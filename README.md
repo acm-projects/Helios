@@ -1,4 +1,4 @@
-<h1 align="center"> Helios ☀️🛠️ </h1>
+<h1 align="center"> Helios ☀️ </h1>
 
 <div align="center">
 An intelligent MCP server generator that transforms complex APIs into clean, agent-friendly tool interfaces.  
