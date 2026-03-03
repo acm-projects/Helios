@@ -1,6 +1,7 @@
 const { MongoClient } = require('mongodb');
+require('dotenv').config();
 
-const uri = 'mongodb+srv://navmihs23_db_user:27epb7wwi50ESjTO@cluster0.nl8eux7.mongodb.net/?appName=Cluster0';
+const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 // json file will be given by the algorithm 
 // create new user that gives a json fil and the functio will just take the new user
@@ -19,8 +20,8 @@ const client = new MongoClient(uri);
 //     const newUser = { name: name, age: age, email: email };
 //     const createResult = await collection.insertOne(newUser);
 //     console.log('Created:', createResult.insertedId);}
-const newUserT = {"name": "navmi", "_id": "456"};
-const newUserT2 = {"name": "extra", "_id": "123", "material" : "plastic", "color" : "red" };
+const newUserT = {"name": "navmi", "_id": "1234"};
+const newUserT2 = {"name": "extra", "_id": "12345", "material" : "plastic", "color" : "red" };
 
 async function extra() {
   // // CREATE - insert a document
