@@ -57,11 +57,18 @@ async function run() {
     const db = client.db('myDatabase');
     const collection = db.collection('users');
 
-    const createResult = await collection.insertOne(newUserT);
-    console.log('Created:', createResult.insertedId);
-    const createResult2 = await collection.insertOne(newUserT2);
-    console.log('Created:', createResult2.insertedId);
+    // const createResult = await collection.insertOne(newUserT);
+    // console.log('Created:', createResult.insertedId);
+    // const createResult2 = await collection.insertOne(newUserT2);
+    // console.log('Created:', createResult2.insertedId);
 
+    const user = await collection.findOne({ _id: "1234" });
+    console.log('Read:', user);
+    console.log('name:', user.name);
+    console.log('id:', user._id);
+
+    // generateTool(apiData.name, apiData.url, apiData.apiKey, apiData.secretKey);
+    //move everything into a function and practice calling it from everyone elses stuff
 
   } finally {
     await client.close();
