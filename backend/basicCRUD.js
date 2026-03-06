@@ -56,12 +56,13 @@ async function run() {
     await client.connect();
     const db = client.db('myDatabase');
     const collection = db.collection('users');
-
-    // const createResult = await collection.insertOne(newUserT);
-    // console.log('Created:', createResult.insertedId);
+    //create
+    const createResult = await collection.insertOne(newUserT);
+    console.log('Created:', createResult.insertedId);
     // const createResult2 = await collection.insertOne(newUserT2);
     // console.log('Created:', createResult2.insertedId);
-
+    
+    //read
     const user = await collection.findOne({ _id: "1234" });
     console.log('Read:', user);
     console.log('name:', user.name);
