@@ -20,8 +20,8 @@ const client = new MongoClient(uri);
 //     const newUser = { name: name, age: age, email: email };
 //     const createResult = await collection.insertOne(newUser);
 //     console.log('Created:', createResult.insertedId);}
-const newUserT = {"name": "navmi", "_id": "1234"};
-const newUserT2 = {"name": "extra", "_id": "12345", "material" : "plastic", "color" : "red" };
+//const newUserT = {"name": "navmi", "_id": "1234"};
+//const newUserT2 = {"name": "extra", "_id": "12345", "material" : "plastic", "color" : "red" };
 
 async function extra() {
   // // CREATE - insert a document
@@ -61,7 +61,7 @@ async function run() {
     console.log('Created:', createResult.insertedId);
     // const createResult2 = await collection.insertOne(newUserT2);
     // console.log('Created:', createResult2.insertedId);
-    
+
     //read
     const user = await collection.findOne({ _id: "1234" });
     console.log('Read:', user);
