@@ -89,7 +89,7 @@ function generateToolName(method: string, path: string): string {
 }
 
 // Parses a full OpenAPI 3.x spec into the tool registry format
-export function parseOpenApiSpec(spec: any, source: string): ToolsFile {
+export function parseOpenApiSpec(spec: any): ToolsFile {
   const tools: EndpointDefinition[] = [];
   const paths: Record<string, any> = spec.paths || {};
 
@@ -103,7 +103,7 @@ export function parseOpenApiSpec(spec: any, source: string): ToolsFile {
     const scheme = spec.schemes && spec.schemes.length > 0 ? spec.schemes[0] : "https";
     baseUrl = `${scheme}://${spec.host}${spec.basePath || ""}`;
   } else {
-    baseUrl = source;
+    baseUrl = " ";
   }
 
   const httpMethods = ["get", "post", "put", "patch", "delete", "head", "options"] as const;
@@ -136,20 +136,24 @@ export function parseOpenApiSpec(spec: any, source: string): ToolsFile {
 
   return { baseUrl, tools };
 }
+export async function parseSwaggerUrl(specUrl: string): Promise<any> {
+  const spec = await SwaggerParser.validate(specUrl);
+  return spec;
+}
 
 // Fetch spec and detect format using swagger-parser
-export async function generateToolRegistry(specPathOrUrl: string): Promise<ToolsFile> {
-  const spec = await SwaggerParser.validate(specPathOrUrl);
+export async function generateToolRegistry(spec: string): Promise<ToolsFile> {
+  
 
   // OpenAPI 3.x or Swagger 2.x
   if ((spec as any).openapi || (spec as any).swagger) {
-    return parseOpenApiSpec(spec, specPathOrUrl);
+    return parseOpenApiSpec(spec);
   }
 
-  // Format
+  // Formatting non-openai/swagger spec
   const apis = Array.isArray(spec) ? spec : [spec];
   return {
-    baseUrl: specPathOrUrl,
+    baseUrl: "help me",
     tools: apis.map((api: any) => {
       const queryParams: string[] = Object.keys(api.parameters?.query || {});
       return {
@@ -174,7 +178,7 @@ export async function generateToolRegistry(specPathOrUrl: string): Promise<Tools
 
 
 // Prompt user for API spec URL
-async function promptForApiUrl(): Promise<string> {
+export async function promptForApiUrl(): Promise<string> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question("What is your API spec URL? ", (answer: string) => {
@@ -185,7 +189,7 @@ async function promptForApiUrl(): Promise<string> {
 }
 
 // ESM-compatible entry point guard
-
+/*
 async function main() {
   const specPathOrUrl = process.argv[2] || (await promptForApiUrl());
 
@@ -203,5 +207,5 @@ async function main() {
     process.exit(1);
   }
 }
-
-main();
+*/
+//main();
