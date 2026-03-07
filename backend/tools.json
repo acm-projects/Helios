@@ -1,0 +1,132 @@
+{
+  "baseUrl": "https://dogapi.dog/api/v2",
+  "tools": [
+    {
+      "name": "get_breeds",
+      "description": "list breeds",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page[number]": {
+            "type": "integer",
+            "description": "Page number for pagination",
+            "minimum": 1
+          },
+          "page[size]": {
+            "type": "integer",
+            "description": "Number of records per page (max 1000)",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/breeds",
+        "headers": {},
+        "query_params": [
+          "page[number]",
+          "page[size]"
+        ]
+      }
+    },
+    {
+      "name": "get_breeds_by_id",
+      "description": "get breed with non-existing id",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/breeds/{id}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "get_facts",
+      "description": "list facts",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Number of facts to return (max 5, defaults to 1)",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/facts",
+        "headers": {},
+        "query_params": [
+          "limit"
+        ]
+      }
+    },
+    {
+      "name": "get_groups",
+      "description": "list groups",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page[number]": {
+            "type": "integer",
+            "description": "Page number for pagination",
+            "minimum": 1
+          },
+          "page[size]": {
+            "type": "integer",
+            "description": "Number of records per page (max 1000)",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/groups",
+        "headers": {},
+        "query_params": [
+          "page[number]",
+          "page[size]"
+        ]
+      }
+    },
+    {
+      "name": "get_groups_by_id",
+      "description": "get group with non-existing id",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/groups/{id}",
+        "headers": {},
+        "query_params": []
+      }
+    }
+  ]
+}
