@@ -1,401 +1,129 @@
 {
-  "baseUrl": "https://petstore3.swagger.io/api/v3",
+  "baseUrl": "https://dogapi.dog/api/v2",
   "tools": [
     {
-      "name": "put_pet",
-      "description": "Update an existing pet.",
-      "input_schema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "handler": {
-        "method": "PUT",
-        "path": "/pet",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "post_pet",
-      "description": "Add a new pet to the store.",
-      "input_schema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "handler": {
-        "method": "POST",
-        "path": "/pet",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "get_pet_findByStatus",
-      "description": "Finds Pets by status.",
+      "name": "get_breeds",
+      "description": "list breeds",
       "input_schema": {
         "type": "object",
         "properties": {
-          "status": {
-            "type": "string",
-            "description": "Status values that need to be considered for filter"
+          "page[number]": {
+            "type": "integer",
+            "description": "Page number for pagination",
+            "minimum": 1
+          },
+          "page[size]": {
+            "type": "integer",
+            "description": "Number of records per page (max 1000)",
+            "minimum": 1,
+            "maximum": 1000
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": []
       },
       "handler": {
         "method": "GET",
-        "path": "/pet/findByStatus",
+        "path": "/breeds",
         "headers": {},
         "query_params": [
-          "status"
+          "page[number]",
+          "page[size]"
         ]
       }
     },
     {
-      "name": "get_pet_findByTags",
-      "description": "Finds Pets by tags.",
+      "name": "get_breeds_by_id",
+      "description": "get breed with non-existing id",
       "input_schema": {
         "type": "object",
         "properties": {
-          "tags": {
-            "type": "array",
-            "description": "Tags to filter by"
+          "id": {
+            "type": "string"
           }
         },
         "required": [
-          "tags"
+          "id"
         ]
       },
       "handler": {
         "method": "GET",
-        "path": "/pet/findByTags",
+        "path": "/breeds/{id}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "get_facts",
+      "description": "list facts",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Number of facts to return (max 5, defaults to 1)",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/facts",
         "headers": {},
         "query_params": [
-          "tags"
+          "limit"
         ]
       }
     },
     {
-      "name": "get_pet_petId",
-      "description": "Find pet by ID.",
+      "name": "get_groups",
+      "description": "list groups",
       "input_schema": {
         "type": "object",
         "properties": {
-          "petId": {
+          "page[number]": {
             "type": "integer",
-            "description": "ID of pet to return"
+            "description": "Page number for pagination",
+            "minimum": 1
+          },
+          "page[size]": {
+            "type": "integer",
+            "description": "Number of records per page (max 1000)",
+            "minimum": 1,
+            "maximum": 1000
           }
         },
-        "required": [
-          "petId"
-        ]
+        "required": []
       },
       "handler": {
         "method": "GET",
-        "path": "/pet/{petId}",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "post_pet_petId",
-      "description": "Updates a pet in the store with form data.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "petId": {
-            "type": "integer",
-            "description": "ID of pet that needs to be updated"
-          },
-          "name": {
-            "type": "string",
-            "description": "Name of pet that needs to be updated"
-          },
-          "status": {
-            "type": "string",
-            "description": "Status of pet that needs to be updated"
-          }
-        },
-        "required": [
-          "petId"
-        ]
-      },
-      "handler": {
-        "method": "POST",
-        "path": "/pet/{petId}",
+        "path": "/groups",
         "headers": {},
         "query_params": [
-          "name",
-          "status"
+          "page[number]",
+          "page[size]"
         ]
       }
     },
     {
-      "name": "delete_pet_petId",
-      "description": "Deletes a pet.",
+      "name": "get_groups_by_id",
+      "description": "get group with non-existing id",
       "input_schema": {
         "type": "object",
         "properties": {
-          "api_key": {
-            "type": "string",
-            "description": ""
-          },
-          "petId": {
-            "type": "integer",
-            "description": "Pet id to delete"
+          "id": {
+            "type": "string"
           }
         },
         "required": [
-          "petId"
-        ]
-      },
-      "handler": {
-        "method": "DELETE",
-        "path": "/pet/{petId}",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "post_pet_petId_uploadImage",
-      "description": "Uploads an image.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "petId": {
-            "type": "integer",
-            "description": "ID of pet to update"
-          },
-          "additionalMetadata": {
-            "type": "string",
-            "description": "Additional Metadata"
-          }
-        },
-        "required": [
-          "petId"
-        ]
-      },
-      "handler": {
-        "method": "POST",
-        "path": "/pet/{petId}/uploadImage",
-        "headers": {},
-        "query_params": [
-          "additionalMetadata"
-        ]
-      }
-    },
-    {
-      "name": "get_store_inventory",
-      "description": "Returns pet inventories by status.",
-      "input_schema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "handler": {
-        "method": "GET",
-        "path": "/store/inventory",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "post_store_order",
-      "description": "Place an order for a pet.",
-      "input_schema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "handler": {
-        "method": "POST",
-        "path": "/store/order",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "get_store_order_orderId",
-      "description": "Find purchase order by ID.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "integer",
-            "description": "ID of order that needs to be fetched"
-          }
-        },
-        "required": [
-          "orderId"
+          "id"
         ]
       },
       "handler": {
         "method": "GET",
-        "path": "/store/order/{orderId}",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "delete_store_order_orderId",
-      "description": "Delete purchase order by identifier.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "integer",
-            "description": "ID of the order that needs to be deleted"
-          }
-        },
-        "required": [
-          "orderId"
-        ]
-      },
-      "handler": {
-        "method": "DELETE",
-        "path": "/store/order/{orderId}",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "post_user",
-      "description": "Create user.",
-      "input_schema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "handler": {
-        "method": "POST",
-        "path": "/user",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "post_user_createWithList",
-      "description": "Creates list of users with given input array.",
-      "input_schema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "handler": {
-        "method": "POST",
-        "path": "/user/createWithList",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "get_user_login",
-      "description": "Logs user into the system.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "username": {
-            "type": "string",
-            "description": "The user name for login"
-          },
-          "password": {
-            "type": "string",
-            "description": "The password for login in clear text"
-          }
-        },
-        "required": []
-      },
-      "handler": {
-        "method": "GET",
-        "path": "/user/login",
-        "headers": {},
-        "query_params": [
-          "username",
-          "password"
-        ]
-      }
-    },
-    {
-      "name": "get_user_logout",
-      "description": "Logs out current logged in user session.",
-      "input_schema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "handler": {
-        "method": "GET",
-        "path": "/user/logout",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "get_user_username",
-      "description": "Get user by user name.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "username": {
-            "type": "string",
-            "description": "The name that needs to be fetched. Use user1 for testing"
-          }
-        },
-        "required": [
-          "username"
-        ]
-      },
-      "handler": {
-        "method": "GET",
-        "path": "/user/{username}",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "put_user_username",
-      "description": "Update user resource.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "username": {
-            "type": "string",
-            "description": "name that need to be deleted"
-          }
-        },
-        "required": [
-          "username"
-        ]
-      },
-      "handler": {
-        "method": "PUT",
-        "path": "/user/{username}",
-        "headers": {},
-        "query_params": []
-      }
-    },
-    {
-      "name": "delete_user_username",
-      "description": "Delete user resource.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "username": {
-            "type": "string",
-            "description": "The name that needs to be deleted"
-          }
-        },
-        "required": [
-          "username"
-        ]
-      },
-      "handler": {
-        "method": "DELETE",
-        "path": "/user/{username}",
+        "path": "/groups/{id}",
         "headers": {},
         "query_params": []
       }
