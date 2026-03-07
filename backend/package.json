@@ -1,4 +1,10 @@
 {
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "mongodb": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5"
   "name": "first-mcp-generator",
   "type": "module",
   "version": "1.0.0",
