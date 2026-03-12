@@ -31,14 +31,19 @@ export async function updateMongo(filter, updates) {
   return result.modifiedCount;
 }
 
-async function removeMongo(query) {
+export async function removeMongo(query) {
   const result = await collection.deleteOne(query);
   console.log('Deleted:', result.deletedCount, 'document(s)');
   return result.deletedCount;
 }
 
+export async function getAllMongo() {
+  const users = await collection.find({}).toArray();
+  return users;
+}
+
 async function run() {
-  
+
 }
 
 run().catch(console.error);
