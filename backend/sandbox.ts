@@ -1,8 +1,10 @@
 //import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import dotenv from "dotenv"
+import { ToolsFile } from "./server.ts"
+
 dotenv.config();
-export async function initializeAgent(): Promise<string>{
+export async function initializeAgent(registry: ToolsFile): Promise<string>{
     //make curl command as a responce
     const response = await fetch("http://localhost:3000/mcp", {
     method: "POST",
@@ -15,9 +17,10 @@ export async function initializeAgent(): Promise<string>{
         "id": 1,
         "method": "initialize",
         "params": {
-        "protocolVersion": "2024-11-05",
-        "capabilities": {},
-        "clientInfo": { "name": "test-client", "version": "1.0.0" }
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": { "name": "test-client", "version": "1.0.0" },
+            "toolsRegistry": registry
         }      
     })
     });

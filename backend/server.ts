@@ -11,7 +11,8 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js"
 import { z } from "zod"
 import { Request, Response } from "express"
-import { readFileSync } from "fs" //tool file reading
+
+
 
 export interface ToolsFile {
     baseUrl: string
@@ -109,8 +110,7 @@ const app = createMcpExpressApp()
 const transports = new Map<string, StreamableHTTPServerTransport>()
 const MCPserver = new Map<string, McpServer>()
 
-const rawTools = readFileSync("tools.json", "utf-8")
-const toolsData = JSON.parse(rawTools) as ToolsFile
+
 
 async function postHandler(req: Request, res: Response) {
     const sessionId = req.headers["mcp-session-id"] as string | undefined
@@ -122,6 +122,8 @@ async function postHandler(req: Request, res: Response) {
     }
 
     if (!sessionId && isInitializeRequest(req.body)) {
+        const toolsData = (req.body.params as any)?.toolsRegistry as ToolsFile
+
         const server = new McpServer({
             name: "mcpServer",
             version: "1.0.0"

@@ -150,8 +150,9 @@ async function main(): Promise<void> {
   //-----------------------------------------------------------------------------------------------------------------------------------------------------
 
   //create tools from spec url content
+  let registry: any = null
   try {
-    const registry = await generateToolRegistry(savedApiSpec);
+    registry = await generateToolRegistry(savedApiSpec);
     writeFileSync("tools.json", JSON.stringify(registry, null, 2));
   } catch (err: any) {
     console.error(`Failed to parse API spec`);
@@ -160,7 +161,7 @@ async function main(): Promise<void> {
   }
 
   //initialize sandbox llm to use tools
-  const sessionId = await initializeAgent();
+  const sessionId = await initializeAgent(registry);
   //get tools for llm
   const tools = await getTools(sessionId);
 
