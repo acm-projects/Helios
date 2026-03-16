@@ -7,8 +7,11 @@ import {initializeAgent, getTools, callTool, messageAI } from "./sandbox.ts";
 import express from "express"
 //server functions our "new main"
 
+import cors from "cors"
+
 //start server
 const app = express()
+app.use(cors())
 app.use(express.json()) //tells our server our req, and res are in json format, so we can use calls like req.body.name
 
 //connect to database
@@ -21,7 +24,7 @@ app.post("/api/spec/parse", async (req, res) => {
     try {
     spec = await parseSwaggerUrl(req.body.url)
     } catch (err: any) {
-    return res.status(400).json({ error: "invalid spec:" + err.message })
+    return res.status(400).json({ error: "invalid specURL"})
     }
 
     specId = req.body.name
