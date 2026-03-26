@@ -1,129 +1,544 @@
 {
-  "baseUrl": "https://dogapi.dog/api/v2",
+  "baseUrl": "https://petstore.swagger.io/v2",
   "tools": [
     {
-      "name": "get_breeds",
-      "description": "list breeds",
+      "name": "uploadFile",
+      "description": "uploads an image",
       "input_schema": {
         "type": "object",
         "properties": {
-          "page[number]": {
-            "type": "integer",
-            "description": "Page number for pagination",
-            "minimum": 1
+          "petId": {
+            "type": "string",
+            "description": "ID of pet to update"
           },
-          "page[size]": {
-            "type": "integer",
-            "description": "Number of records per page (max 1000)",
-            "minimum": 1,
-            "maximum": 1000
-          }
-        },
-        "required": []
-      },
-      "handler": {
-        "method": "GET",
-        "path": "/breeds",
-        "headers": {},
-        "query_params": [
-          "page[number]",
-          "page[size]"
-        ]
-      }
-    },
-    {
-      "name": "get_breeds_by_id",
-      "description": "get breed with non-existing id",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
+          "additionalMetadata": {
+            "type": "string",
+            "description": "Additional data to pass to server"
+          },
+          "file": {
+            "type": "string",
+            "description": "file to upload"
           }
         },
         "required": [
-          "id"
+          "petId"
         ]
       },
       "handler": {
-        "method": "GET",
-        "path": "/breeds/{id}",
+        "method": "POST",
+        "path": "/pet/{petId}/uploadImage",
         "headers": {},
         "query_params": []
       }
     },
     {
-      "name": "get_facts",
-      "description": "list facts",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "limit": {
-            "type": "integer",
-            "description": "Number of facts to return (max 5, defaults to 1)",
-            "default": 1,
-            "minimum": 1,
-            "maximum": 5
-          }
-        },
-        "required": []
-      },
-      "handler": {
-        "method": "GET",
-        "path": "/facts",
-        "headers": {},
-        "query_params": [
-          "limit"
-        ]
-      }
-    },
-    {
-      "name": "get_groups",
-      "description": "list groups",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "page[number]": {
-            "type": "integer",
-            "description": "Page number for pagination",
-            "minimum": 1
-          },
-          "page[size]": {
-            "type": "integer",
-            "description": "Number of records per page (max 1000)",
-            "minimum": 1,
-            "maximum": 1000
-          }
-        },
-        "required": []
-      },
-      "handler": {
-        "method": "GET",
-        "path": "/groups",
-        "headers": {},
-        "query_params": [
-          "page[number]",
-          "page[size]"
-        ]
-      }
-    },
-    {
-      "name": "get_groups_by_id",
-      "description": "get group with non-existing id",
+      "name": "addPet",
+      "description": "Add a new pet to the store",
       "input_schema": {
         "type": "object",
         "properties": {
           "id": {
+            "type": "integer"
+          },
+          "category": {
             "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photoUrls": {
+            "type": "array"
+          },
+          "tags": {
+            "type": "array"
+          },
+          "status": {
+            "type": "string",
+            "description": "pet status in the store"
           }
         },
         "required": [
-          "id"
+          "name",
+          "photoUrls"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/pet",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "updatePet",
+      "description": "Update an existing pet",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "category": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photoUrls": {
+            "type": "array"
+          },
+          "tags": {
+            "type": "array"
+          },
+          "status": {
+            "type": "string",
+            "description": "pet status in the store"
+          }
+        },
+        "required": [
+          "name",
+          "photoUrls"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/pet",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "findPetsByStatus",
+      "description": "Finds Pets by status",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Status values that need to be considered for filter"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "handler": {
         "method": "GET",
-        "path": "/groups/{id}",
+        "path": "/pet/findByStatus",
+        "headers": {},
+        "query_params": [
+          "status"
+        ]
+      }
+    },
+    {
+      "name": "findPetsByTags",
+      "description": "Finds Pets by tags",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "type": "string",
+            "description": "Tags to filter by"
+          }
+        },
+        "required": [
+          "tags"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/pet/findByTags",
+        "headers": {},
+        "query_params": [
+          "tags"
+        ]
+      }
+    },
+    {
+      "name": "getPetById",
+      "description": "Find pet by ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "petId": {
+            "type": "string",
+            "description": "ID of pet to return"
+          }
+        },
+        "required": [
+          "petId"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/pet/{petId}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "updatePetWithForm",
+      "description": "Updates a pet in the store with form data",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "petId": {
+            "type": "string",
+            "description": "ID of pet that needs to be updated"
+          },
+          "name": {
+            "type": "string",
+            "description": "Updated name of the pet"
+          },
+          "status": {
+            "type": "string",
+            "description": "Updated status of the pet"
+          }
+        },
+        "required": [
+          "petId"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/pet/{petId}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "deletePet",
+      "description": "Deletes a pet",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "api_key": {
+            "type": "string"
+          },
+          "petId": {
+            "type": "string",
+            "description": "Pet id to delete"
+          }
+        },
+        "required": [
+          "petId"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/pet/{petId}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "getInventory",
+      "description": "Returns pet inventories by status",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/store/inventory",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "placeOrder",
+      "description": "Place an order for a pet",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "petId": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "shipDate": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "Order Status"
+          },
+          "complete": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/store/order",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "getOrderById",
+      "description": "Find purchase order by ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "ID of pet that needs to be fetched"
+          }
+        },
+        "required": [
+          "orderId"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/store/order/{orderId}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "deleteOrder",
+      "description": "Delete purchase order by ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "ID of the order that needs to be deleted"
+          }
+        },
+        "required": [
+          "orderId"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/store/order/{orderId}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "createUsersWithListInput",
+      "description": "Creates list of users with given input array",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "array",
+            "description": "List of user object"
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/user/createWithList",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "getUserByName",
+      "description": "Get user by user name",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "The name that needs to be fetched. Use user1 for testing. "
+          }
+        },
+        "required": [
+          "username"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/user/{username}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "updateUser",
+      "description": "Updated user",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "userStatus": {
+            "type": "integer",
+            "description": "User Status"
+          }
+        },
+        "required": [
+          "username"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/user/{username}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "deleteUser",
+      "description": "Delete user",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "The name that needs to be deleted"
+          }
+        },
+        "required": [
+          "username"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/user/{username}",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "loginUser",
+      "description": "Logs user into the system",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "The user name for login"
+          },
+          "password": {
+            "type": "string",
+            "description": "The password for login in clear text"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/user/login",
+        "headers": {},
+        "query_params": [
+          "username",
+          "password"
+        ]
+      }
+    },
+    {
+      "name": "logoutUser",
+      "description": "Logs out current logged in user session",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/user/logout",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "createUsersWithArrayInput",
+      "description": "Creates list of users with given input array",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "array",
+            "description": "List of user object"
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/user/createWithArray",
+        "headers": {},
+        "query_params": []
+      }
+    },
+    {
+      "name": "createUser",
+      "description": "Create user",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "userStatus": {
+            "type": "integer",
+            "description": "User Status"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/user",
         "headers": {},
         "query_params": []
       }

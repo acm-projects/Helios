@@ -152,9 +152,8 @@ async function postHandler(req: Request, res: Response) {
         await transport.handleRequest(req, res, req.body)
         return
     }
-
+        
     res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "Invalid request" }, id: null })
-
 }
 
 async function getHandler(req: Request, res: Response) {

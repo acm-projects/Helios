@@ -79,6 +79,9 @@ app.post("/api/sandbox/start", async (req, res) => {
 })
 
 app.post("/api/sandbox/chat", async (req, res) => {
+    console.log("Payload token estimate:", JSON.stringify(req.body).length / 4)
+    console.log("Tools count:", req.body.tools?.length)
+    console.log("History length:", req.body.history?.length)
     const history = req.body.history
     history.push({ role: "user", content: req.body.message })
 
@@ -92,17 +95,21 @@ app.post("/api/sandbox/chat", async (req, res) => {
         const toolName = toolCall.function.name;
         const args = JSON.parse(toolCall.function.arguments);
         const toolResponse = await callTool(req.body.sessionId, toolName, args)
-
+        //check for high numbers of responses
+        const limited = Array.isArray(toolResponse) && toolResponse.length > 100 ? toolResponse.slice(0, 100) : toolResponse
+        const content = JSON.stringify(limited)
+        
         //debugging
-        console.log("Tool response:", JSON.stringify(toolResponse))
-
+        console.log("Tool response:", content)
+        
         history.push({
             role: "tool",
             tool_call_id: message.tool_calls[0].id,
-            content: JSON.stringify(toolResponse)
+            content: content
         });
 
         const toolMessage = await messageAI(history, req.body.tools);
+
         console.log("Agent: " + toolMessage.content);
         if (toolMessage.content) {
             history.push({ role: "assistant", content: toolMessage.content });
