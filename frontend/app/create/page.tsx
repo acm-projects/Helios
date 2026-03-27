@@ -37,19 +37,17 @@ export default function Create() {
       <Link href="/">
         <Image src="/logoName.svg" alt="Helios" width={200} height={200} className="cursor-pointer" />
       </Link>
-      <div className="flex font-[family-name:--font-cinzel]" style={{ gap: "clamp(10px, 4vw, 168px)" }}>
-        <button className="text-[52px] cursor-pointer flex flex-col items-center group">
-          Info
-          <span className="block h-[2px] w-full bg-gray-500 group-hover:bg-black mt-[-6px]"></span>
-        </button>
-        <button className="text-[52px] cursor-pointer flex flex-col items-center group">
-          Keys
-          <span className="block h-[2px] w-full bg-gray-500 group-hover:bg-black mt-[-6px]"></span>
-        </button>
-        <button className="text-[52px] cursor-pointer flex flex-col items-center group">
-          Account
-          <span className="block h-[2px] w-full bg-gray-500 group-hover:bg-black mt-[-6px]"></span>
-        </button>
+      <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[32px] tracking-widest">
+        <span className="flex flex-col items-center text-black">
+          Create
+          <span className="block h-[2px] w-full bg-black mt-[-4px]"></span>
+        </span>
+        <span className="text-gray-400 text-[20px] mb-1">✦</span>
+        <span className="text-gray-400">Sandbox</span>
+        <span className="text-gray-400 text-[20px] mb-1">✦</span>
+        <span className="text-gray-400">Verify</span>
+        <span className="text-gray-400 text-[20px] mb-1">✦</span>
+        <span className="text-gray-400">Download</span>
       </div>
       <div className="w-[220px]"></div>
     </nav>
