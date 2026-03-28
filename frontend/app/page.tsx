@@ -1,10 +1,16 @@
-{/* main page */}
+"use client"
 import Image from "next/image"
 import Link from "next/link"
+import { useState, useEffect } from "react"
 import { Mail, Hash } from "lucide-react"
 import { siGoogle, siGithub, siSpotify, siNotion, siStripe, siDiscord } from "simple-icons"
 
-const servers = ["Server 1", "Server 2", "Server 3"]
+interface SavedServer {
+  id: string
+  baseUrl: string
+  toolCount: number
+  createdAt: string
+}
 
 const premadeServers = [
   { name: "Google",  simpleIcon: siGoogle,   lucideIcon: null },
@@ -18,6 +24,19 @@ const premadeServers = [
 ]
 
 export default function Home() {
+  const [servers, setServers] = useState<SavedServer[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/servers")
+      .then(res => res.json())
+      .then(data => {
+        setServers(data.servers ?? [])
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
   return (
   <div className="min-h-screen">
     <nav className="flex items-center justify-between px-6 pl-20">
@@ -54,13 +73,30 @@ export default function Home() {
       <h2 className="font-[family-name:--font-cinzel] text-[42px]">Your Servers</h2>
       <div className="h-[1px] bg-black"></div>
       <div className="flex flex-wrap justify-center gap-6 mt-8 pb-16">
-        {servers.map((server) => (
-          <div key={server} className="w-[280px] aspect-[4/3] font-[family-name:--font-cinzel] cursor-pointer px-8 py-10 text-[24px] tracking-widest text-black border-[2px] border-gray-400 relative
-            before:absolute before:inset-[5px] before:border-[1px] before:border-gray-300 before:pointer-events-none
-            hover:border-black hover:before:border-gray-500 transition-colors duration-300">
-            {server}
-          </div>
-        ))}
+        {loading ? (
+          <span className="font-[family-name:--font-cinzel] text-gray-400 text-[18px] tracking-widest">Loading...</span>
+        ) : servers.length === 0 ? (
+          <span className="font-[family-name:--font-cinzel] text-gray-400 text-[18px] tracking-widest">No servers yet — build one above.</span>
+        ) : (
+          servers.map((server) => (
+            <Link key={server.id} href={`/sandbox?specId=${server.id}`}>
+              <div className="w-[280px] aspect-[4/3] font-[family-name:--font-cinzel] cursor-pointer flex flex-col justify-between px-8 py-8 text-black border-[2px] border-gray-400 relative
+                before:absolute before:inset-[5px] before:border-[1px] before:border-gray-300 before:pointer-events-none
+                hover:border-black hover:before:border-gray-500 transition-colors duration-300">
+                <span className="text-[22px] tracking-widest leading-tight break-words">{server.id}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] tracking-wider text-gray-400 truncate font-[family-name:--font-geist-mono]">{server.baseUrl || "—"}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] tracking-widest text-gray-500">{server.toolCount} tools</span>
+                    <span className="text-[11px] text-gray-400 font-[family-name:--font-geist-mono]">
+                      {server.createdAt ? new Date(server.createdAt).toLocaleDateString() : "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))
+        )}
       </div>
     </section>
 
@@ -87,4 +123,5 @@ export default function Home() {
     </section>
 
   </div>
-)}
+  )
+}

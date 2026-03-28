@@ -39,10 +39,19 @@ app.post("/api/spec/parse", async (req, res) => {
         return res.status(400).json({ error: "The name is already taken. Please choose another name."})
     } 
 
-    //saves a key to add to database (we can look up the same spec with that id later)
+    // Generate registry to extract metadata before saving
+    let registry: any
+    try {
+        registry = await generateToolRegistry(spec)
+    } catch (err: any) {
+        return res.status(400).json({ error: "Failed to generate tool registry: " + err.message })
+    }
+
     spec._id = specId
+    spec._baseUrl = registry.baseUrl
+    spec._toolCount = registry.tools.length
+    spec._createdAt = new Date().toISOString()
     await createMongo(spec)
-    //sends reponse back to the front end
     res.json({ specId })
 })
 
@@ -83,6 +92,7 @@ app.post("/api/sandbox/start", async (req, res) => {
 app.post("/api/sandbox/chat", async (req, res) => {
     const MAX_ITERATIONS = 10;
     const TOKEN_BUDGET = 25000;
+    const MAX_RESPONSE_CHARS = 8000;
 
     const history = req.body.history
     history.push({ role: "user", content: req.body.message })
@@ -122,10 +132,15 @@ app.post("/api/sandbox/chat", async (req, res) => {
                 ? toolResponse.slice(0, 100)
                 : toolResponse;
 
+            let content = JSON.stringify(limited);
+            if (content.length > MAX_RESPONSE_CHARS) {
+                content = content.slice(0, MAX_RESPONSE_CHARS) + `... [truncated — ${content.length - MAX_RESPONSE_CHARS} characters omitted]`;
+            }
+
             history.push({
                 role: "tool",
                 tool_call_id: toolCall.id,
-                content: JSON.stringify(limited)
+                content
             });
 
             console.log(`[Step ${iterations}] Tool: ${toolName} | Tokens so far: ${totalTokens}`);
@@ -149,6 +164,17 @@ app.post("/api/sandbox/chat", async (req, res) => {
 })
 
 
+
+app.get("/api/servers", async (req, res) => {
+    const all = await getAllMongo()
+    const servers = all.map((s: any) => ({
+        id: s._id,
+        baseUrl: s._baseUrl || "",
+        toolCount: s._toolCount || 0,
+        createdAt: s._createdAt || ""
+    }))
+    res.json({ servers })
+})
 
 app.listen(8000, () => {
     console.log("api server running on port 8000")

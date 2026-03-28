@@ -213,7 +213,7 @@ export function parseOpenApiSpec(spec: any): ToolsFile {
   return { baseUrl, tools };
 }
 export async function parseSwaggerUrl(specUrl: string): Promise<any> {
-  const spec = await SwaggerParser.validate(specUrl);
+  const spec = await SwaggerParser.dereference(specUrl);
   return spec;
 }
 
