@@ -11,33 +11,27 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js"
 import { z } from "zod"
 import { Request, Response } from "express"
-
-
-
-export interface ToolsFile {
-    baseUrl: string
-    tools: EndpointDefinition[]
-}
-
-export interface EndpointDefinition {
-    type?: string
-    function?: string
-    name: string
-    description: string
-    input_schema: { type: string, properties: Record<string, { type: string, description: string }>, required: string[] }
-    handler: { method: string, path: string, headers?: Record<string, string>, query_params: string[] }
-}
+import type { ToolsFile, EndpointDefinition } from "./generate_tool_registry.ts"
 
 function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, baseUrl: string) {
     const schema: Record<string, any> = {}
     for (const paramName in endpoint.input_schema.properties) {
         const paramInfo = endpoint.input_schema.properties[paramName]
         if (paramInfo.type === "number" || paramInfo.type === "integer") {
-            schema[paramName] = z.number().describe(paramInfo.description || "")
+            schema[paramName] = z.number().optional().describe(paramInfo.description || "")
+        } else if (paramInfo.type === "boolean") {
+            schema[paramName] = z.boolean().optional().describe(paramInfo.description || "")
+        } else if (paramInfo.type === "object") {
+            schema[paramName] = z.record(z.any()).optional().describe(paramInfo.description || "")
         } else if (paramInfo.type === "array") {
-            schema[paramName] = z.array(z.string()).describe(paramInfo.description || "")
+            const items = (paramInfo as any).items
+            if (items?.type === "object") {
+                schema[paramName] = z.array(z.record(z.any())).optional().describe(paramInfo.description || "")
+            } else {
+                schema[paramName] = z.array(z.string()).optional().describe(paramInfo.description || "")
+            }
         } else {
-            schema[paramName] = z.string().describe(paramInfo.description || "")
+            schema[paramName] = z.string().optional().describe(paramInfo.description || "")
         }
     }
 

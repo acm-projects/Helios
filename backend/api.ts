@@ -3,7 +3,7 @@ import {generateToolRegistry, parseSwaggerUrl } from "./generate_tool_registry.t
 //database functions
 import { connectMongo, createMongo, getMongo, getAllMongo, removeMongo } from "./crud.js";
 //sandbox client functions
-import {initializeAgent, getTools, callTool, messageAI } from "./sandbox.ts";
+import {initializeAgent, callTool, messageAI } from "./sandbox.ts";
 import express from "express"
 //server functions our "new main"
 
@@ -62,65 +62,87 @@ app.post("/api/sandbox/start", async (req, res) => {
 
     //initialize sandbox llm to use tools
     const sessionId = await initializeAgent(registry);
-    //get tools for llm
-    const tools = await getTools(sessionId);
 
-    //tools isnt in the right format for openai so we need to change the format\
-    const openAITools = tools.map(tool => ({
-    type: "function" as const,
-    function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.inputSchema
-    }
+    // Build tools from registry directly — preserves handler (method, path) for the frontend
+    const openAITools = registry.tools.map((tool: any) => ({
+        type: "function" as const,
+        function: {
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.input_schema
+        },
+        handler: {
+            method: tool.handler.method,
+            path: tool.handler.path
+        }
     }));
 
     res.json({ sessionId, tools: openAITools })
 })
 
 app.post("/api/sandbox/chat", async (req, res) => {
-    console.log("Payload token estimate:", JSON.stringify(req.body).length / 4)
-    console.log("Tools count:", req.body.tools?.length)
-    console.log("History length:", req.body.history?.length)
+    const MAX_ITERATIONS = 10;
+    const TOKEN_BUDGET = 25000;
+
     const history = req.body.history
     history.push({ role: "user", content: req.body.message })
 
-    const message = await messageAI(history, req.body.tools)
-    if (message.tool_calls != null) {
-        //add agents tool call message into history
-        history.push(message);
-        //getting tool variables from message and parse them into obj
-        const toolCall = message.tool_calls[0];
-        if (toolCall.type === "function") {
-        const toolName = toolCall.function.name;
-        const args = JSON.parse(toolCall.function.arguments);
-        const toolResponse = await callTool(req.body.sessionId, toolName, args)
-        //check for high numbers of responses
-        const limited = Array.isArray(toolResponse) && toolResponse.length > 100 ? toolResponse.slice(0, 100) : toolResponse
-        const content = JSON.stringify(limited)
-        
-        //debugging
-        console.log("Tool response:", content)
-        
-        history.push({
-            role: "tool",
-            tool_call_id: message.tool_calls[0].id,
-            content: content
-        });
+    let iterations = 0;
+    let totalTokens = 0;
 
-        const toolMessage = await messageAI(history, req.body.tools);
+    try {
+        while (iterations < MAX_ITERATIONS && totalTokens < TOKEN_BUDGET) {
+            const { message, tokens } = await messageAI(history, req.body.tools);
+            totalTokens += tokens;
+            iterations++;
 
-        console.log("Agent: " + toolMessage.content);
-        if (toolMessage.content) {
-            history.push({ role: "assistant", content: toolMessage.content });
+            // AI returned a plain response — it's done thinking
+            if (!message.tool_calls || message.tool_calls.length === 0) {
+                if (message.content) history.push({ role: "assistant", content: message.content });
+                break;
+            }
+
+            // AI wants to call a tool — execute it and loop
+            history.push(message);
+            const toolCall = message.tool_calls[0];
+            if (toolCall.type !== "function") break;
+            const toolName = toolCall.function.name;
+
+            let args: any;
+            try {
+                args = JSON.parse(toolCall.function.arguments);
+            } catch {
+                const msg = "I tried to call a tool but the arguments were too large or malformed to parse. Try using a shorter input (e.g. a URL instead of a base64 image).";
+                history.push({ role: "assistant", content: msg });
+                break;
+            }
+
+            const toolResponse = await callTool(req.body.sessionId, toolName, args);
+            const limited = Array.isArray(toolResponse) && toolResponse.length > 100
+                ? toolResponse.slice(0, 100)
+                : toolResponse;
+
+            history.push({
+                role: "tool",
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(limited)
+            });
+
+            console.log(`[Step ${iterations}] Tool: ${toolName} | Tokens so far: ${totalTokens}`);
         }
+
+        // Hit a limit — tell the user why it stopped
+        if (iterations >= MAX_ITERATIONS) {
+            const msg = `I reached my step limit (${MAX_ITERATIONS} attempts) without completing the task. Try breaking it into smaller steps.`;
+            history.push({ role: "assistant", content: msg });
+        } else if (totalTokens >= TOKEN_BUDGET) {
+            const msg = `I used too many tokens (${totalTokens}) and had to stop. The conversation is getting too long — try starting a new one.`;
+            history.push({ role: "assistant", content: msg });
         }
-    }
-    else {
-        console.log("Agent: " + message.content)
-        if (message.content) {
-        history.push({ role: "assistant", content: message.content })
-        }
+    } catch (err: any) {
+        console.error("Chat handler error:", err.message);
+        const msg = `Something went wrong: ${err.message}`;
+        history.push({ role: "assistant", content: msg });
     }
 
     res.json({ reply: history[history.length - 1].content, history })

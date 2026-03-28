@@ -21,6 +21,18 @@ interface Tool {
     description: string
     parameters: unknown
   }
+  handler?: {
+    method: string
+    path: string
+  }
+}
+
+const METHOD_STYLES: Record<string, string> = {
+  GET:    "border border-gray-300 text-gray-500 bg-white",
+  POST:   "bg-gray-800 text-white",
+  PUT:    "bg-gray-600 text-white",
+  PATCH:  "bg-gray-500 text-white",
+  DELETE: "bg-black text-white",
 }
 
 export default function Sandbox() {
@@ -98,6 +110,9 @@ export default function Sandbox() {
     setInput("")
     setIsLoading(true)
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 60000) // 1 min max
+
     fetch("http://localhost:8000/api/sandbox/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -106,10 +121,12 @@ export default function Sandbox() {
         tools: activeTools,
         history: messages.filter(m => m.role !== "tool_call").map(m => ({ role: m.role, content: m.content })),
         message: messageText
-      })
+      }),
+      signal: controller.signal
     })
       .then(res => res.json())
       .then(data => {
+        clearTimeout(timeout)
         // Parse returned history to detect if a tool was called
         const history: { role: string; tool_calls?: { function: { name: string } }[] }[] = data.history ?? []
         const toolCallStep = history.find(m => m.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length > 0)
@@ -131,6 +148,17 @@ export default function Sandbox() {
           timestamp: new Date()
         })
         setMessages(prev => [...prev, ...newMessages])
+        setIsLoading(false)
+      })
+      .catch(err => {
+        clearTimeout(timeout)
+        const reason = err.name === "AbortError" ? "Request timed out — the AI took too long to respond." : "Failed to reach the server."
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: reason,
+          timestamp: new Date()
+        }])
         setIsLoading(false)
       })
   }
@@ -333,12 +361,24 @@ export default function Sandbox() {
 
                     {/* Tool info */}
                     <div className="flex flex-col gap-1 min-w-0">
-                      <span className={cn(
-                        "font-[family-name:--font-cinzel] text-[13px] tracking-wider leading-tight",
-                        enabled ? "text-black" : "text-gray-400"
-                      )}>
-                        {tool.function.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {tool.handler?.method && (
+                          <span className={cn(
+                            "flex-shrink-0 font-[family-name:--font-geist-mono] text-[9px] tracking-widest px-1.5 py-0.5",
+                            enabled
+                              ? (METHOD_STYLES[tool.handler.method.toUpperCase()] ?? "bg-gray-400 text-white")
+                              : "border border-gray-200 text-gray-300 bg-white"
+                          )}>
+                            {tool.handler.method.toUpperCase()}
+                          </span>
+                        )}
+                        <span className={cn(
+                          "font-[family-name:--font-cinzel] text-[13px] tracking-wider leading-tight truncate",
+                          enabled ? "text-black" : "text-gray-400"
+                        )}>
+                          {tool.function.name}
+                        </span>
+                      </div>
                       {tool.function.description && (
                         <span className="text-[11px] text-gray-400 leading-snug font-[family-name:--font-geist-sans] truncate">
                           {tool.function.description}

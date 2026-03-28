@@ -1,18 +1,14 @@
 import SwaggerParser from "@apidevtools/swagger-parser";
-import * as readline from "readline";
-import { writeFileSync } from "fs";
 import type { OpenAPIV3 } from "openapi-types";
 
 // Types
 
 export interface EndpointDefinition {
-  type?: string;
-  function?: string;
   name: string;
   description: string;
   input_schema: {
     type: string;
-    properties: Record<string, { type: string; description?: string; default?: any; minimum?: number; maximum?: number }>;
+    properties: Record<string, any>;
     required: string[];
   };
   handler: {
@@ -29,6 +25,31 @@ export interface ToolsFile {
 }
 
 
+// Builds a single schema property, ensuring arrays always have items (OpenAI requirement)
+function buildSchemaProp(schema: any, rootSpec: any): any {
+  const resolved = resolveSchema(schema, rootSpec);
+  const type = resolved.type === "array" ? "array" : resolved.type === "object" ? "object" : mapType(resolved.type);
+  const prop: any = { type };
+  if (type === "array") {
+    const rawItems = resolved.items ? resolveSchema(resolved.items, rootSpec) : null;
+    if (rawItems?.type === "object") {
+      prop.items = { type: "object" };
+    } else {
+      prop.items = rawItems?.type ? { type: mapType(rawItems.type) } : { type: "string" };
+    }
+  }
+  if (type === "object" && resolved.properties) {
+    prop.properties = Object.fromEntries(
+      Object.entries<any>(resolved.properties).map(([k, v]) => [k, buildSchemaProp(v, rootSpec)])
+    );
+  }
+  if (resolved.description) prop.description = resolved.description;
+  if (resolved.default !== undefined) prop.default = resolved.default;
+  if (resolved.minimum !== undefined) prop.minimum = resolved.minimum;
+  if (resolved.maximum !== undefined) prop.maximum = resolved.maximum;
+  return prop;
+}
+
 // Maps OpenAPI types to our schema types
 function mapType(apiType: string | undefined): string {
   switch ((apiType || "").toLowerCase()) {
@@ -36,6 +57,7 @@ function mapType(apiType: string | undefined): string {
     case "integer": return "integer";
     case "number": return "number";
     case "boolean": return "boolean";
+    case "object": return "object";
     default: return "string";
   }
 }
@@ -74,11 +96,7 @@ function buildFromOpenApiParams(
     if (p.in === "body" && schema && schema.properties) {
       for (const [propName, propSchemaRaw] of Object.entries<any>(schema.properties)) {
         const propSchema = resolveSchema(propSchemaRaw, rootSpec);
-        const schemaProp: any = { type: propSchema.type === "array" ? "array" : mapType(propSchema.type) };
-        if (propSchema.description) schemaProp.description = propSchema.description;
-        if (propSchema.default !== undefined) schemaProp.default = propSchema.default;
-
-        properties[propName] = schemaProp;
+        properties[propName] = buildSchemaProp(propSchema, rootSpec);
       }
 
       if (Array.isArray(schema.required)) {
@@ -89,14 +107,8 @@ function buildFromOpenApiParams(
       continue;
     }
 
-    const schemaProp: any = {
-      type: schema.type === "array" ? "array" : mapType(schema.type),
-    };
-
-    if (p.description) schemaProp.description = p.description;
-    if (schema.default !== undefined) schemaProp.default = schema.default;
-    if (schema.minimum !== undefined) schemaProp.minimum = schema.minimum;
-    if (schema.maximum !== undefined) schemaProp.maximum = schema.maximum;
+    const schemaProp = buildSchemaProp(schema, rootSpec);
+    if (p.description && !schemaProp.description) schemaProp.description = p.description;
 
     properties[name] = schemaProp;
 
@@ -125,12 +137,7 @@ function buildFromOpenApiParams(
     if (bodySchema && bodySchema.properties) {
       for (const [propName, propSchemaRaw] of Object.entries<any>(bodySchema.properties)) {
         const propSchema = resolveSchema(propSchemaRaw, rootSpec);
-        const schemaProp: any = { type: propSchema.type === "array" ? "array" : mapType(propSchema.type) };
-
-        if (propSchema.description) schemaProp.description = propSchema.description;
-        if (propSchema.default !== undefined) schemaProp.default = propSchema.default;
-
-        properties[propName] = schemaProp;
+        properties[propName] = buildSchemaProp(propSchema, rootSpec);
       }
 
       if (Array.isArray(bodySchema.required)) {
@@ -171,7 +178,7 @@ export function parseOpenApiSpec(spec: any): ToolsFile {
     const scheme = spec.schemes && spec.schemes.length > 0 ? spec.schemes[0] : "https";
     baseUrl = `${scheme}://${spec.host}${spec.basePath || ""}`;
   } else {
-    baseUrl = " ";
+    baseUrl = "";
   }
 
   const httpMethods = ["get", "post", "put", "patch", "delete", "head", "options"] as const;
@@ -219,62 +226,8 @@ export async function generateToolRegistry(spec: string): Promise<ToolsFile> {
     return parseOpenApiSpec(spec);
   }
 
-  // Formatting non-openai/swagger spec
-  const apis = Array.isArray(spec) ? spec : [spec];
-  return {
-    baseUrl: "help me",
-    tools: apis.map((api: any) => {
-      const queryParams: string[] = Object.keys(api.parameters?.query || {});
-      return {
-        name: api.name,
-        description: api.description || "",
-        input_schema: {
-          type: "object" as const,
-          properties: {},
-          required: [],
-        },
-        handler: {
-          method: api.method,
-          path: api.path,
-          headers: {},
-          query_params: queryParams,
-        },
-      };
-    }),
-  };
+  throw new Error("Unsupported spec format: must be OpenAPI 3.x or Swagger 2.x");
 }
 
 
 
-// Prompt user for API spec URL
-export async function promptForApiUrl(): Promise<string> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question("What is your API spec URL? ", (answer: string) => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
-}
-
-// ESM-compatible entry point guard
-/*
-async function main() {
-  const specPathOrUrl = process.argv[2] || (await promptForApiUrl());
-
-  if (!specPathOrUrl) {
-    console.error("Error: No API spec path or URL provided.");
-    process.exit(1);
-  }
-
-  try {
-    const registry = await generateToolRegistry(specPathOrUrl);
-    writeFileSync("tools.json", JSON.stringify(registry, null, 2));
-  } catch (err: any) {
-    console.error(`Failed to fetch or parse API spec from: ${specPathOrUrl}`);
-    console.error(err.message);
-    process.exit(1);
-  }
-}
-*/
-//main();

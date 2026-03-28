@@ -1,7 +1,7 @@
 //import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import dotenv from "dotenv"
-import { ToolsFile } from "./server.ts"
+import type { ToolsFile } from "./generate_tool_registry.ts"
 
 dotenv.config();
 export async function initializeAgent(registry: ToolsFile): Promise<string>{
@@ -84,17 +84,20 @@ export async function callTool(sessionId: string, toolName: string, args: Record
     return data.result.content;
 }
 
-export async function messageAI(messageHistory: OpenAI.Chat.ChatCompletionMessageParam[], tools: any[]) {
-    //const client = new Anthropic({ apiKey: process.env.SANDBOX_OPENAI_KEY});
-    const client = new OpenAI({ apiKey:process.env.SANDBOX_OPENAI_KEY });
-    //const response = await client.messages.create({
+export async function messageAI(
+    messageHistory: OpenAI.Chat.ChatCompletionMessageParam[],
+    tools: any[]
+): Promise<{ message: OpenAI.Chat.ChatCompletionMessage, tokens: number }> {
+    const client = new OpenAI({ apiKey: process.env.SANDBOX_OPENAI_KEY });
     const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    max_tokens: 4096,
-    messages: messageHistory,
-    tools: tools
-    })
-    
-    if (!response) throw new Error("No tools list returned");
-    return response.choices[0].message;
+        model: "gpt-4o-mini",
+        max_tokens: 4096,
+        messages: messageHistory,
+        tools: tools
+    });
+    if (!response) throw new Error("No response from AI");
+    return {
+        message: response.choices[0].message,
+        tokens: response.usage?.total_tokens ?? 0
+    };
 }
