@@ -27,8 +27,8 @@ export async function getMongo(query) {
 
 export async function updateMongo(filter, updates) {
   const result = await collection.updateOne(filter, { $set: updates });
-  console.log('Updated:', result.modifiedCount, 'document(s)');
-  return result.modifiedCount;
+  console.log('Updated:', result.matchedCount, 'document(s)');
+  return result.matchedCount;
 }
 
 export async function removeMongo(query) {

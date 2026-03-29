@@ -41,7 +41,7 @@ export default function Home() {
   <div className="min-h-screen">
     <nav className="flex items-center justify-between px-6 pl-20">
         <Image src="/logoName.svg" alt="Helios" width={200} height={200} />
-        <div className="flex font-[family-name:--font-cinzel]" style={{ gap: "clamp(10px, 4vw, 168px)" }}>
+        <div className="flex font-[family-name:--font-cinzel] gap-[clamp(10px,4vw,168px)]">
           <button className="text-[52px] cursor-pointer flex flex-col items-center group">
             Info
             <span className="block h-[2px] w-full bg-gray-500 group-hover:bg-black mt-[-6px]"></span>

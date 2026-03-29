@@ -1,12 +1,12 @@
 //run main: npx tsx main.ts
 //ex spec urls:
 /*
-https://petstore.swagger.io/v2/swagger.json
+  https://petstore.swagger.io/v2/swagger.json
 */
 
 import OpenAI from "openai";
 //tool generation functions
-import { promptForApiUrl, generateToolRegistry, parseSwaggerUrl } from "./generate_tool_registry.ts";
+import { generateToolRegistry, parseSwaggerUrl } from "./generate_tool_registry.ts";
 import { writeFileSync } from "fs";
 //database functions
 import { connectMongo, createMongo, getMongo, getAllMongo, removeMongo } from "./crud.js";
@@ -191,7 +191,7 @@ async function main(): Promise<void> {
     history.push({ role: "user", content: userInput });
 
     //send user reply to ai and wait for responce
-    const message = await messageAI(history, openAITools)
+    const { message } = await messageAI(history, openAITools)
 
 
     if (message.tool_calls != null) {
@@ -213,7 +213,7 @@ async function main(): Promise<void> {
           content: JSON.stringify(toolResponse)
         });
 
-        const toolMessage = await messageAI(history, openAITools);
+        const { message: toolMessage } = await messageAI(history, openAITools);
         console.log("Agent: " + toolMessage.content);
         if (toolMessage.content) {
           history.push({ role: "assistant", content: toolMessage.content });

@@ -15,9 +15,13 @@ export default function Create() {
   const [url, setUrl] = useState("")
   const [name, setName] = useState("")
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async () => {
+    if (isLoading) return
+    setIsLoading(true)
+    setError("")
     const response = await fetch("http://localhost:8000/api/spec/parse", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -25,9 +29,16 @@ export default function Create() {
     })
     const data = await response.json()
     if (response.ok) {
+      sessionStorage.setItem(`helios_draft_${data.specId}`, JSON.stringify({
+        spec: data.spec,
+        baseUrl: data.baseUrl,
+        toolCount: data.toolCount,
+        catalog: data.catalog
+      }))
       router.push(`/sandbox?specId=${data.specId}`)
     } else {
       setError(data.error)
+      setIsLoading(false)
     }
   }
 
@@ -80,14 +91,27 @@ export default function Create() {
         />
       </div>
 
-      <button
-        onClick={handleSubmit}
-        className="font-[family-name:--font-cinzel] cursor-pointer px-16 py-6 text-[24px] tracking-widest text-black border-[3px] border-black relative
-          before:absolute before:inset-[6px] before:border-[1px] before:border-black before:pointer-events-none
-          hover:bg-black hover:text-white hover:before:border-white transition-colors duration-300"
-      >
-        Generate
-      </button>
+      <div className="flex items-center gap-6">
+        <Link href="/">
+          <button className="font-[family-name:--font-cinzel] cursor-pointer px-10 py-6 text-[24px] tracking-widest text-gray-400 border-[3px] border-gray-300 relative
+            before:absolute before:inset-[6px] before:border-[1px] before:border-gray-300 before:pointer-events-none
+            hover:border-black hover:text-black hover:before:border-black transition-colors duration-300">
+            Back
+          </button>
+        </Link>
+        <button
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className={`font-[family-name:--font-cinzel] px-16 py-6 text-[24px] tracking-widest border-[3px] relative
+            before:absolute before:inset-[6px] before:border-[1px] before:pointer-events-none transition-colors duration-300
+            ${isLoading
+              ? "cursor-not-allowed text-gray-400 border-gray-300 before:border-gray-300"
+              : "cursor-pointer text-black border-black before:border-black hover:bg-black hover:text-white hover:before:border-white"
+            }`}
+        >
+          {isLoading ? "Generating..." : "Generate"}
+        </button>
+      </div>
     </main>
   </div>
   )

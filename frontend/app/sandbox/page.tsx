@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Send, User, Bot } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -25,6 +25,7 @@ interface Tool {
     method: string
     path: string
   }
+  enabled?: boolean
 }
 
 const METHOD_STYLES: Record<string, string> = {
@@ -38,6 +39,7 @@ const METHOD_STYLES: Record<string, string> = {
 export default function Sandbox() {
   const searchParams = useSearchParams()
   const specId = searchParams.get("specId")
+  const router = useRouter()
 
   // sandbox state
   const [sessionId, setSessionId] = useState("")
@@ -55,19 +57,22 @@ export default function Sandbox() {
 
   // initialize sandbox on page load
   useEffect(() => {
+    const draft = specId ? sessionStorage.getItem(`helios_draft_${specId}`) : null
+    const draftData = draft ? JSON.parse(draft) : null
+
     fetch("http://localhost:8000/api/sandbox/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ specId })
+      body: JSON.stringify({ specId, spec: draftData?.spec ?? undefined, baseUrl: draftData?.baseUrl ?? undefined })
     })
       .then(res => res.json())
       .then(data => {
         const tools: Tool[] = data.tools ?? []
         setSessionId(data.sessionId)
         setAllTools(tools)
-        setActiveTools(tools)
+        setActiveTools(tools.filter(t => t.enabled !== false))
         const initialToggles: Record<string, boolean> = {}
-        tools.forEach((t: Tool) => { initialToggles[t.function.name] = true })
+        tools.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
         setToolToggles(initialToggles)
       })
   }, [specId])
@@ -93,6 +98,27 @@ export default function Sandbox() {
     const filtered = allTools.filter(t => toolToggles[t.function.name])
     setActiveTools(filtered)
     setMessages([])
+  }
+
+  const handleNavigateToVerify = () => {
+    if (specId) {
+      const draft = sessionStorage.getItem(`helios_draft_${specId}`)
+      if (draft) {
+        // New server — update existing draft catalog with current toggle states
+        const draftData = JSON.parse(draft)
+        if (Array.isArray(draftData.catalog)) {
+          const updatedCatalog = draftData.catalog.map((item: { name: string; enabled?: boolean }) => ({
+            ...item,
+            enabled: toolToggles[item.name] ?? item.enabled ?? true
+          }))
+          sessionStorage.setItem(`helios_draft_${specId}`, JSON.stringify({ ...draftData, catalog: updatedCatalog }))
+        }
+      } else {
+        // Existing server — write toggle overrides so Verify can apply them on top of the DB catalog
+        sessionStorage.setItem(`helios_toggles_${specId}`, JSON.stringify(toolToggles))
+      }
+    }
+    router.push(`/verify?specId=${specId}`)
   }
 
   const handleSend = async () => {
@@ -188,11 +214,18 @@ export default function Sandbox() {
             <span className="block h-[2px] w-full bg-black mt-[-4px]"></span>
           </span>
           <span className="text-gray-400 text-[20px] mb-1">✦</span>
-          <span className="text-gray-400">Verify</span>
+          <span onClick={handleNavigateToVerify} className="text-gray-400 hover:text-black transition-colors duration-200 cursor-pointer">Verify</span>
           <span className="text-gray-400 text-[20px] mb-1">✦</span>
           <span className="text-gray-400">Download</span>
         </div>
-        <div className="w-[220px]"></div>
+        <div className="flex items-center gap-3 w-[220px] justify-end">
+          <Link href="/" className="font-[family-name:--font-cinzel] text-[14px] tracking-widest text-gray-400 border-[2px] border-gray-300 px-4 py-2 hover:border-black hover:text-black transition-colors duration-200">
+            Cancel
+          </Link>
+          <button onClick={handleNavigateToVerify} className="font-[family-name:--font-cinzel] text-[14px] tracking-widest text-white bg-black border-[2px] border-black px-4 py-2 hover:bg-white hover:text-black transition-colors duration-200 cursor-pointer">
+            Next →
+          </button>
+        </div>
       </nav>
 
       {/* Body — two panels */}
@@ -270,9 +303,9 @@ export default function Sandbox() {
                   </div>
                   <div className="border-[1px] border-gray-300 px-4 py-3 flex items-center gap-3">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-black/40 animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="w-2 h-2 rounded-full bg-black/40 animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="w-2 h-2 rounded-full bg-black/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <div className="w-2 h-2 rounded-full bg-black/40 animate-bounce [animation-delay:0ms]" />
+                      <div className="w-2 h-2 rounded-full bg-black/40 animate-bounce [animation-delay:150ms]" />
+                      <div className="w-2 h-2 rounded-full bg-black/40 animate-bounce [animation-delay:300ms]" />
                     </div>
                     <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400">Thinking...</span>
                   </div>
@@ -391,7 +424,7 @@ export default function Sandbox() {
             )}
           </div>
 
-          {/* Apply button */}
+          {/* Footer buttons */}
           <div className="border-t-[2px] border-black p-6 flex-shrink-0">
             <button
               onClick={handleApply}

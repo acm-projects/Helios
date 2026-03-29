@@ -15,24 +15,28 @@ import type { ToolsFile, EndpointDefinition } from "./generate_tool_registry.ts"
 
 function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, baseUrl: string) {
     const schema: Record<string, any> = {}
+    const required = Array.isArray(endpoint.input_schema.required) ? endpoint.input_schema.required : []
     for (const paramName in endpoint.input_schema.properties) {
         const paramInfo = endpoint.input_schema.properties[paramName]
+        const isRequired = required.includes(paramName)
+        let field: any
         if (paramInfo.type === "number" || paramInfo.type === "integer") {
-            schema[paramName] = z.number().optional().describe(paramInfo.description || "")
+            field = z.number().describe(paramInfo.description || "")
         } else if (paramInfo.type === "boolean") {
-            schema[paramName] = z.boolean().optional().describe(paramInfo.description || "")
+            field = z.boolean().describe(paramInfo.description || "")
         } else if (paramInfo.type === "object") {
-            schema[paramName] = z.record(z.any()).optional().describe(paramInfo.description || "")
+            field = z.record(z.any()).describe(paramInfo.description || "")
         } else if (paramInfo.type === "array") {
             const items = (paramInfo as any).items
             if (items?.type === "object") {
-                schema[paramName] = z.array(z.record(z.any())).optional().describe(paramInfo.description || "")
+                field = z.array(z.record(z.any())).describe(paramInfo.description || "")
             } else {
-                schema[paramName] = z.array(z.string()).optional().describe(paramInfo.description || "")
+                field = z.array(z.string()).describe(paramInfo.description || "")
             }
         } else {
-            schema[paramName] = z.string().optional().describe(paramInfo.description || "")
+            field = z.string().describe(paramInfo.description || "")
         }
+        schema[paramName] = isRequired ? field : field.optional()
     }
 
     server.registerTool(
@@ -60,28 +64,30 @@ function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, ba
 
             const method = endpoint.handler.method.toUpperCase();
 
-            const bodyParams: Record<string, any> = {};
-            let hasBody = false;
-
-            if (["POST", "PUT", "PATCH"].includes(method)) {
+            // Sandbox is read-only — non-GET calls are simulated, never executed
+            if (method !== "GET") {
+                const bodyParams: Record<string, any> = {};
                 for (const key in args) {
                     if (!endpoint.handler.path.includes(`{${key}}`) && !endpoint.handler.query_params.includes(key) && args[key] !== undefined) {
                         bodyParams[key] = args[key];
-                        hasBody = true;
                     }
+                }
+                const simulation = {
+                    sandbox_simulation: true,
+                    info: "Sandbox is read-only. This request was simulated successfully — no data was sent or changed.",
+                    simulated_request: {
+                        method,
+                        url,
+                        headers: { ...(endpoint.handler.headers || {}), "Content-Type": "application/json" },
+                        body: Object.keys(bodyParams).length > 0 ? bodyParams : null
+                    }
+                };
+                return {
+                    content: [{ type: "text", text: JSON.stringify(simulation, null, 2) }]
                 }
             }
 
-            const fetchOptions: RequestInit = {
-                method,
-                headers: {
-                    ...(endpoint.handler.headers || {}),
-                    ...(hasBody ? { "Content-Type": "application/json" } : {})
-                },
-                ...(hasBody ? { body: JSON.stringify(bodyParams) } : {})
-            };
-
-            const response = await fetch(url, fetchOptions);
+            const response = await fetch(url, { method: "GET", headers: endpoint.handler.headers || {} });
             const textResponse = await response.text();
 
             let data;
