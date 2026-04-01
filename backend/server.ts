@@ -74,7 +74,7 @@ function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, ba
                 }
                 const simulation = {
                     sandbox_simulation: true,
-                    info: "Sandbox is read-only. This request was simulated successfully — no data was sent or changed.",
+                    info: "Sandbox simulation complete. This is the final result — the sandbox does not execute write operations. Do not retry.",
                     simulated_request: {
                         method,
                         url,

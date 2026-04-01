@@ -86,14 +86,16 @@ export async function callTool(sessionId: string, toolName: string, args: Record
 
 export async function messageAI(
     messageHistory: OpenAI.Chat.ChatCompletionMessageParam[],
-    tools: any[]
+    tools: any[],
+    toolChoice?: "none" | "auto"
 ): Promise<{ message: OpenAI.Chat.ChatCompletionMessage, tokens: number }> {
     const client = new OpenAI({ apiKey: process.env.SANDBOX_OPENAI_KEY });
     const response = await client.chat.completions.create({
         model: "gpt-4o-mini",
         max_tokens: 4096,
         messages: messageHistory,
-        tools: tools
+        tools: tools,
+        ...(toolChoice ? { tool_choice: toolChoice } : {})
     });
     if (!response) throw new Error("No response from AI");
     return {

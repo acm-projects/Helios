@@ -156,14 +156,14 @@ export default function Sandbox() {
         // Parse returned history to detect if a tool was called
         const history: { role: string; tool_calls?: { function: { name: string } }[] }[] = data.history ?? []
         const toolCallStep = history.find(m => m.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length > 0)
-        const toolUsed = toolCallStep?.tool_calls?.[0]?.function?.name ?? null
+        const toolsUsed = toolCallStep?.tool_calls?.map(tc => tc.function?.name).filter(Boolean) ?? []
 
         const newMessages: Message[] = []
-        if (toolUsed) {
+        if (toolsUsed.length > 0) {
           newMessages.push({
             id: Date.now().toString() + "-tool",
             role: "tool_call",
-            content: toolUsed,
+            content: toolsUsed.join("  ·  "),
             timestamp: new Date()
           })
         }

@@ -28,7 +28,7 @@ interface CatalogEntry {
   enabled: boolean
   input_schema: {
     type: string
-    properties: Record<string, any>
+    properties: Record<string, unknown>
     required?: string[]
   }
   handler: {
@@ -44,28 +44,30 @@ export default function Verify() {
   const router = useRouter()
   const specId = searchParams.get("specId")
 
-  const [catalog, setCatalog] = useState<CatalogEntry[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [catalog, setCatalog] = useState<CatalogEntry[]>(() => {
+    if (!specId) return []
+    const draft = sessionStorage.getItem(`helios_draft_${specId}`)
+    const draftData = draft ? JSON.parse(draft) : null
+    return draftData?.catalog ?? []
+  })
+  const [isLoading, setIsLoading] = useState(() => {
+    if (!specId) return false
+    const draft = sessionStorage.getItem(`helios_draft_${specId}`)
+    const draftData = draft ? JSON.parse(draft) : null
+    return !draftData?.catalog
+  })
   const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState(specId ? "" : "No spec ID provided.")
   const [editingSet, setEditingSet] = useState<Set<number>>(new Set())
 
   useEffect(() => {
-    if (!specId) {
-      setError("No spec ID provided.")
-      setIsLoading(false)
-      return
-    }
+    if (!specId) return
     const draft = sessionStorage.getItem(`helios_draft_${specId}`)
     const draftData = draft ? JSON.parse(draft) : null
+    if (draftData?.catalog) return  // already initialized via useState
 
-    if (draftData?.catalog) {
-      // New unsaved server — catalog already generated, use it directly
-      setCatalog(draftData.catalog)
-      setIsLoading(false)
-    } else {
-      // Existing saved server — fetch from DB, then apply any sandbox toggle overrides
-      fetch(`http://localhost:8000/api/servers/${specId}/catalog`)
+    // Existing saved server — fetch from DB, then apply any sandbox toggle overrides
+    fetch(`http://localhost:8000/api/servers/${specId}/catalog`)
         .then(res => res.json())
         .then(data => {
           if (data.error) { setError(data.error); setIsLoading(false); return }
@@ -82,7 +84,6 @@ export default function Verify() {
           setIsLoading(false)
         })
         .catch(() => { setError("Failed to reach the server."); setIsLoading(false) })
-    }
   }, [specId])
 
   const handleNameChange = (index: number, value: string) => {
@@ -274,8 +275,9 @@ export default function Verify() {
                     {isEditing && (
                       <div className="px-6 pb-5 flex flex-col gap-4 border-t-[1px] border-gray-100 bg-gray-50">
                         <div className="flex flex-col gap-1 pt-4">
-                          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-widest text-gray-400 uppercase">Tool Name</label>
+                          <label htmlFor={`tool-name-${i}`} className="font-[family-name:--font-cinzel] text-[9px] tracking-widest text-gray-400 uppercase">Tool Name</label>
                           <input
+                            id={`tool-name-${i}`}
                             type="text"
                             value={entry.name}
                             onChange={e => handleNameChange(i, e.target.value)}
@@ -283,8 +285,9 @@ export default function Verify() {
                           />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-widest text-gray-400 uppercase">Description</label>
+                          <label htmlFor={`tool-description-${i}`} className="font-[family-name:--font-cinzel] text-[9px] tracking-widest text-gray-400 uppercase">Description</label>
                           <textarea
+                            id={`tool-description-${i}`}
                             value={entry.description}
                             onChange={e => {
                               handleDescriptionChange(i, e.target.value)

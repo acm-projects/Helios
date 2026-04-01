@@ -136,15 +136,18 @@ app.post("/api/sandbox/chat", async (req, res) => {
 
     const systemPrompt = {
         role: "system" as const,
-        content: "You are a sandbox testing assistant for API tools. GET requests execute against the real API. POST, PUT, PATCH, and DELETE requests are never executed — the tool returns a simulation showing what would have been sent. When you receive a sandbox_simulation response, present the simulated_request to the user clearly as a success. Never treat a simulation as an error or failure."
+        content: "You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue."
     }
 
     let iterations = 0;
     let totalTokens = 0;
+    let forceTextNext = false;
 
     try {
         while (iterations < MAX_ITERATIONS && totalTokens < TOKEN_BUDGET) {
-            const { message, tokens } = await messageAI([systemPrompt, ...history], req.body.tools);
+            const toolChoice = forceTextNext ? "none" : "auto";
+            forceTextNext = false;
+            const { message, tokens } = await messageAI([systemPrompt, ...history], req.body.tools, toolChoice);
             totalTokens += tokens;
             iterations++;
 
@@ -154,38 +157,54 @@ app.post("/api/sandbox/chat", async (req, res) => {
                 break;
             }
 
-            // AI wants to call a tool — execute it and loop
+            // AI wants to call tools — execute ALL in parallel
             history.push(message);
-            const toolCall = message.tool_calls[0];
-            if (toolCall.type !== "function") break;
-            const toolName = toolCall.function.name;
 
-            let args: any;
-            try {
-                args = JSON.parse(toolCall.function.arguments);
-            } catch {
-                const msg = "I tried to call a tool but the arguments were too large or malformed to parse. Try using a shorter input (e.g. a URL instead of a base64 image).";
-                history.push({ role: "assistant", content: msg });
-                break;
+            const toolResults = await Promise.allSettled(
+                message.tool_calls.map(async (toolCall) => {
+                    if (toolCall.type !== "function") {
+                        return `Tool call skipped: unsupported type "${toolCall.type}".`;
+                    }
+
+                    let args: any;
+                    try {
+                        args = JSON.parse(toolCall.function.arguments);
+                    } catch {
+                        return "Tool call failed: arguments were malformed or too large to parse. Try a shorter input.";
+                    }
+
+                    try {
+                        const toolResponse = await callTool(req.body.sessionId, toolCall.function.name, args);
+                        const limited = Array.isArray(toolResponse) && toolResponse.length > 100
+                            ? toolResponse.slice(0, 100)
+                            : toolResponse;
+                        let content = JSON.stringify(limited);
+                        if (content.length > MAX_RESPONSE_CHARS) {
+                            content = content.slice(0, MAX_RESPONSE_CHARS) + `... [truncated — ${content.length - MAX_RESPONSE_CHARS} characters omitted]`;
+                        }
+                        return content;
+                    } catch (toolErr: any) {
+                        return `Tool execution error: ${toolErr.message}`;
+                    }
+                })
+            );
+
+            // Push one response per tool_call — index-paired so the ID is always correct
+            for (let i = 0; i < message.tool_calls.length; i++) {
+                const result = toolResults[i];
+                const content = result.status === "fulfilled"
+                    ? result.value
+                    : `Unexpected error for tool call ${message.tool_calls[i].id}.`;
+                history.push({ role: "tool", tool_call_id: message.tool_calls[i].id, content });
             }
 
-            const toolResponse = await callTool(req.body.sessionId, toolName, args);
-            const limited = Array.isArray(toolResponse) && toolResponse.length > 100
-                ? toolResponse.slice(0, 100)
-                : toolResponse;
+            // If any tool response was a sandbox simulation, force text on the next call
+            forceTextNext = history.slice(-message.tool_calls.length).some(
+                (m: any) => m.role === "tool" && typeof m.content === "string" && m.content.includes("sandbox_simulation")
+            );
 
-            let content = JSON.stringify(limited);
-            if (content.length > MAX_RESPONSE_CHARS) {
-                content = content.slice(0, MAX_RESPONSE_CHARS) + `... [truncated — ${content.length - MAX_RESPONSE_CHARS} characters omitted]`;
-            }
-
-            history.push({
-                role: "tool",
-                tool_call_id: toolCall.id,
-                content
-            });
-
-            console.log(`[Step ${iterations}] Tool: ${toolName} | Tokens so far: ${totalTokens}`);
+            const toolNames = message.tool_calls.map(tc => ("function" in tc ? tc.function.name : tc.type)).join(", ");
+            console.log(`[Step ${iterations}] Tools: ${toolNames} | Tokens so far: ${totalTokens}`);
         }
 
         // Hit a limit — tell the user why it stopped
