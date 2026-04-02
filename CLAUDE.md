@@ -126,11 +126,31 @@ npm run lint        # ESLint
 
 ---
 
+## Current Status (2026-04-01)
+
+All core sandbox functionality is working:
+- Spec parse → catalog review (verify page) → sandbox chat loop
+- Parallel tool calls (all tool_calls in one step, all executed concurrently)
+- Non-GET simulation (intercepted at server.ts, never touches the API)
+- Fallback simulation when Zod rejects args (api.ts constructs locally)
+- Session expired surfaces a clean message instead of silent failure
+- Composite multi-API sessions (create page) — re-initialize on every page load
+- Verify page handles both `specId` (single API) and `compositeId` (multi-API) flows
+- Swagger 2.0 query params correctly extracted (p.type/p.items read directly)
+
+**Known issue to resolve**: if a server was saved to MongoDB with a stale catalog (from an old session before fixes), its `query_params` will be `[]`. Fix: delete and re-add the server from the home page.
+
 ## Upcoming Features (Product To-Do)
-- OAuth + API key input UI for authenticated APIs
-- MCP server boilerplate templates (emailer, Google, etc.)
-- Store chat history in MongoDB per session
-- Main dashboard listing all saved MCP servers
-- Spec input via JSON upload and AI-generated JSON from prompt
-- Intent prompt on spec page — LLM optimizes tool groupings
-- Sandbox GET-only enforcement — simulate non-GET calls without executing them
+
+### Next up
+- [ ] Wire up recommended APIs on create page (clicking does nothing)
+- [ ] API key input UI — input field before sandbox start; key injected into `handler.headers`
+- [ ] Generated server download — template engine renders tool registry → TypeScript MCP boilerplate → ZIP
+
+### Backlog
+- [ ] OAuth flow for authenticated APIs (Google, Spotify, Slack) — needs callback URL + token storage, post-MVP
+- [ ] Response shaping — strip irrelevant fields per endpoint using OpenAPI response schemas
+- [ ] Intent prompt on spec page — LLM optimizes tool groupings
+- [ ] Store chat history in MongoDB per session
+- [ ] MCP server boilerplate templates (emailer, Google, etc.)
+- [ ] Spec input via JSON upload and AI-generated JSON from prompt

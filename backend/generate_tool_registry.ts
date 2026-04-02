@@ -89,8 +89,11 @@ function buildFromOpenApiParams(
 
   // Parse path and query parameters
   for (const p of parameters) {
+    console.log(`[param] name=${p.name} in=${p.in} type=${p.type} hasSchema=${!!p.schema}`)
     const name = p.name;
-    const schema = resolveSchema(p.schema || {}, rootSpec);
+    // Swagger 2.0 puts type/items directly on the param; OpenAPI 3.x wraps them under p.schema
+    const rawSchema = p.schema || (p.type ? { type: p.type, items: p.items, enum: p.enum, description: p.description } : {})
+    const schema = resolveSchema(rawSchema, rootSpec);
 
     // Special case for Swagger 2.0: 'body' params that point to a whole object
     if (p.in === "body" && schema && schema.properties) {

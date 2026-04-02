@@ -1,9 +1,14 @@
-//Start server:
-//npx tsx server.ts
-//Initialize: 
-//curl -v -X POST http://localhost:3000/mcp -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test-client\",\"version\":\"1.0.0\"}}}"
-//Call Post - change server-id
-//curl -v -X POST http://localhost:3000/mcp -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -H "mcp-session-id: SESSION_ID" -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"get_post\",\"arguments\":{\"id\":1}}}"
+// MCP server — port 3000. Pure tool dispatch: no AI, no DB.
+// Each session gets its own McpServer instance with its own registered tools.
+// The tool registry is passed inside the initialize request body, not loaded from a file,
+// so sessions never share or contaminate each other's tool sets.
+//
+// Start: npx tsx server.ts
+//
+// Initialize:
+// curl -v -X POST http://localhost:3000/mcp -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test-client\",\"version\":\"1.0.0\"}}}"
+// Call a tool (replace SESSION_ID):
+// curl -v -X POST http://localhost:3000/mcp -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -H "mcp-session-id: SESSION_ID" -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"get_post\",\"arguments\":{\"id\":1}}}"
 import { randomUUID } from "node:crypto"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
@@ -13,6 +18,9 @@ import { z } from "zod"
 import { Request, Response } from "express"
 import type { ToolsFile, EndpointDefinition } from "./generate_tool_registry.ts"
 
+// Converts one EndpointDefinition from the registry into a live MCP tool on the given server.
+// Builds a Zod schema from input_schema.properties, then at call time:
+// substitutes path params, appends query params, and either fetches (GET) or returns a simulation (non-GET).
 function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, baseUrl: string) {
     const schema: Record<string, any> = {}
     const required = Array.isArray(endpoint.input_schema.required) ? endpoint.input_schema.required : []
@@ -25,11 +33,15 @@ function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, ba
         } else if (paramInfo.type === "boolean") {
             field = z.boolean().describe(paramInfo.description || "")
         } else if (paramInfo.type === "object") {
-            field = z.record(z.any()).describe(paramInfo.description || "")
+            field = z.record(z.string(), z.any()).describe(paramInfo.description || "")
         } else if (paramInfo.type === "array") {
             const items = (paramInfo as any).items
             if (items?.type === "object") {
-                field = z.array(z.record(z.any())).describe(paramInfo.description || "")
+                field = z.array(z.record(z.string(), z.any())).describe(paramInfo.description || "")
+            } else if (items?.type === "number" || items?.type === "integer") {
+                field = z.array(z.number()).describe(paramInfo.description || "")
+            } else if (items?.type === "boolean") {
+                field = z.array(z.boolean()).describe(paramInfo.description || "")
             } else {
                 field = z.array(z.string()).describe(paramInfo.description || "")
             }
@@ -39,6 +51,7 @@ function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, ba
         schema[paramName] = isRequired ? field : field.optional()
     }
 
+    console.log(`[register] ${endpoint.name} | query_params: [${(endpoint.handler.query_params || []).join(", ")}]`)
     server.registerTool(
         endpoint.name,
         {
@@ -53,7 +66,7 @@ function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, ba
                 }
             }
             const params = new URLSearchParams()
-            for (const paramName of endpoint.handler.query_params) {
+            for (const paramName of (endpoint.handler.query_params || [])) {
                 if (args[paramName] !== undefined) {
                     params.append(paramName, String(args[paramName]))
                 }
@@ -87,8 +100,24 @@ function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, ba
                 }
             }
 
-            const response = await fetch(url, { method: "GET", headers: endpoint.handler.headers || {} });
+            let response: Awaited<ReturnType<typeof fetch>>
+            try {
+                console.log(`[tool:${endpoint.name}] Fetching: ${url}`)
+                response = await fetch(url, { method: "GET", headers: endpoint.handler.headers || {} })
+            } catch (err: any) {
+                console.error(`[tool:${endpoint.name}] Network error fetching ${url}: ${err.message}`)
+                return { content: [{ type: "text", text: `Network error: ${err.message}` }] }
+            }
             const textResponse = await response.text();
+
+            if (!response.ok) {
+                const reason =
+                    response.status === 429 ? "Rate limit hit — this API only allows a limited number of free requests. Wait a moment and try again." :
+                    response.status === 402 ? "API quota exceeded — this free API has reached its usage limit." :
+                    response.status === 403 ? "Access denied (403) — the API rejected the request. The free tier quota may be exhausted." :
+                    `API returned an error: HTTP ${response.status} ${response.statusText}. Body: ${textResponse.slice(0, 300)}`
+                return { content: [{ type: "text", text: reason }] }
+            }
 
             let data;
             try {
@@ -107,8 +136,24 @@ function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, ba
 
 const app = createMcpExpressApp()
 
+// All three Maps are keyed by sessionId. A session lives until the client disconnects or it goes idle.
 const transports = new Map<string, StreamableHTTPServerTransport>()
 const MCPserver = new Map<string, McpServer>()
+const sessionTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+const SESSION_TTL_MS = 30 * 60 * 1000 // 30 minutes
+
+function refreshSessionTimer(sessionId: string) {
+    const existing = sessionTimers.get(sessionId)
+    if (existing) clearTimeout(existing)
+    const timer = setTimeout(() => {
+        transports.delete(sessionId)
+        MCPserver.delete(sessionId)
+        sessionTimers.delete(sessionId)
+        console.log(`[session] Evicted idle session ${sessionId}`)
+    }, SESSION_TTL_MS)
+    sessionTimers.set(sessionId, timer)
+}
 
 
 
@@ -116,13 +161,20 @@ async function postHandler(req: Request, res: Response) {
     const sessionId = req.headers["mcp-session-id"] as string | undefined
 
     if (sessionId && transports.has(sessionId)) {
+        refreshSessionTimer(sessionId)
         const transport = transports.get(sessionId)!
         await transport.handleRequest(req, res, req.body)
         return
     }
 
+    // No session ID + initialize request = brand new session. Tool registry arrives in the request body.
     if (!sessionId && isInitializeRequest(req.body)) {
         const toolsData = (req.body.params as any)?.toolsRegistry as ToolsFile
+
+        if (!toolsData || !Array.isArray(toolsData.tools)) {
+            res.status(400).json({ jsonrpc: "2.0", error: { code: -32602, message: "toolsRegistry missing or invalid in initialize params" }, id: null })
+            return
+        }
 
         const server = new McpServer({
             name: "mcpServer",
@@ -134,6 +186,7 @@ async function postHandler(req: Request, res: Response) {
             onsessioninitialized: (id) => {
                 transports.set(id, transport)
                 MCPserver.set(id, server)
+                refreshSessionTimer(id)
             }
         })
 
@@ -141,6 +194,8 @@ async function postHandler(req: Request, res: Response) {
             if (transport.sessionId) {
                 transports.delete(transport.sessionId)
                 MCPserver.delete(transport.sessionId)
+                const t = sessionTimers.get(transport.sessionId)
+                if (t) { clearTimeout(t); sessionTimers.delete(transport.sessionId) }
             }
         }
 
@@ -173,7 +228,6 @@ async function deleteHandler(req: Request, res: Response) {
     await transports.get(sessionId)!.handleRequest(req, res)
 }
 
-//Initialises and creates servers for any chat.
 app.post("/mcp", postHandler)
 
 app.get("/mcp", getHandler)

@@ -24,6 +24,7 @@ interface Tool {
   handler?: {
     method: string
     path: string
+    query_params?: string[]
   }
   enabled?: boolean
 }
@@ -38,7 +39,8 @@ const METHOD_STYLES: Record<string, string> = {
 
 export default function Sandbox() {
   const searchParams = useSearchParams()
-  const specId = searchParams.get("specId")
+  const specId      = searchParams.get("specId")
+  const compositeId = searchParams.get("compositeId")
   const router = useRouter()
 
   // sandbox state
@@ -57,6 +59,47 @@ export default function Sandbox() {
 
   // initialize sandbox on page load
   useEffect(() => {
+    // Composite path — re-initialize the MCP session on every page load.
+    // sessionStorage holds the tools but NOT a reusable session — server.ts sessions
+    // are in-memory only and are lost on restart, so we always start fresh here.
+    if (compositeId) {
+      const raw = sessionStorage.getItem(`helios_session_${compositeId}`)
+      if (!raw) return
+      const { tools } = JSON.parse(raw)
+      const toolList: Tool[] = tools ?? []
+
+      const registryTools = toolList.map((t: Tool) => ({
+        name:         t.function.name,
+        description:  t.function.description,
+        input_schema: t.function.parameters ?? { type: "object", properties: {} },
+        handler: {
+          method:       t.handler?.method ?? "GET",
+          path:         t.handler?.path ?? "",
+          headers:      {},
+          query_params: t.handler?.query_params ?? []
+        }
+      }))
+
+      fetch("http://localhost:8000/api/sandbox/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toolsRegistry: { baseUrl: "", tools: registryTools } })
+      })
+        .then(res => res.json())
+        .then(data => {
+          // Update sessionStorage with the new sessionId for this page load
+          sessionStorage.setItem(`helios_session_${compositeId}`, JSON.stringify({ sessionId: data.sessionId, tools: toolList }))
+          setSessionId(data.sessionId)
+          setAllTools(toolList)
+          setActiveTools(toolList.filter((t: Tool) => t.enabled !== false))
+          const initialToggles: Record<string, boolean> = {}
+          toolList.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
+          setToolToggles(initialToggles)
+        })
+      return
+    }
+
+    // Standard path — spec-based initialization
     const draft = specId ? sessionStorage.getItem(`helios_draft_${specId}`) : null
     const draftData = draft ? JSON.parse(draft) : null
 
@@ -75,7 +118,7 @@ export default function Sandbox() {
         tools.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
         setToolToggles(initialToggles)
       })
-  }, [specId])
+  }, [specId, compositeId])
 
   // scroll to bottom on new message
   useEffect(() => {
@@ -94,6 +137,7 @@ export default function Sandbox() {
     setToolToggles(prev => ({ ...prev, [name]: !prev[name] }))
   }
 
+  // Applying a new tool set resets chat — the old history references tools that may no longer be active.
   const handleApply = () => {
     const filtered = allTools.filter(t => toolToggles[t.function.name])
     setActiveTools(filtered)
@@ -101,6 +145,11 @@ export default function Sandbox() {
   }
 
   const handleNavigateToVerify = () => {
+    if (compositeId) {
+      // Composite session — pass compositeId so verify can read tools from sessionStorage
+      router.push(`/verify?compositeId=${compositeId}`)
+      return
+    }
     if (specId) {
       const draft = sessionStorage.getItem(`helios_draft_${specId}`)
       if (draft) {
@@ -117,8 +166,8 @@ export default function Sandbox() {
         // Existing server — write toggle overrides so Verify can apply them on top of the DB catalog
         sessionStorage.setItem(`helios_toggles_${specId}`, JSON.stringify(toolToggles))
       }
+      router.push(`/verify?specId=${specId}`)
     }
-    router.push(`/verify?specId=${specId}`)
   }
 
   const handleSend = async () => {
@@ -145,6 +194,7 @@ export default function Sandbox() {
       body: JSON.stringify({
         sessionId,
         tools: activeTools,
+        // tool_call messages are UI-only; strip them before sending history to the backend
         history: messages.filter(m => m.role !== "tool_call").map(m => ({ role: m.role, content: m.content })),
         message: messageText
       }),

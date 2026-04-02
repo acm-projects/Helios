@@ -42,25 +42,42 @@ interface CatalogEntry {
 export default function Verify() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const specId = searchParams.get("specId")
+  const specId      = searchParams.get("specId")
+  const compositeId = searchParams.get("compositeId")
 
   const [catalog, setCatalog] = useState<CatalogEntry[]>(() => {
+    if (compositeId) {
+      const raw = sessionStorage.getItem(`helios_session_${compositeId}`)
+      if (!raw) return []
+      const { tools } = JSON.parse(raw)
+      return (tools ?? []).map((t: any) => ({
+        name:         t.function.name,
+        description:  t.function.description ?? "",
+        enabled:      t.enabled ?? true,
+        input_schema: t.function.parameters ?? { type: "object", properties: {} },
+        handler: { method: t.handler?.method ?? "GET", path: t.handler?.path ?? "", headers: {}, query_params: [] }
+      }))
+    }
     if (!specId) return []
     const draft = sessionStorage.getItem(`helios_draft_${specId}`)
     const draftData = draft ? JSON.parse(draft) : null
     return draftData?.catalog ?? []
   })
   const [isLoading, setIsLoading] = useState(() => {
+    if (compositeId) return false
     if (!specId) return false
     const draft = sessionStorage.getItem(`helios_draft_${specId}`)
     const draftData = draft ? JSON.parse(draft) : null
     return !draftData?.catalog
   })
   const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState(specId ? "" : "No spec ID provided.")
+  const [serverName, setServerName] = useState("")
+  const [nameError, setNameError]   = useState("")
+  const [error, setError] = useState(!specId && !compositeId ? "No spec ID provided." : "")
   const [editingSet, setEditingSet] = useState<Set<number>>(new Set())
 
   useEffect(() => {
+    if (compositeId) return // catalog already loaded from sessionStorage in useState
     if (!specId) return
     const draft = sessionStorage.getItem(`helios_draft_${specId}`)
     const draftData = draft ? JSON.parse(draft) : null
@@ -108,10 +125,31 @@ export default function Verify() {
   }
 
   const handleSave = async () => {
-    if (!specId) return
     setIsSaving(true)
     setError("")
+
     try {
+      if (compositeId) {
+        // Composite save — server name entered on this page
+        if (!serverName.trim()) { setNameError("Server name is required."); setIsSaving(false); return }
+        const res = await fetch(`http://localhost:8000/api/servers/${serverName.trim()}/catalog`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            catalog,
+            spec: { type: "composite" },
+            baseUrl: "",
+            toolCount: catalog.filter(t => t.enabled).length
+          })
+        })
+        const data = await res.json()
+        if (!res.ok) { setError(data.error || "Failed to save."); setIsSaving(false); return }
+        sessionStorage.removeItem(`helios_session_${compositeId}`)
+        router.push("/")
+        return
+      }
+
+      if (!specId) return
       const draft = sessionStorage.getItem(`helios_draft_${specId}`)
       const draftData = draft ? JSON.parse(draft) : null
 
@@ -126,7 +164,7 @@ export default function Verify() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || "Failed to save."); setIsSaving(false); return }
       sessionStorage.removeItem(`helios_draft_${specId}`)
-      router.push(`/`)
+      router.push("/")
     } catch {
       setError("Failed to reach the server.")
       setIsSaving(false)
@@ -315,7 +353,7 @@ export default function Verify() {
               <p className="font-[family-name:--font-cinzel] text-red-600 text-[12px] tracking-wider mb-3 text-center">{error}</p>
             )}
             <div className="flex gap-4">
-              <Link href={`/sandbox?specId=${specId}`} className="flex-1">
+              <Link href={compositeId ? `/sandbox?compositeId=${compositeId}` : `/sandbox?specId=${specId}`} className="flex-1">
                 <button className="font-[family-name:--font-cinzel] w-full cursor-pointer py-4 text-[16px] tracking-widest text-gray-400 border-[2px] border-gray-300 relative
                   before:absolute before:inset-[4px] before:border-[1px] before:border-gray-300 before:pointer-events-none
                   hover:border-black hover:text-black hover:before:border-black transition-colors duration-300">
@@ -348,6 +386,21 @@ export default function Verify() {
           <div className="h-[2px] bg-black flex-shrink-0"></div>
 
           <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-8">
+
+            {/* Server Name — composite sessions only */}
+            {compositeId && (
+              <div className="flex flex-col gap-3">
+                <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 uppercase">Server Name</span>
+                <input
+                  type="text"
+                  value={serverName}
+                  onChange={e => { setServerName(e.target.value); setNameError("") }}
+                  placeholder="my-server-name"
+                  className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[14px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400"
+                />
+                {nameError && <span className="font-[family-name:--font-cinzel] text-red-600 text-[11px] tracking-wider">{nameError}</span>}
+              </div>
+            )}
 
             {/* Overview */}
             <div className="flex flex-col gap-3">
