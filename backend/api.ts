@@ -1,16 +1,21 @@
 // API server — port 8000. The layer between the frontend and the two backend services (MCP + MongoDB).
 // Handles spec parsing, sandbox session management, and saved server CRUD.
+import dotenv from "dotenv"
+dotenv.config()
 import {generateToolRegistry, parseSwaggerUrl } from "./generate_tool_registry.ts";
 import { connectMongo, createMongo, getMongo, getAllMongo, removeMongo, updateMongo } from "./crud.js";
 import {initializeAgent, callTool, messageAI } from "./sandbox.ts";
+import authRouter from "./auth/auth.routes.js";
 import express from "express"
 import cors from "cors"
+import mongoose from "mongoose"
 
 const app = express()
 app.use(cors())
 app.use(express.json({ limit: "10mb" })) // parses JSON bodies so req.body.name etc. work
 
 await connectMongo()
+await mongoose.connect(process.env.MONGODB_URI!)
 
 // Shared shape for tools sent to OpenAI and back to the frontend
 function toOpenAITool(tool: any, enabled = true) {
@@ -387,6 +392,8 @@ app.get("/api/servers", async (req, res) => {
         res.status(500).json({ error: err.message })
     }
 })
+
+app.use("/api/auth", authRouter)
 
 app.listen(8000, () => {
     console.log("api server running on port 8000")
