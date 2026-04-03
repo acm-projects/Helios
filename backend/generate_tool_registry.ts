@@ -19,9 +19,19 @@ export interface EndpointDefinition {
   };
 }
 
+export interface AuthConfig {
+  type: "api_key" | "bearer_token" | "basic_auth" | "oauth2" | "none";
+  in?: "header" | "query";
+  name?: string;
+  authorizationUrl?: string;
+  tokenUrl?: string;
+  scopes?: Record<string, string>;
+}
+
 export interface ToolsFile {
   baseUrl: string;
   tools: EndpointDefinition[];
+  auth: AuthConfig[];
 }
 
 
@@ -166,6 +176,35 @@ function generateToolName(method: string, path: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
+// Extracts auth requirements from OpenAPI securitySchemes (supports 2.x and 3.x)
+function parseAuthConfig(spec: any): AuthConfig[] {
+  const schemes = spec.components?.securitySchemes || spec.securityDefinitions || {};
+  const authConfigs: AuthConfig[] = [];
+
+  for (const [, scheme] of Object.entries(schemes) as [string, any][]) {
+    if (scheme.type === "oauth2") {
+      const flows = scheme.flows || {};
+      const flow = flows.authorizationCode || flows.implicit || flows.clientCredentials || flows.password || {};
+      authConfigs.push({
+        type: "oauth2",
+        authorizationUrl: flow.authorizationUrl,
+        tokenUrl: flow.tokenUrl,
+        scopes: flow.scopes || {},
+      });
+    } else if (scheme.type === "http" && scheme.scheme === "bearer") {
+      authConfigs.push({ type: "bearer_token" });
+    } else if (scheme.type === "http" && scheme.scheme === "apikey") {
+      authConfigs.push({ type: "api_key", in: "header", name: "x-api-key" });
+    } else if (scheme.type === "apiKey") {
+      authConfigs.push({ type: "api_key", in: scheme.in, name: scheme.name });
+    } else if (scheme.type === "http" && scheme.scheme === "basic") {
+      authConfigs.push({ type: "basic_auth" });
+    }
+  }
+
+  return authConfigs.length ? authConfigs : [{ type: "none" }];
+}
+
 // Parses a full OpenAPI 3.x spec into the tool registry format
 export function parseOpenApiSpec(spec: any): ToolsFile {
   const tools: EndpointDefinition[] = [];
@@ -213,7 +252,7 @@ export function parseOpenApiSpec(spec: any): ToolsFile {
     }
   }
 
-  return { baseUrl, tools };
+  return { baseUrl, tools, auth: parseAuthConfig(spec) };
 }
 export async function parseSwaggerUrl(specUrl: string): Promise<any> {
   const spec = await SwaggerParser.dereference(specUrl);
