@@ -30,25 +30,31 @@ function toOpenAITool(tool: any, enabled = true) {
     }
 }
 
-// Parses a spec URL and returns the tool catalog to the frontend for review.
+// Parses a spec and returns the tool catalog to the frontend for review.
+// Accepts either { url, name } or { spec, name } (raw JSON object from file upload).
 // Does NOT save to the DB yet — that only happens when the user confirms via POST /catalog.
 app.post("/api/spec/parse", async (req, res) => {
-    let spec: any
-
-    try {
-        spec = await parseSwaggerUrl(req.body.url)
-    } catch (err: any) {
-        return res.status(400).json({ error: "invalid specURL" })
-    }
-
     const specId = req.body.name
     if (!specId) return res.status(400).json({ error: "name cannot be empty" })
 
-    // Check name uniqueness before letting the user proceed
     const existing = await getMongo({ _id: specId })
     if (existing) return res.status(400).json({ error: "The name is already taken. Please choose another name." })
 
-    // Generate registry to build initial catalog — not saved to DB yet
+    let spec: any
+
+    if (req.body.spec) {
+        // Raw JSON spec passed directly (file upload path)
+        spec = req.body.spec
+    } else if (req.body.url) {
+        try {
+            spec = await parseSwaggerUrl(req.body.url)
+        } catch (err: any) {
+            return res.status(400).json({ error: "invalid specURL" })
+        }
+    } else {
+        return res.status(400).json({ error: "either url or spec is required" })
+    }
+
     let registry: any
     try {
         registry = await generateToolRegistry(spec)
@@ -64,13 +70,11 @@ app.post("/api/spec/parse", async (req, res) => {
         handler: tool.handler
     }))
 
-    // If spec declares no base URL, infer it from the origin of the spec URL itself
     let baseUrl = registry.baseUrl
     if (!baseUrl && req.body.url) {
         try { baseUrl = new URL(req.body.url).origin } catch {}
     }
 
-    // Return everything to the frontend — DB write happens only on Confirm & Save
     res.json({
         specId,
         spec,
