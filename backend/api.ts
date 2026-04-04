@@ -6,6 +6,7 @@ import {generateToolRegistry, parseSwaggerUrl } from "./generate_tool_registry.t
 import { connectMongo, createMongo, getMongo, getAllMongo, removeMongo, updateMongo } from "./crud.js";
 import {initializeAgent, callTool, messageAI } from "./sandbox.ts";
 import authRouter from "./auth/auth.routes.js";
+import { authMiddleware } from "./auth/auth.middleware.js";
 import express from "express"
 import cors from "cors"
 import mongoose from "mongoose"
@@ -38,11 +39,11 @@ function toOpenAITool(tool: any, enabled = true) {
 // Parses a spec and returns the tool catalog to the frontend for review.
 // Accepts either { url, name } or { spec, name } (raw JSON object from file upload).
 // Does NOT save to the DB yet — that only happens when the user confirms via POST /catalog.
-app.post("/api/spec/parse", async (req, res) => {
+app.post("/api/spec/parse", authMiddleware, async (req, res) => {
     const specId = req.body.name
     if (!specId) return res.status(400).json({ error: "name cannot be empty" })
 
-    const existing = await getMongo({ _id: specId })
+    const existing = await getMongo({ _id: specId }, req.user!.userId)
     if (existing) return res.status(400).json({ error: "The name is already taken. Please choose another name." })
 
     let spec: any
@@ -93,7 +94,7 @@ app.post("/api/spec/parse", async (req, res) => {
 //   toolsRegistry — pre-built composite registry from the create page (multi-API, baseUrl is "")
 //   spec          — unsaved new server passed directly from the frontend
 //   specId        — existing saved server, loaded from DB
-app.post("/api/sandbox/start", async (req, res) => {
+app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
     let registry: any = null
     let frontendTools: any[] | null = null
 
@@ -121,8 +122,8 @@ app.post("/api/sandbox/start", async (req, res) => {
                 registry = { ...registry, baseUrl: req.body.baseUrl }
             }
         } else {
-            // Existing saved server — load from DB
-            const doc = await getMongo({ _id: req.body.specId })
+            // Existing saved server — load from DB, scoped to the authenticated user
+            const doc = await getMongo({ _id: req.body.specId }, req.user!.userId)
             if (!doc) return res.status(404).json({ error: "Spec not found" })
 
             if (doc._catalog && Array.isArray(doc._catalog) && doc._catalog.length > 0) {
@@ -150,7 +151,7 @@ app.post("/api/sandbox/start", async (req, res) => {
     res.json({ sessionId, tools: openAITools })
 })
 
-app.post("/api/sandbox/chat", async (req, res) => {
+app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
     const MAX_ITERATIONS = 10;
     const TOKEN_BUDGET = 25000;
     const MAX_RESPONSE_CHARS = 8000;
@@ -316,11 +317,9 @@ app.post("/api/sandbox/chat", async (req, res) => {
     res.json({ reply: history[history.length - 1].content, history })
 })
 
-
-
-app.get("/api/servers/:specId/catalog", async (req, res) => {
+app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
     try {
-        const doc = await getMongo({ _id: req.params.specId })
+        const doc = await getMongo({ _id: req.params.specId }, req.user!.userId)
         if (!doc) return res.status(404).json({ error: "Spec not found" })
 
         if (doc._catalog && Array.isArray(doc._catalog) && doc._catalog.length > 0) {
@@ -341,12 +340,12 @@ app.get("/api/servers/:specId/catalog", async (req, res) => {
     }
 })
 
-app.post("/api/servers/:specId/catalog", async (req, res) => {
+app.post("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
     try {
         const { catalog, spec, baseUrl, toolCount } = req.body
         if (!Array.isArray(catalog)) return res.status(400).json({ error: "catalog must be an array" })
 
-        const existing = await getMongo({ _id: req.params.specId })
+        const existing = await getMongo({ _id: req.params.specId }, req.user!.userId)
 
         if (!existing) {
             // New server — first time saving. Create the full document now.
@@ -356,10 +355,10 @@ app.post("/api/servers/:specId/catalog", async (req, res) => {
             spec._toolCount = toolCount || catalog.length
             spec._createdAt = new Date().toISOString()
             spec._catalog = catalog
-            await createMongo(spec)
+            await createMongo(spec, req.user!.userId)
         } else {
             // Existing server — just update the catalog
-            await updateMongo({ _id: req.params.specId }, { _catalog: catalog })
+            await updateMongo({ _id: req.params.specId }, { _catalog: catalog }, req.user!.userId)
         }
 
         res.json({ ok: true })
@@ -368,9 +367,9 @@ app.post("/api/servers/:specId/catalog", async (req, res) => {
     }
 })
 
-app.delete("/api/servers/:specId", async (req, res) => {
+app.delete("/api/servers/:specId", authMiddleware, async (req, res) => {
     try {
-        const deleted = await removeMongo({ _id: req.params.specId })
+        const deleted = await removeMongo({ _id: req.params.specId }, req.user!.userId)
         if (!deleted) return res.status(404).json({ error: "Server not found" })
         res.json({ ok: true })
     } catch (err: any) {
@@ -378,9 +377,9 @@ app.delete("/api/servers/:specId", async (req, res) => {
     }
 })
 
-app.get("/api/servers", async (req, res) => {
+app.get("/api/servers", authMiddleware, async (req, res) => {
     try {
-        const all = await getAllMongo()
+        const all = await getAllMongo(req.user!.userId)
         const servers = all.map((s: any) => ({
             id: s._id,
             baseUrl: s._baseUrl || "",

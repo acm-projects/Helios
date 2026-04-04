@@ -2,7 +2,9 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { User, Trash2 } from "lucide-react"
+import { isLoggedIn, getAuthHeaders, logout } from "@/lib/auth"
 
 interface SavedServer {
   id: string
@@ -12,6 +14,7 @@ interface SavedServer {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [servers, setServers] = useState<SavedServer[]>([])
   const [loading, setLoading] = useState(true)
   const [menuState, setMenuState] = useState<'closed' | 'expanding' | 'open' | 'collapsing'>('closed')
@@ -34,20 +37,31 @@ export default function Home() {
 
   const handleDeleteConfirm = async () => {
     if (!confirmDelete) return
-    const res = await fetch(`http://localhost:8000/api/servers/${confirmDelete}`, { method: "DELETE" })
+    const res = await fetch(`http://localhost:8000/api/servers/${confirmDelete}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    })
     if (res.ok) setServers(prev => prev.filter(s => s.id !== confirmDelete))
     setConfirmDelete(null)
   }
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/servers")
-      .then(res => res.json())
+    if (!isLoggedIn()) {
+      router.replace("/auth")
+      return
+    }
+    fetch("http://localhost:8000/api/servers", { headers: getAuthHeaders() })
+      .then(res => {
+        if (res.status === 401) { router.replace("/auth"); return null }
+        return res.json()
+      })
       .then(data => {
+        if (!data) return
         setServers(data.servers ?? [])
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [])
+  }, [router])
 
   return (
   <div className="min-h-screen">
@@ -85,7 +99,7 @@ export default function Home() {
             <div className={`absolute top-[52px] left-0 right-0 transition-opacity duration-150
               ${menuState === 'open' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
               <div className="mx-5 h-[1px] bg-gray-200" />
-              {["Account", "Settings", "Info"].map((item) => (
+              {["Settings", "Info"].map((item) => (
                 <button
                   key={item}
                   onClick={e => e.stopPropagation()}
@@ -94,6 +108,12 @@ export default function Home() {
                   {item}
                 </button>
               ))}
+              <button
+                onClick={e => { e.stopPropagation(); logout() }}
+                className="w-full text-left px-6 py-[14px] font-[family-name:--font-cinzel] text-[13px] tracking-widest cursor-pointer hover:bg-black hover:text-white transition-colors duration-200"
+              >
+                Sign Out
+              </button>
             </div>
           </div>
         </div>

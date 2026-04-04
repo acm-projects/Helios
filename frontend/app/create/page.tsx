@@ -8,6 +8,7 @@ import Link from "next/link"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Search, X, ChevronDown, ChevronRight, Info } from "lucide-react"
+import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
 
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
 
@@ -111,11 +112,15 @@ export default function Create() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/servers")
-      .then(res => res.json())
-      .then(data => setServers(data.servers ?? []))
+    if (!isLoggedIn()) { router.replace("/auth"); return }
+    fetch("http://localhost:8000/api/servers", { headers: getAuthHeaders() })
+      .then(res => {
+        if (res.status === 401) { router.replace("/auth"); return null }
+        return res.json()
+      })
+      .then(data => { if (data) setServers(data.servers ?? []) })
       .catch(() => {})
-  }, [])
+  }, [router])
 
   // Close dropdown when clicking outside the search container
   useEffect(() => {
@@ -140,7 +145,7 @@ export default function Create() {
     try {
       res  = await fetch("http://localhost:8000/api/spec/parse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ url: specUrl, name }),
       })
       data = await res.json()
@@ -201,7 +206,7 @@ export default function Create() {
     try {
       res  = await fetch("http://localhost:8000/api/spec/parse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ spec, name: jsonName }),
       })
       data = await res.json()
@@ -277,7 +282,7 @@ export default function Create() {
     setPendingApiName(serverId)
     setPendingDraft(null)
 
-    const res  = await fetch(`http://localhost:8000/api/servers/${serverId}/catalog`)
+    const res  = await fetch(`http://localhost:8000/api/servers/${serverId}/catalog`, { headers: getAuthHeaders() })
     const data = await res.json()
 
     if (!res.ok || data.error) {
@@ -313,7 +318,7 @@ export default function Create() {
     try {
       const res  = await fetch("http://localhost:8000/api/sandbox/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ toolsRegistry: { baseUrl: "", tools: registryTools } })
       })
       const data = await res.json()

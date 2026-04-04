@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { Send, User, Bot } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
 
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
 
@@ -59,6 +60,8 @@ export default function Sandbox() {
 
   // initialize sandbox on page load
   useEffect(() => {
+    if (!isLoggedIn()) { router.replace("/auth"); return }
+
     // Composite path — re-initialize the MCP session on every page load.
     // sessionStorage holds the tools but NOT a reusable session — server.ts sessions
     // are in-memory only and are lost on restart, so we always start fresh here.
@@ -82,7 +85,7 @@ export default function Sandbox() {
 
       fetch("http://localhost:8000/api/sandbox/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ toolsRegistry: { baseUrl: "", tools: registryTools } })
       })
         .then(res => res.json())
@@ -105,7 +108,7 @@ export default function Sandbox() {
 
     fetch("http://localhost:8000/api/sandbox/start", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({ specId, spec: draftData?.spec ?? undefined, baseUrl: draftData?.baseUrl ?? undefined })
     })
       .then(res => res.json())
@@ -118,7 +121,7 @@ export default function Sandbox() {
         tools.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
         setToolToggles(initialToggles)
       })
-  }, [specId, compositeId])
+  }, [specId, compositeId, router])
 
   // scroll to bottom on new message
   useEffect(() => {
@@ -190,7 +193,7 @@ export default function Sandbox() {
 
     fetch("http://localhost:8000/api/sandbox/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({
         sessionId,
         tools: activeTools,
