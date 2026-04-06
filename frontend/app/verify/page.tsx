@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { getAuthHeaders } from "@/lib/auth"
 
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
 
@@ -84,7 +85,7 @@ export default function Verify() {
     if (draftData?.catalog) return  // already initialized via useState
 
     // Existing saved server — fetch from DB, then apply any sandbox toggle overrides
-    fetch(`http://localhost:8000/api/servers/${specId}/catalog`)
+    fetch(`http://localhost:8000/api/servers/${specId}/catalog`, { headers: getAuthHeaders() })
         .then(res => res.json())
         .then(data => {
           if (data.error) { setError(data.error); setIsLoading(false); return }
@@ -134,7 +135,7 @@ export default function Verify() {
         if (!serverName.trim()) { setNameError("Server name is required."); setIsSaving(false); return }
         const res = await fetch(`http://localhost:8000/api/servers/${serverName.trim()}/catalog`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           body: JSON.stringify({
             catalog,
             spec: { type: "composite" },
@@ -155,7 +156,7 @@ export default function Verify() {
 
       const res = await fetch(`http://localhost:8000/api/servers/${specId}/catalog`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
           catalog,
           ...(draftData ? { spec: draftData.spec, baseUrl: draftData.baseUrl, toolCount: draftData.toolCount } : {})
