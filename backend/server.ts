@@ -1,239 +1,306 @@
-// MCP server — port 3000. Pure tool dispatch: no AI, no DB.
+// MCP server — port 3000. Pure tool dispatch: no AI, no DB writes.
 // Each session gets its own McpServer instance with its own registered tools.
-// The tool registry is passed inside the initialize request body, not loaded from a file,
-// so sessions never share or contaminate each other's tool sets.
+// The tool registry (with enrichment) is passed inside the initialize request body.
+// Auth is looked up LIVE from MongoDB on every tool call — never baked into the session.
 //
 // Start: npx tsx server.ts
-//
-// Initialize:
-// curl -v -X POST http://localhost:3000/mcp -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test-client\",\"version\":\"1.0.0\"}}}"
-// Call a tool (replace SESSION_ID):
-// curl -v -X POST http://localhost:3000/mcp -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -H "mcp-session-id: SESSION_ID" -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"get_post\",\"arguments\":{\"id\":1}}}"
+import dotenv from "dotenv"
+dotenv.config()
+
 import { randomUUID } from "node:crypto"
+import express from "express"
+import mongoose from "mongoose"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js"
 import { z } from "zod"
 import { Request, Response } from "express"
-import type { ToolsFile, EndpointDefinition } from "./generate_tool_registry.ts"
+import type { ToolsFile, EndpointDefinition, ToolEnrichment } from "./generate_tool_registry.ts"
+import { getStoredApiKey } from "./auth/apiKeyManager.ts"
 
-// Converts one EndpointDefinition from the registry into a live MCP tool on the given server.
-// Builds a Zod schema from input_schema.properties, then at call time:
-// substitutes path params, appends query params, and either fetches (GET) or returns a simulation (non-GET).
-function registerDynamicTool(server: McpServer, endpoint: EndpointDefinition, baseUrl: string) {
-    const schema: Record<string, any> = {}
-    const required = Array.isArray(endpoint.input_schema.required) ? endpoint.input_schema.required : []
-    for (const paramName in endpoint.input_schema.properties) {
-        const paramInfo = endpoint.input_schema.properties[paramName]
-        const isRequired = required.includes(paramName)
-        let field: any
-        if (paramInfo.type === "number" || paramInfo.type === "integer") {
-            field = z.number().describe(paramInfo.description || "")
-        } else if (paramInfo.type === "boolean") {
-            field = z.boolean().describe(paramInfo.description || "")
-        } else if (paramInfo.type === "object") {
-            field = z.record(z.string(), z.any()).describe(paramInfo.description || "")
-        } else if (paramInfo.type === "array") {
-            const items = (paramInfo as any).items
-            if (items?.type === "object") {
-                field = z.array(z.record(z.string(), z.any())).describe(paramInfo.description || "")
-            } else if (items?.type === "number" || items?.type === "integer") {
-                field = z.array(z.number()).describe(paramInfo.description || "")
-            } else if (items?.type === "boolean") {
-                field = z.array(z.boolean()).describe(paramInfo.description || "")
-            } else {
-                field = z.array(z.string()).describe(paramInfo.description || "")
-            }
-        } else {
-            field = z.string().describe(paramInfo.description || "")
-        }
-        schema[paramName] = isRequired ? field : field.optional()
+/**
+ * Registers one EndpointDefinition as a live MCP tool.
+ *
+ * Template behavior (from enrichment):
+ *  - fixed_query_params → always appended to URL, AI never asked about them
+ *  - auth.template      → looked up from DB on EVERY call (never baked in)
+ *
+ * Sandbox safety: non-GET calls are ALWAYS simulated, never executed.
+ */
+function registerDynamicTool(
+  server: McpServer,
+  endpoint: EndpointDefinition,
+  baseUrl: string,
+  userId: string          // required for live auth DB lookup
+) {
+  // Build Zod schema from input_schema — fixed_query_params are already excluded
+  // from properties by generate_tool_registry.ts, so the AI never sees them.
+  const schema: Record<string, any> = {}
+  const required = Array.isArray(endpoint.input_schema.required) ? endpoint.input_schema.required : []
+  for (const paramName in endpoint.input_schema.properties) {
+    const paramInfo = endpoint.input_schema.properties[paramName]
+    const isRequired = required.includes(paramName)
+    let field: any
+    if (paramInfo.type === "number" || paramInfo.type === "integer") {
+      field = z.number().describe(paramInfo.description || "")
+    } else if (paramInfo.type === "boolean") {
+      field = z.boolean().describe(paramInfo.description || "")
+    } else if (paramInfo.type === "object") {
+      field = z.record(z.string(), z.any()).describe(paramInfo.description || "")
+    } else if (paramInfo.type === "array") {
+      const items = (paramInfo as any).items
+      if (items?.type === "object") {
+        field = z.array(z.record(z.string(), z.any())).describe(paramInfo.description || "")
+      } else if (items?.type === "number" || items?.type === "integer") {
+        field = z.array(z.number()).describe(paramInfo.description || "")
+      } else if (items?.type === "boolean") {
+        field = z.array(z.boolean()).describe(paramInfo.description || "")
+      } else {
+        field = z.array(z.string()).describe(paramInfo.description || "")
+      }
+    } else if (Array.isArray(paramInfo.enum) && paramInfo.enum.length > 0) {
+      const [first, ...rest] = paramInfo.enum as [string, ...string[]]
+      field = z.enum([first, ...rest]).describe(paramInfo.description || "")
+    } else {
+      field = z.string().describe(paramInfo.description || "")
     }
+    schema[paramName] = isRequired ? field : field.optional()
+  }
 
-    console.log(`[register] ${endpoint.name} | query_params: [${(endpoint.handler.query_params || []).join(", ")}]`)
-    server.registerTool(
-        endpoint.name,
-        {
-            description: endpoint.description,
-            inputSchema: schema
-        },
-        async (args) => {
-            let url = baseUrl + endpoint.handler.path
-            for (const paramName in endpoint.input_schema.properties) {
-                if (endpoint.handler.path.includes(`{${paramName}}`) && args[paramName] !== undefined) {
-                    url = url.replace(`{${paramName}}`, String(args[paramName]))
-                }
-            }
-            const params = new URLSearchParams()
-            for (const paramName of (endpoint.handler.query_params || [])) {
-                if (args[paramName] !== undefined) {
-                    params.append(paramName, String(args[paramName]))
-                }
-            }
-            if (params.toString()) {
-                url += "?" + params.toString()
-            }
+  const enrichment: ToolEnrichment = (endpoint as any).enrichment ?? { auth: null }
+  console.log(`[register] ${endpoint.name} | fixed: [${Object.keys(endpoint.handler.fixed_query_params || {}).join(", ")}] | auth: ${enrichment.auth?.template ?? "none"}`)
 
-            const method = endpoint.handler.method.toUpperCase();
-
-            // Sandbox is read-only — non-GET calls are simulated, never executed
-            if (method !== "GET") {
-                const bodyParams: Record<string, any> = {};
-                for (const key in args) {
-                    if (!endpoint.handler.path.includes(`{${key}}`) && !endpoint.handler.query_params.includes(key) && args[key] !== undefined) {
-                        bodyParams[key] = args[key];
-                    }
-                }
-                const simulation = {
-                    sandbox_simulation: true,
-                    info: "Sandbox simulation complete. This is the final result — the sandbox does not execute write operations. Do not retry.",
-                    simulated_request: {
-                        method,
-                        url,
-                        headers: { ...(endpoint.handler.headers || {}), "Content-Type": "application/json" },
-                        body: Object.keys(bodyParams).length > 0 ? bodyParams : null
-                    }
-                };
-                return {
-                    content: [{ type: "text", text: JSON.stringify(simulation, null, 2) }]
-                }
-            }
-
-            let response: Awaited<ReturnType<typeof fetch>>
-            try {
-                console.log(`[tool:${endpoint.name}] Fetching: ${url}`)
-                response = await fetch(url, { method: "GET", headers: endpoint.handler.headers || {} })
-            } catch (err: any) {
-                console.error(`[tool:${endpoint.name}] Network error fetching ${url}: ${err.message}`)
-                return { content: [{ type: "text", text: `Network error: ${err.message}` }] }
-            }
-            const textResponse = await response.text();
-
-            if (!response.ok) {
-                const reason =
-                    response.status === 429 ? "Rate limit hit — this API only allows a limited number of free requests. Wait a moment and try again." :
-                    response.status === 402 ? "API quota exceeded — this free API has reached its usage limit." :
-                    response.status === 403 ? "Access denied (403) — the API rejected the request. The free tier quota may be exhausted." :
-                    `API returned an error: HTTP ${response.status} ${response.statusText}. Body: ${textResponse.slice(0, 300)}`
-                return { content: [{ type: "text", text: reason }] }
-            }
-
-            let data;
-            try {
-                data = textResponse ? JSON.parse(textResponse) : "Success (Empty Response)";
-            } catch (e) {
-                data = textResponse;
-            }
-
-            return {
-                content: [{ type: "text", text: typeof data === 'string' ? data : JSON.stringify(data) }]
-            }
+  const hasInputParams = Object.keys(schema).length > 0
+  server.registerTool(
+    endpoint.name,
+    {
+      description: endpoint.description,
+      inputSchema: hasInputParams ? schema : undefined
+    },
+    async (args) => {
+      // ── 1. Substitute path params ──────────────────────────────────────────
+      let url = baseUrl + endpoint.handler.path
+      for (const paramName in endpoint.input_schema.properties) {
+        if (endpoint.handler.path.includes(`{${paramName}}`) && args[paramName] !== undefined) {
+          url = url.replace(`{${paramName}}`, String(args[paramName]))
         }
-    )
+      }
 
+      // ── 2. Build query params from AI-supplied args ────────────────────────
+      const params = new URLSearchParams()
+      for (const paramName of (endpoint.handler.query_params || [])) {
+        const val = args[paramName]
+        if (val !== undefined && val !== null && String(val).trim() !== "") {
+          params.append(paramName, String(val))
+        }
+      }
+
+      // ── 3. Auto-inject fixed query params (e.g. api-version=1.0) ──────────
+      for (const [k, v] of Object.entries(endpoint.handler.fixed_query_params || {})) {
+        params.set(k, v)
+      }
+
+      // ── 4. Build headers — start from static handler headers ──────────────
+      const headers: Record<string, string> = { ...(endpoint.handler.headers || {}) }
+
+      // ── 5. Live auth lookup — never baked in, always fresh from DB ─────────
+      const auth = enrichment.auth
+      console.log(`[auth:${endpoint.name}] template=${auth?.template ?? "none"} integration_id="${auth?.integration_id ?? ""}" userId="${userId}"`)
+      if (auth && auth.integration_id) {
+        const storedKey = await getStoredApiKey(userId, auth.integration_id)
+        console.log(`[auth:${endpoint.name}] key_found=${!!storedKey}`)
+        if (storedKey) {
+          switch (auth.template) {
+            case "bearer_token":
+            case "oauth2_client_creds":
+            case "oauth2_auth_code":
+              headers["Authorization"] = `Bearer ${storedKey}`
+              break
+            case "api_key_header":
+              headers[auth.header_name || "X-API-Key"] = storedKey
+              break
+            case "api_key_query":
+              params.set(auth.param_name || "api_key", storedKey)
+              break
+            case "basic_auth":
+              headers["Authorization"] = `Basic ${Buffer.from(storedKey).toString("base64")}`
+              break
+          }
+        }
+        // No storedKey → auth header omitted → API will return 401
+        // The 401 branch below returns a clear message to the user
+      }
+
+      // ── 6. Finalize URL ────────────────────────────────────────────────────
+      if (params.toString()) {
+        url += "?" + params.toString()
+      }
+
+      const method = endpoint.handler.method.toUpperCase()
+
+      // ── 7. Sandbox safety: non-GET calls are ALWAYS simulated ──────────────
+      if (method !== "GET") {
+        const qp = endpoint.handler.query_params || []
+        const bodyParams: Record<string, any> = {}
+        for (const key in args) {
+          if (!endpoint.handler.path.includes(`{${key}}`) && !qp.includes(key) && args[key] !== undefined) {
+            bodyParams[key] = args[key]
+          }
+        }
+        const simulation = {
+          sandbox_simulation: true,
+          info: "Sandbox simulation complete. This is the final result — the sandbox does not execute write operations. Do not retry.",
+          simulated_request: {
+            method,
+            url,
+            headers: { ...headers, "Content-Type": "application/json" },
+            body: Object.keys(bodyParams).length > 0 ? bodyParams : null
+          }
+        }
+        return { content: [{ type: "text", text: JSON.stringify(simulation, null, 2) }] }
+      }
+
+      // ── 8. Execute GET — real call to live API ─────────────────────────────
+      let response: Awaited<ReturnType<typeof fetch>>
+      try {
+        console.log(`[tool:${endpoint.name}] GET ${url}`)
+        response = await fetch(url, { method: "GET", headers })
+      } catch (err: any) {
+        console.error(`[tool:${endpoint.name}] Network error: ${err.message}`)
+        return { content: [{ type: "text", text: `Network error: ${err.message}` }] }
+      }
+
+      const textResponse = await response.text()
+      if (!response.ok) console.log(`[tool:${endpoint.name}] HTTP ${response.status} — ${textResponse.slice(0, 300)}`)
+
+      if (!response.ok) {
+        const reason =
+          response.status === 429
+            ? `Rate limit hit (429). Wait a moment and try again. Body: ${textResponse.slice(0, 200)}`
+            : response.status === 401
+            ? `Unauthorized (401) — the API key or Bearer token is missing or expired. Tell the user to re-enter their credentials in the Tools → API Keys panel. Body: ${textResponse.slice(0, 200)}`
+            : `API error ${response.status}: ${textResponse.slice(0, 500)}`
+        return { content: [{ type: "text", text: reason }] }
+      }
+
+      let data
+      try {
+        data = textResponse ? JSON.parse(textResponse) : "Success (Empty Response)"
+      } catch {
+        data = textResponse
+      }
+
+      return {
+        content: [{ type: "text", text: typeof data === "string" ? data : JSON.stringify(data) }]
+      }
+    }
+  )
 }
 
-const app = createMcpExpressApp()
+// ─── Express App ───────────────────────────────────────────────────────────────
 
-// All three Maps are keyed by sessionId. A session lives until the client disconnects or it goes idle.
-const transports = new Map<string, StreamableHTTPServerTransport>()
-const MCPserver = new Map<string, McpServer>()
+const app = express()
+app.use(express.json({ limit: "50mb" }))
+
+// Session maps — keyed by sessionId
+const transports   = new Map<string, StreamableHTTPServerTransport>()
+const MCPserver    = new Map<string, McpServer>()
 const sessionTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-const SESSION_TTL_MS = 30 * 60 * 1000 // 30 minutes
+const SESSION_TTL_MS = 30 * 60 * 1000
 
 function refreshSessionTimer(sessionId: string) {
-    const existing = sessionTimers.get(sessionId)
-    if (existing) clearTimeout(existing)
-    const timer = setTimeout(() => {
-        transports.delete(sessionId)
-        MCPserver.delete(sessionId)
-        sessionTimers.delete(sessionId)
-        console.log(`[session] Evicted idle session ${sessionId}`)
-    }, SESSION_TTL_MS)
-    sessionTimers.set(sessionId, timer)
+  const existing = sessionTimers.get(sessionId)
+  if (existing) clearTimeout(existing)
+  const timer = setTimeout(() => {
+    transports.delete(sessionId)
+    MCPserver.delete(sessionId)
+    sessionTimers.delete(sessionId)
+    console.log(`[session] Evicted idle session ${sessionId}`)
+  }, SESSION_TTL_MS)
+  sessionTimers.set(sessionId, timer)
 }
 
-
-
 async function postHandler(req: Request, res: Response) {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined
+  const sessionId = req.headers["mcp-session-id"] as string | undefined
 
-    if (sessionId && transports.has(sessionId)) {
-        refreshSessionTimer(sessionId)
-        const transport = transports.get(sessionId)!
-        await transport.handleRequest(req, res, req.body)
-        return
+  if (sessionId && transports.has(sessionId)) {
+    refreshSessionTimer(sessionId)
+    const transport = transports.get(sessionId)!
+    await transport.handleRequest(req, res, req.body)
+    return
+  }
+
+  if (!sessionId && isInitializeRequest(req.body)) {
+    const params = req.body.params as any
+    const toolsData = params?.toolsRegistry as ToolsFile
+    const userId    = (params?.userId as string) || ""
+
+    if (!toolsData || !Array.isArray(toolsData.tools)) {
+      res.status(400).json({ jsonrpc: "2.0", error: { code: -32602, message: "toolsRegistry missing or invalid in initialize params" }, id: null })
+      return
     }
 
-    // No session ID + initialize request = brand new session. Tool registry arrives in the request body.
-    if (!sessionId && isInitializeRequest(req.body)) {
-        const toolsData = (req.body.params as any)?.toolsRegistry as ToolsFile
+    const server = new McpServer({ name: "mcpServer", version: "1.0.0" })
 
-        if (!toolsData || !Array.isArray(toolsData.tools)) {
-            res.status(400).json({ jsonrpc: "2.0", error: { code: -32602, message: "toolsRegistry missing or invalid in initialize params" }, id: null })
-            return
-        }
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (id) => {
+        transports.set(id, transport)
+        MCPserver.set(id, server)
+        refreshSessionTimer(id)
+      }
+    })
 
-        const server = new McpServer({
-            name: "mcpServer",
-            version: "1.0.0"
-        })
-
-        const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => randomUUID(),
-            onsessioninitialized: (id) => {
-                transports.set(id, transport)
-                MCPserver.set(id, server)
-                refreshSessionTimer(id)
-            }
-        })
-
-        transport.onclose = () => {
-            if (transport.sessionId) {
-                transports.delete(transport.sessionId)
-                MCPserver.delete(transport.sessionId)
-                const t = sessionTimers.get(transport.sessionId)
-                if (t) { clearTimeout(t); sessionTimers.delete(transport.sessionId) }
-            }
-        }
-
-        for (const tools of toolsData.tools) {
-            registerDynamicTool(server, tools, toolsData.baseUrl)
-        }
-
-        await server.connect(transport)
-        await transport.handleRequest(req, res, req.body)
-        return
+    transport.onclose = () => {
+      if (transport.sessionId) {
+        transports.delete(transport.sessionId)
+        MCPserver.delete(transport.sessionId)
+        const t = sessionTimers.get(transport.sessionId)
+        if (t) { clearTimeout(t); sessionTimers.delete(transport.sessionId) }
+      }
     }
-        
-    res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "Invalid request" }, id: null })
+
+    for (const tool of toolsData.tools) {
+      registerDynamicTool(server, tool, toolsData.baseUrl, userId)
+    }
+
+    await server.connect(transport)
+    await transport.handleRequest(req, res, req.body)
+    return
+  }
+
+  res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "Invalid request" }, id: null })
 }
 
 async function getHandler(req: Request, res: Response) {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined
-    if (!sessionId || !transports.has(sessionId)) {
-        res.status(400).send("Invalid or missing session ID")
-        return
-    }
-    await transports.get(sessionId)!.handleRequest(req, res)
+  const sessionId = req.headers["mcp-session-id"] as string | undefined
+  if (!sessionId || !transports.has(sessionId)) {
+    res.status(400).send("Invalid or missing session ID")
+    return
+  }
+  await transports.get(sessionId)!.handleRequest(req, res)
 }
+
 async function deleteHandler(req: Request, res: Response) {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined
-    if (!sessionId || !transports.has(sessionId)) {
-        res.status(400).send("Invalid or missing session ID")
-        return
-    }
-    await transports.get(sessionId)!.handleRequest(req, res)
+  const sessionId = req.headers["mcp-session-id"] as string | undefined
+  if (!sessionId || !transports.has(sessionId)) {
+    res.status(400).send("Invalid or missing session ID")
+    return
+  }
+  await transports.get(sessionId)!.handleRequest(req, res)
 }
 
 app.post("/mcp", postHandler)
-
 app.get("/mcp", getHandler)
-
 app.delete("/mcp", deleteHandler)
 
-app.listen(3000, () => {
-    console.log("MCP server running on port 3000")
-})
+// ─── Startup ───────────────────────────────────────────────────────────────────
+
+async function start() {
+  await mongoose.connect(process.env.MONGODB_URI!)
+  console.log("[db] MongoDB connected")
+  app.listen(3000, () => console.log("MCP server running on port 3000"))
+}
+
+start().catch(console.error)

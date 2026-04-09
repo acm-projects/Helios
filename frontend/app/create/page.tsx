@@ -40,12 +40,19 @@ interface PopupTool {
   input_schema?: object
 }
 
+interface AuthConfig {
+  type: "api_key" | "bearer_token" | "basic_auth" | "oauth2" | "none"
+  in?: "header" | "query"
+  name?: string
+}
+
 interface PendingDraft {
   specId?: string
   spec?: unknown
   baseUrl: string
   toolCount?: number
   catalog?: PopupTool[]
+  auth?: AuthConfig[]
 }
 
 interface ParseSpecResponse {
@@ -55,6 +62,7 @@ interface ParseSpecResponse {
   baseUrl?: string
   toolCount?: number
   catalog?: PopupTool[]
+  auth?: AuthConfig[]
 }
 
 const METHOD_STYLES: Record<string, string> = {
@@ -93,11 +101,20 @@ export default function Create() {
   const [jsonError, setJsonError]   = useState("")
   const [jsonName, setJsonName]     = useState("")
   const [isParsing, setIsParsing]   = useState(false)
+  const [duplicateNotice, setDuplicateNotice] = useState<string[]>([])
 
-  const [tools, setTools]       = useState<ToolItem[]>([])
+  const [tools, setTools]       = useState<ToolItem[]>(() => {
+    if (typeof window === "undefined") return []
+    try {
+      const saved = sessionStorage.getItem("helios_create_tools")
+      return saved ? JSON.parse(saved) : []
+    } catch { return [] }
+  })
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState("")
+
+  const MAX_TOOLS_PER_API = 60
 
   const [popupOpen, setPopupOpen]           = useState(false)
   const [popupLoading, setPopupLoading]     = useState(false)
@@ -121,6 +138,11 @@ export default function Create() {
       .then(data => { if (data) setServers(data.servers ?? []) })
       .catch(() => {})
   }, [router])
+
+  // Persist assembled tools across navigation (back from sandbox)
+  useEffect(() => {
+    sessionStorage.setItem("helios_create_tools", JSON.stringify(tools))
+  }, [tools])
 
   // Close dropdown when clicking outside the search container
   useEffect(() => {
@@ -166,7 +188,7 @@ export default function Create() {
     }
 
     const catalog: PopupTool[] = data.catalog ?? []
-    setPendingDraft({ specId: data.specId, spec: data.spec, baseUrl: data.baseUrl ?? "", toolCount: data.toolCount, catalog })
+    setPendingDraft({ specId: data.specId, spec: data.spec, baseUrl: data.baseUrl ?? "", toolCount: data.toolCount, catalog, auth: data.auth })
     setPopupTools(catalog)
     setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
     setPopupLoading(false)
@@ -227,7 +249,7 @@ export default function Create() {
     }
 
     const catalog: PopupTool[] = data.catalog ?? []
-    setPendingDraft({ specId: data.specId, spec: data.spec, baseUrl: data.baseUrl ?? "", toolCount: data.toolCount, catalog })
+    setPendingDraft({ specId: data.specId, spec: data.spec, baseUrl: data.baseUrl ?? "", toolCount: data.toolCount, catalog, auth: data.auth })
     setPopupTools(catalog)
     setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
     setPopupLoading(false)
@@ -236,6 +258,7 @@ export default function Create() {
 
   const handlePopupConfirm = () => {
     const selected = popupTools.filter(t => popupSelected.has(t.name))
+
     const newTools: ToolItem[] = selected.map(t => ({
       id:           `${pendingApiName}-${t.name}-${Date.now()}`,
       name:         t.name,
@@ -248,9 +271,27 @@ export default function Create() {
       input_schema: t.input_schema,
       handler:      t.handler,
     }))
-    setTools(prev => [...prev, ...newTools])
+
+    setTools(prev => {
+      const existingNames = new Set(prev.map(t => t.name))
+      const unique     = newTools.filter(t => !existingNames.has(t.name))
+      const duplicates = newTools.filter(t =>  existingNames.has(t.name))
+      if (duplicates.length > 0) setDuplicateNotice(duplicates.map(t => t.name))
+      return unique.length > 0 ? [...prev, ...unique] : prev
+    })
+
     if (pendingDraft?.specId) {
-      sessionStorage.setItem(`helios_draft_${pendingDraft.specId}`, JSON.stringify(pendingDraft))
+      // Store only auth/baseUrl — omit spec and catalog (too large for sessionStorage on big APIs)
+      try {
+        sessionStorage.setItem(`helios_draft_${pendingDraft.specId}`, JSON.stringify({
+          specId:    pendingDraft.specId,
+          baseUrl:   pendingDraft.baseUrl,
+          auth:      pendingDraft.auth,
+          toolCount: pendingDraft.toolCount,
+        }))
+      } catch {
+        // Storage full even after stripping spec — non-fatal, auth lookup will just skip
+      }
     }
     setPopupOpen(false)
     setUrl("")
@@ -303,15 +344,22 @@ export default function Create() {
     setIsGenerating(true)
     setGenerateError("")
 
+    if (tools.length > MAX_TOOLS_PER_API && !intent.trim()) {
+      setGenerateError(`${tools.length} tools exceeds the ${MAX_TOOLS_PER_API}-tool sandbox limit. Remove tools from the list below, or describe your intent above to let Helios filter them automatically.`)
+      setIsGenerating(false)
+      return
+    }
+
     const registryTools = tools.map(t => ({
       name:         t.name,
       description:  t.description,
       input_schema: t.input_schema ?? { type: "object", properties: {} },
       handler: {
-        method:       t.method ?? "GET",
-        path:         t.baseUrl ? `${t.baseUrl}${t.path ?? ""}` : (t.path ?? ""),
-        headers:      {},
-        query_params: t.handler?.query_params ?? []
+        method:             t.method ?? "GET",
+        path:               t.baseUrl ? `${t.baseUrl}${t.path ?? ""}` : (t.path ?? ""),
+        headers:            {},
+        query_params:       t.handler?.query_params ?? [],
+        fixed_query_params: (t.handler as any)?.fixed_query_params
       }
     }))
 
@@ -332,6 +380,22 @@ export default function Create() {
         sessionId: data.sessionId,
         tools:     data.tools
       }))
+      // Build toolName → apiName map and apiName → AuthConfig[] map from stored drafts
+      const toolMap: Record<string, string> = {}
+      const authMap: Record<string, AuthConfig[]> = {}
+      tools.forEach(t => {
+        toolMap[t.name] = t.apiName
+        if (!authMap[t.apiName] && t.apiName) {
+          try {
+            const draftRaw = sessionStorage.getItem(`helios_draft_${t.apiName}`)
+            if (draftRaw) {
+              const draft: PendingDraft = JSON.parse(draftRaw)
+              if (draft.auth && draft.auth.length > 0) authMap[t.apiName] = draft.auth
+            }
+          } catch {}
+        }
+      })
+      sessionStorage.setItem(`helios_groups_${syntheticId}`, JSON.stringify({ toolMap, authMap }))
       router.push(`/sandbox?compositeId=${syntheticId}`)
     } catch {
       setGenerateError("Could not reach the server.")
@@ -363,7 +427,14 @@ export default function Create() {
           <span className="text-gray-400 text-[20px] mb-1">✦</span>
           <span className="text-gray-400">Download</span>
         </div>
-        <div className="w-[220px]" />
+        <div className="flex items-center justify-end w-[220px]">
+          <button
+            onClick={() => { sessionStorage.removeItem("helios_create_tools"); router.push("/") }}
+            className="font-[family-name:--font-cinzel] text-[14px] tracking-widest text-gray-400 border-[2px] border-gray-300 px-4 py-2 hover:border-black hover:text-black transition-colors duration-200 cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
       </nav>
 
       {/* Body — centered column */}
@@ -876,6 +947,35 @@ export default function Create() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate tools notice */}
+      {duplicateNotice.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setDuplicateNotice([])} />
+          <div className="relative bg-white border-[2px] border-black px-10 py-8 flex flex-col gap-5 max-w-[420px] w-full mx-6
+            before:absolute before:inset-[6px] before:border-[1px] before:border-black before:pointer-events-none">
+            <span className="font-[family-name:--font-cinzel] text-[18px] tracking-widest text-black">Duplicate Tools</span>
+            <p className="font-[family-name:--font-geist-sans] text-[13px] text-gray-500 leading-relaxed">
+              The following tools were not added because they already exist in your session:
+            </p>
+            <ul className="flex flex-col gap-1 max-h-[200px] overflow-y-auto">
+              {duplicateNotice.map(name => (
+                <li key={name} className="font-[family-name:--font-cinzel] text-[12px] tracking-wider text-black border-b-[1px] border-gray-100 pb-1">
+                  {name}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setDuplicateNotice([])}
+              className="font-[family-name:--font-cinzel] text-[13px] tracking-widest text-white bg-black border-[2px] border-black px-6 py-3 relative
+                before:absolute before:inset-[4px] before:border-[1px] before:border-white before:pointer-events-none
+                hover:bg-white hover:text-black hover:before:border-black transition-colors duration-300 cursor-pointer"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}

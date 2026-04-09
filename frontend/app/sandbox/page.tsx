@@ -8,6 +8,14 @@ import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
 
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
 
+const METHOD_BADGE_STYLES: Record<string, string> = {
+  GET:    "border border-gray-300 text-gray-500 bg-white",
+  POST:   "bg-gray-800 text-white",
+  PUT:    "bg-gray-600 text-white",
+  PATCH:  "bg-gray-500 text-white",
+  DELETE: "bg-black text-white",
+}
+
 interface Message {
   id: string
   role: "user" | "assistant" | "tool_call"
@@ -30,13 +38,21 @@ interface Tool {
   enabled?: boolean
 }
 
-const METHOD_STYLES: Record<string, string> = {
-  GET:    "border border-gray-300 text-gray-500 bg-white",
-  POST:   "bg-gray-800 text-white",
-  PUT:    "bg-gray-600 text-white",
-  PATCH:  "bg-gray-500 text-white",
-  DELETE: "bg-black text-white",
+interface AuthConfig {
+  type: "api_key" | "bearer_token" | "basic_auth" | "oauth2" | "none"
+  in?: "header" | "query"
+  name?: string
+  authorizationUrl?: string
+  tokenUrl?: string
+  scopes?: Record<string, string>
 }
+
+interface AuthContext {
+  oauth2Url?: string
+  tokenUrl?: string
+  basicAuthNote?: string
+}
+
 
 export default function Sandbox() {
   const searchParams = useSearchParams()
@@ -49,6 +65,7 @@ export default function Sandbox() {
   const [allTools, setAllTools] = useState<Tool[]>([])
   const [toolToggles, setToolToggles] = useState<Record<string, boolean>>({})
   const [activeTools, setActiveTools] = useState<Tool[]>([])
+  const [authContext, setAuthContext] = useState<AuthContext | undefined>(undefined)
 
   // chat UI state
   const [messages, setMessages] = useState<Message[]>([])
@@ -76,17 +93,32 @@ export default function Sandbox() {
         description:  t.function.description,
         input_schema: t.function.parameters ?? { type: "object", properties: {} },
         handler: {
-          method:       t.handler?.method ?? "GET",
-          path:         t.handler?.path ?? "",
-          headers:      {},
-          query_params: t.handler?.query_params ?? []
+          method:             t.handler?.method ?? "GET",
+          path:               t.handler?.path ?? "",
+          headers:            {},
+          query_params:       t.handler?.query_params ?? [],
+          fixed_query_params: (t.handler as any)?.fixed_query_params
         }
       }))
+
+      // Load the toolName → apiName map and authMap saved by the create page
+      let localGroupMap: Record<string, string> = {}
+      let localAuthMap: Record<string, AuthConfig[]> = {}
+      const groupsRaw = sessionStorage.getItem(`helios_groups_${compositeId}`)
+      if (groupsRaw) {
+        try {
+          const parsed = JSON.parse(groupsRaw)
+          // Support both new { toolMap, authMap } format and old flat Record<string,string> format
+          localGroupMap = parsed.toolMap ?? parsed
+          localAuthMap  = parsed.authMap ?? {}
+          setToolGroupMap(localGroupMap)
+        } catch {}
+      }
 
       fetch("http://localhost:8000/api/sandbox/start", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ toolsRegistry: { baseUrl: "", tools: registryTools } })
+        body: JSON.stringify({ toolsRegistry: { baseUrl: "", tools: registryTools }, groupMap: localGroupMap, authMap: localAuthMap })
       })
         .then(res => res.json())
         .then(data => {
@@ -95,6 +127,7 @@ export default function Sandbox() {
           setSessionId(data.sessionId)
           setAllTools(toolList)
           setActiveTools(toolList.filter((t: Tool) => t.enabled !== false))
+          if (data.authContext) setAuthContext(data.authContext)
           const initialToggles: Record<string, boolean> = {}
           toolList.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
           setToolToggles(initialToggles)
@@ -117,6 +150,7 @@ export default function Sandbox() {
         setSessionId(data.sessionId)
         setAllTools(tools)
         setActiveTools(tools.filter(t => t.enabled !== false))
+        if (data.authContext) setAuthContext(data.authContext)
         const initialToggles: Record<string, boolean> = {}
         tools.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
         setToolToggles(initialToggles)
@@ -199,7 +233,8 @@ export default function Sandbox() {
         tools: activeTools,
         // tool_call messages are UI-only; strip them before sending history to the backend
         history: messages.filter(m => m.role !== "tool_call").map(m => ({ role: m.role, content: m.content })),
-        message: messageText
+        message: messageText,
+        authContext
       }),
       signal: controller.signal
     })
@@ -251,14 +286,143 @@ export default function Sandbox() {
 
   const enabledCount = Object.values(toolToggles).filter(Boolean).length
 
+  const [panelOpen, setPanelOpen]           = useState(false)
+  const [panelTab, setPanelTab]             = useState<"tools" | "keys">("tools")
+  const [apiKeys, setApiKeys]               = useState<Record<string, string>>({})
+  const [hasSecurityScheme, setHasSecurityScheme] = useState<boolean | null>(null)
+  const [toolGroupMap, setToolGroupMap]     = useState<Record<string, string>>({})
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [savedKeyStatus, setSavedKeyStatus] = useState<Record<string, boolean>>({})
+  const [isSavingKey, setIsSavingKey]       = useState<string | null>(null)
+  // OAuth2 client credentials state — keyed by group name
+  const [oauth2Fields, setOauth2Fields] = useState<Record<string, { clientId: string; clientSecret: string }>>({})
+  const [oauth2ConnectStatus, setOauth2ConnectStatus] = useState<Record<string, { ok: boolean; msg: string }>>({})
+  const [isConnecting, setIsConnecting] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Composite session — check if any API in the authMap requires a non-none key
+    if (compositeId) {
+      const groupsRaw = sessionStorage.getItem(`helios_groups_${compositeId}`)
+      if (!groupsRaw) { setHasSecurityScheme(false); return }
+      try {
+        const parsed = JSON.parse(groupsRaw)
+        const authMap: Record<string, AuthConfig[]> = parsed.authMap ?? {}
+        const hasAuth = Object.values(authMap).some(configs =>
+          configs.some(c => c.type !== "none")
+        )
+        setHasSecurityScheme(hasAuth)
+      } catch { setHasSecurityScheme(false) }
+      return
+    }
+    // Standard specId session — inspect the raw spec stored in the draft
+    if (!specId) { setHasSecurityScheme(false); return }
+    const draft = sessionStorage.getItem(`helios_draft_${specId}`)
+    if (!draft) {
+      // Even without a draft, if authContext has content, there IS auth
+      setHasSecurityScheme(!!authContext && Object.keys(authContext).length > 0)
+      return
+    }
+    try {
+      const { spec } = JSON.parse(draft)
+      const has3 = spec?.components?.securitySchemes && Object.keys(spec.components.securitySchemes).length > 0
+      const has2 = spec?.securityDefinitions && Object.keys(spec.securityDefinitions).length > 0
+      setHasSecurityScheme(!!(has3 || has2))
+    } catch { setHasSecurityScheme(false) }
+  }, [specId, compositeId, authContext])
+
+  // Fetch saved key status from DB whenever the API Keys tab is opened
+  useEffect(() => {
+    if (!panelOpen || panelTab !== "keys") return
+    const groups = Object.keys(toolGroupMap).length > 0
+      ? [...new Set(Object.values(toolGroupMap))] as string[]
+      : specId ? [specId] : []
+    if (groups.length === 0) return
+    Promise.all(
+      groups.map(async g => {
+        try {
+          const res = await fetch(`http://localhost:8000/api/keys/${encodeURIComponent(g)}/status`, { headers: getAuthHeaders() })
+          const data = await res.json()
+          return [g, data.exists ?? false] as [string, boolean]
+        } catch { return [g, false] as [string, boolean] }
+      })
+    ).then(entries => setSavedKeyStatus(Object.fromEntries(entries)))
+  }, [panelOpen, panelTab])
+
+  const handleSaveKey = async (groupName: string) => {
+    const key = apiKeys[groupName]
+    if (!key?.trim()) return
+    setIsSavingKey(groupName)
+    try {
+      const res = await fetch(`http://localhost:8000/api/keys/${encodeURIComponent(groupName)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ key: key.trim() })
+      })
+      if (res.ok) {
+        setSavedKeyStatus(prev => ({ ...prev, [groupName]: true }))
+        setApiKeys(prev => ({ ...prev, [groupName]: "" }))
+      }
+    } catch {}
+    setIsSavingKey(null)
+  }
+
+  // OAuth2 Client Credentials flow — exchanges clientId+clientSecret on the backend, stores access_token
+  const handleOAuth2Connect = async (groupName: string, tokenUrl: string) => {
+    const fields = oauth2Fields[groupName]
+    if (!fields?.clientId?.trim() || !fields?.clientSecret?.trim()) return
+    setIsConnecting(groupName)
+    setOauth2ConnectStatus(prev => ({ ...prev, [groupName]: { ok: false, msg: "" } }))
+    try {
+      const res = await fetch("http://localhost:8000/api/oauth2/client-credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({
+          integrationId: groupName,
+          clientId: fields.clientId.trim(),
+          clientSecret: fields.clientSecret.trim(),
+          tokenUrl,
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSavedKeyStatus(prev => ({ ...prev, [groupName]: true }))
+        const expiryMsg = data.expiresIn ? ` (expires in ${Math.round(data.expiresIn / 60)}min)` : ""
+        setOauth2ConnectStatus(prev => ({ ...prev, [groupName]: { ok: true, msg: `Connected${expiryMsg}` } }))
+        setOauth2Fields(prev => ({ ...prev, [groupName]: { clientId: "", clientSecret: "" } }))
+      } else {
+        setOauth2ConnectStatus(prev => ({ ...prev, [groupName]: { ok: false, msg: data.error ?? "Connection failed" } }))
+      }
+    } catch (err: any) {
+      setOauth2ConnectStatus(prev => ({ ...prev, [groupName]: { ok: false, msg: "Network error" } }))
+    }
+    setIsConnecting(null)
+  }
+
+  // Build ordered group list from toolGroupMap (composite) or a single group (specId)
+  const toolGroups: { name: string; tools: Tool[] }[] = (() => {
+    if (allTools.length === 0) return []
+    if (Object.keys(toolGroupMap).length > 0) {
+      const seen: string[] = []
+      const map: Record<string, Tool[]> = {}
+      allTools.forEach(tool => {
+        const g = toolGroupMap[tool.function.name] ?? "Other"
+        if (!map[g]) { map[g] = []; seen.push(g) }
+        map[g].push(tool)
+      })
+      return seen.map(name => ({ name, tools: map[name] }))
+    }
+    return [{ name: specId ?? "Session", tools: allTools }]
+  })()
+
   return (
     <div className="flex flex-col h-screen w-full bg-white">
 
-      {/* Nav */}
+      {/* Nav — original style restored */}
       <nav className="flex items-center justify-between px-6 pl-20 flex-shrink-0">
         <Link href="/">
-          <Image src="/logoName.svg" alt="Helios" width={200} height={200} className="cursor-pointer" />
+          <Image src="/logoName.svg" alt="Helios" width={180} height={180} className="cursor-pointer" />
         </Link>
+
         <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[32px] tracking-widest">
           <span className="text-gray-400">Create</span>
           <span className="text-gray-400 text-[20px] mb-1">✦</span>
@@ -271,9 +435,10 @@ export default function Sandbox() {
           <span className="text-gray-400 text-[20px] mb-1">✦</span>
           <span className="text-gray-400">Download</span>
         </div>
+
         <div className="flex items-center gap-3 w-[220px] justify-end">
-          <Link href="/" className="font-[family-name:--font-cinzel] text-[14px] tracking-widest text-gray-400 border-[2px] border-gray-300 px-4 py-2 hover:border-black hover:text-black transition-colors duration-200">
-            Cancel
+          <Link href="/create" className="font-[family-name:--font-cinzel] text-[14px] tracking-widest text-gray-400 border-[2px] border-gray-300 px-4 py-2 hover:border-black hover:text-black transition-colors duration-200">
+            ← Back
           </Link>
           <button onClick={handleNavigateToVerify} className="font-[family-name:--font-cinzel] text-[14px] tracking-widest text-white bg-black border-[2px] border-black px-4 py-2 hover:bg-white hover:text-black transition-colors duration-200 cursor-pointer">
             Next →
@@ -281,26 +446,22 @@ export default function Sandbox() {
         </div>
       </nav>
 
-      {/* Body — two panels */}
+      {/* Body */}
       <div className="flex flex-1 overflow-hidden border-t-[2px] border-black">
-
-        {/* Chat — left */}
         <div className="flex flex-col flex-1 overflow-hidden">
+
+          {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-6">
             <div className="max-w-2xl mx-auto space-y-6">
+
               {messages.map((message) => {
-                // Tool call indicator — centered divider row
                 if (message.role === "tool_call") {
                   return (
                     <div key={message.id} className="flex items-center gap-3 py-1">
                       <div className="flex-1 h-[1px] bg-gray-200"></div>
                       <div className="flex items-center gap-2">
-                        {/* Hammer & anvil animation */}
                         <svg viewBox="0 0 64 68" width="22" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" className="text-gray-400 flex-shrink-0">
-                          <g>
-                            <rect x="18" y="2" width="28" height="12" />
-                            <rect x="30" y="14" width="4" height="18" />
-                          </g>
+                          <g><rect x="18" y="2" width="28" height="12" /><rect x="30" y="14" width="4" height="18" /></g>
                           <rect x="10" y="42" width="44" height="10" />
                           <rect x="16" y="52" width="32" height="8" />
                           <rect x="10" y="60" width="44" height="6" />
@@ -316,26 +477,16 @@ export default function Sandbox() {
                 }
 
                 return (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex gap-4",
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    )}
-                  >
+                  <div key={message.id} className={cn("flex gap-4", message.role === "user" ? "justify-end" : "justify-start")}>
                     {message.role === "assistant" && (
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-black flex items-center justify-center">
                         <Bot className="w-5 h-5 text-white" />
                       </div>
                     )}
-                    <div
-                      className={cn(
-                        "max-w-[70%] px-4 py-3",
-                        message.role === "user"
-                          ? "bg-black text-white"
-                          : "border-[1px] border-gray-300 text-black"
-                      )}
-                    >
+                    <div className={cn(
+                      "max-w-[70%] px-4 py-3",
+                      message.role === "user" ? "bg-black text-white" : "border-[1px] border-gray-300 text-black"
+                    )}>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap break-words font-[family-name:--font-geist-sans]">
                         {message.content}
                       </p>
@@ -369,9 +520,273 @@ export default function Sandbox() {
             </div>
           </div>
 
-          {/* Input */}
-          <div className="border-t-[1px] border-gray-300 bg-white">
-            <div className="max-w-2xl mx-auto px-4 py-4">
+          {/* Input area */}
+          <div className="border-t-[1px] border-gray-200 bg-white">
+            <div className="max-w-2xl mx-auto px-4 pt-3 pb-4">
+
+              {/* Toolbar row — Tools dropdown + Reset Chat */}
+              <div className="flex items-center justify-between mb-3">
+
+                {/* Tools panel button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setPanelOpen(prev => !prev)}
+                    className={cn(
+                      "relative font-[family-name:--font-cinzel] text-[11px] tracking-widest px-4 py-2 border-[2px] transition-colors duration-200 cursor-pointer",
+                      "before:absolute before:inset-[3px] before:border-[1px] before:pointer-events-none",
+                      panelOpen
+                        ? "border-black bg-black text-white before:border-white"
+                        : "border-gray-300 text-gray-500 before:border-gray-200 hover:border-black hover:text-black hover:before:border-gray-400"
+                    )}
+                  >
+                    {allTools.length === 0 ? "Loading..." : `Tools  ${enabledCount}/${allTools.length}  ${panelOpen ? "▴" : "▾"}`}
+                  </button>
+
+                  {/* Two-tab panel */}
+                  {panelOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setPanelOpen(false)} />
+                      <div className="absolute bottom-full mb-2 left-0 z-50 w-[360px] bg-white border-[2px] border-black">
+
+                        {/* Tab headers */}
+                        <div className="flex border-b-[1px] border-gray-200">
+                          {(["tools", "keys"] as const).map(tab => (
+                            <button
+                              key={tab}
+                              onClick={() => setPanelTab(tab)}
+                              className={cn(
+                                "font-[family-name:--font-cinzel] text-[11px] tracking-widest px-6 py-3 uppercase transition-colors duration-150 cursor-pointer",
+                                panelTab === tab
+                                  ? "text-black border-b-[2px] border-black -mb-[1px]"
+                                  : "text-gray-400 hover:text-black"
+                              )}
+                            >
+                              {tab === "tools" ? "Tool List" : "API Keys"}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Tool List tab */}
+                        {panelTab === "tools" && (
+                          <div className="max-h-[300px] overflow-y-auto">
+                            {toolGroups.map(group => {
+                              const isExpanded   = expandedGroups.has(group.name)
+                              const groupEnabled = group.tools.filter(t => toolToggles[t.function.name] ?? true).length
+                              return (
+                                <div key={group.name}>
+                                  {/* Group header — click to expand/collapse */}
+                                  <button
+                                    onClick={() => setExpandedGroups(prev => {
+                                      const next = new Set(prev)
+                                      if (next.has(group.name)) next.delete(group.name)
+                                      else next.add(group.name)
+                                      return next
+                                    })}
+                                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border-b-[1px] border-gray-100 hover:bg-gray-100 transition-colors duration-150 cursor-pointer"
+                                  >
+                                    <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-black">{group.name}</span>
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-[family-name:--font-geist-mono] text-[10px] text-gray-400">{groupEnabled}/{group.tools.length}</span>
+                                      <span className="font-[family-name:--font-geist-mono] text-[10px] text-gray-400">{isExpanded ? "▴" : "▾"}</span>
+                                    </div>
+                                  </button>
+
+                                  {/* Tools — only visible when expanded */}
+                                  {isExpanded && group.tools.map((tool, i) => {
+                                    const enabled = toolToggles[tool.function.name] ?? true
+                                    return (
+                                      <div
+                                        key={tool.function.name}
+                                        onClick={() => toggleTool(tool.function.name)}
+                                        className={cn(
+                                          "flex items-center gap-3 px-4 py-3 pl-7 cursor-pointer transition-colors duration-150",
+                                          i !== group.tools.length - 1 && "border-b-[1px] border-gray-100",
+                                          enabled ? "bg-white hover:bg-gray-50" : "bg-gray-50 hover:bg-gray-100"
+                                        )}
+                                      >
+                                        <div className={cn(
+                                          "flex-shrink-0 w-4 h-4 border-[2px] flex items-center justify-center transition-colors duration-150",
+                                          enabled ? "border-black bg-black" : "border-gray-300 bg-white"
+                                        )}>
+                                          {enabled && (
+                                            <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                                              <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                          )}
+                                        </div>
+                                        {tool.handler?.method && (
+                                          <span className={cn(
+                                            "flex-shrink-0 font-[family-name:--font-geist-mono] text-[9px] tracking-widest px-1.5 py-0.5",
+                                            enabled
+                                              ? (METHOD_BADGE_STYLES[tool.handler.method.toUpperCase()] ?? "border border-gray-300 text-gray-500 bg-white")
+                                              : "border border-gray-200 text-gray-300 bg-white"
+                                          )}>
+                                            {tool.handler.method.toUpperCase()}
+                                          </span>
+                                        )}
+                                        <span className={cn(
+                                          "font-[family-name:--font-cinzel] text-[12px] tracking-wide truncate flex-1 transition-colors duration-150",
+                                          enabled ? "text-black" : "text-gray-400"
+                                        )}>
+                                          {tool.function.name}
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        {/* API Keys tab */}
+                        {panelTab === "keys" && (
+                          <div className="max-h-[300px] overflow-y-auto px-4 py-4">
+                            {hasSecurityScheme === false ? (
+                              <div className="py-4 flex items-center justify-center">
+                                <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-gray-400 text-center">
+                                  No API keys needed for any tools.
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col gap-5">
+                                {toolGroups.map(group => {
+                                  // Determine auth type for this group
+                                  const groupAuthMap: Record<string, AuthConfig[]> = (() => {
+                                    if (!compositeId) return {}
+                                    try {
+                                      const raw = sessionStorage.getItem(`helios_groups_${compositeId}`)
+                                      return raw ? (JSON.parse(raw).authMap ?? {}) : {}
+                                    } catch { return {} }
+                                  })()
+                                  const groupAuthConfigs: AuthConfig[] = groupAuthMap[group.name] ?? []
+                                  const isOAuth2 = groupAuthConfigs.some(c => c.type === "oauth2")
+                                    || (group.name === (specId ?? "") && !!authContext?.oauth2Url)
+                                  const isBasicAuth = groupAuthConfigs.some(c => c.type === "basic_auth")
+                                    || (group.name === (specId ?? "") && !!authContext?.basicAuthNote)
+                                  const oauth2AuthUrl = isOAuth2 ? (groupAuthConfigs.find(c => c.type === "oauth2")?.authorizationUrl ?? authContext?.oauth2Url) : undefined
+                                  const oauth2TokenUrl = isOAuth2 ? (groupAuthConfigs.find(c => c.type === "oauth2")?.tokenUrl ?? authContext?.tokenUrl) : undefined
+
+                                  return (
+                                    <div key={group.name} className="flex flex-col gap-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-black">{group.name}</span>
+                                        <span className={cn(
+                                          "font-[family-name:--font-geist-mono] text-[10px] tracking-wider",
+                                          savedKeyStatus[group.name] ? "text-green-600" : "text-red-400"
+                                        )}>
+                                          {savedKeyStatus[group.name] ? "● Provided" : "○ Missing"}
+                                        </span>
+                                      </div>
+
+                                      {/* OAuth2 — Client Credentials connect form */}
+                                      {isOAuth2 && oauth2TokenUrl ? (
+                                        <div className="flex flex-col gap-2">
+                                          <span className="font-[family-name:--font-geist-sans] text-[10px] text-gray-500">
+                                            OAuth 2.0 — enter your app credentials to connect:
+                                          </span>
+                                          <input
+                                            type="text"
+                                            placeholder="Client ID"
+                                            value={oauth2Fields[group.name]?.clientId ?? ""}
+                                            onChange={e => setOauth2Fields(prev => ({ ...prev, [group.name]: { ...prev[group.name], clientId: e.target.value } }))}
+                                            className="font-[family-name:--font-geist-mono] text-[12px] border-[1px] border-gray-300 px-3 py-2 outline-none focus:border-black transition-colors duration-200"
+                                          />
+                                          <div className="flex gap-2">
+                                            <input
+                                              type="password"
+                                              placeholder="Client Secret"
+                                              value={oauth2Fields[group.name]?.clientSecret ?? ""}
+                                              onChange={e => setOauth2Fields(prev => ({ ...prev, [group.name]: { ...prev[group.name], clientSecret: e.target.value } }))}
+                                              className="flex-1 font-[family-name:--font-geist-mono] text-[12px] border-[1px] border-gray-300 px-3 py-2 outline-none focus:border-black transition-colors duration-200"
+                                            />
+                                            <button
+                                              onClick={() => handleOAuth2Connect(group.name, oauth2TokenUrl)}
+                                              disabled={!oauth2Fields[group.name]?.clientId?.trim() || !oauth2Fields[group.name]?.clientSecret?.trim() || isConnecting === group.name}
+                                              className={cn(
+                                                "font-[family-name:--font-cinzel] text-[10px] tracking-widest px-4 py-2 transition-colors duration-200 whitespace-nowrap",
+                                                !oauth2Fields[group.name]?.clientId?.trim() || !oauth2Fields[group.name]?.clientSecret?.trim() || isConnecting === group.name
+                                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                  : "bg-black text-white hover:bg-gray-800 cursor-pointer"
+                                              )}
+                                            >
+                                              {isConnecting === group.name ? "Connecting..." : "Connect"}
+                                            </button>
+                                          </div>
+                                          {oauth2ConnectStatus[group.name]?.msg && (
+                                            <span className={cn(
+                                              "font-[family-name:--font-geist-mono] text-[10px]",
+                                              oauth2ConnectStatus[group.name].ok ? "text-green-600" : "text-red-500"
+                                            )}>
+                                              {oauth2ConnectStatus[group.name].ok ? "✓ " : "✗ "}{oauth2ConnectStatus[group.name].msg}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        /* Regular API key / BasicAuth input */
+                                        <>
+                                          {isBasicAuth && (
+                                            <span className="font-[family-name:--font-geist-sans] text-[10px] text-gray-500">
+                                              Basic Auth — enter as <code className="bg-gray-100 px-1">username:password</code>
+                                            </span>
+                                          )}
+                                          <div className="flex gap-2">
+                                            <input
+                                              type="password"
+                                              placeholder={savedKeyStatus[group.name] ? "Update key..." : isBasicAuth ? "username:password" : "Enter API key..."}
+                                              value={apiKeys[group.name] ?? ""}
+                                              onChange={e => setApiKeys(prev => ({ ...prev, [group.name]: e.target.value }))}
+                                              className="flex-1 font-[family-name:--font-geist-mono] text-[12px] border-[1px] border-gray-300 px-3 py-2 outline-none focus:border-black transition-colors duration-200"
+                                            />
+                                            <button
+                                              onClick={() => handleSaveKey(group.name)}
+                                              disabled={!apiKeys[group.name]?.trim() || isSavingKey === group.name}
+                                              className={cn(
+                                                "font-[family-name:--font-cinzel] text-[10px] tracking-widest px-4 py-2 transition-colors duration-200",
+                                                !apiKeys[group.name]?.trim() || isSavingKey === group.name
+                                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                  : "bg-black text-white hover:bg-gray-800 cursor-pointer"
+                                              )}
+                                            >
+                                              {isSavingKey === group.name ? "..." : "Save"}
+                                            </button>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Footer */}
+                        <div className="border-t-[1px] border-gray-200 p-4">
+                          <button
+                            onClick={() => { handleApply(); setPanelOpen(false) }}
+                            className="w-full relative font-[family-name:--font-cinzel] py-3 text-[12px] tracking-widest text-black border-[2px] border-black
+                              before:absolute before:inset-[3px] before:border-[1px] before:border-black before:pointer-events-none
+                              hover:bg-black hover:text-white hover:before:border-white transition-colors duration-300 cursor-pointer"
+                          >
+                            Apply & Reset Chat
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Reset Chat */}
+                <button
+                  onClick={() => setMessages([])}
+                  className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 border-[2px] border-gray-300 px-4 py-2 hover:border-black hover:text-black transition-colors duration-200 cursor-pointer"
+                >
+                  Reset Chat
+                </button>
+              </div>
+
+              {/* Input box — original style */}
               <div className="relative flex items-end gap-2 border-[2px] border-gray-300 bg-white p-2 focus-within:border-black transition-colors duration-200">
                 <textarea
                   ref={textareaRef}
@@ -391,106 +806,20 @@ export default function Sandbox() {
                   className={cn(
                     "flex-shrink-0 p-2 transition-colors",
                     input.trim() && !isLoading
-                      ? "bg-black text-white hover:bg-gray-800"
+                      ? "bg-black text-white hover:bg-gray-800 cursor-pointer"
                       : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   )}
                 >
                   <Send className="w-5 h-5" />
                 </button>
               </div>
+
             </div>
           </div>
+
         </div>
-
-        {/* Tool Catalog — right */}
-        <div className="w-[380px] border-l-[2px] border-black flex flex-col flex-shrink-0">
-
-          {/* Header */}
-          <div className="px-6 py-4 flex items-baseline justify-between flex-shrink-0">
-            <span className="font-[family-name:--font-cinzel] text-[22px] tracking-widest">Tool Catalog</span>
-            <span className="font-[family-name:--font-cinzel] text-[14px] text-gray-400 tracking-widest">
-              {enabledCount} / {allTools?.length ?? 0}
-            </span>
-          </div>
-          <div className="h-[2px] bg-black flex-shrink-0"></div>
-
-          {/* Tool list */}
-          <div className="flex-1 overflow-y-auto">
-            {allTools.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <span className="font-[family-name:--font-cinzel] text-gray-400 text-[14px] tracking-widest">Loading tools...</span>
-              </div>
-            ) : (
-              allTools.map((tool, i) => {
-                const enabled = toolToggles[tool.function.name] ?? true
-                return (
-                  <div
-                    key={tool.function.name}
-                    className={cn(
-                      "flex items-start gap-4 px-6 py-4 cursor-pointer transition-colors duration-150",
-                      i !== allTools.length - 1 && "border-b-[1px] border-gray-200",
-                      enabled ? "bg-white hover:bg-gray-50" : "bg-gray-50 hover:bg-gray-100"
-                    )}
-                    onClick={() => toggleTool(tool.function.name)}
-                  >
-                    {/* Toggle box */}
-                    <div className={cn(
-                      "flex-shrink-0 w-5 h-5 border-[2px] mt-0.5 flex items-center justify-center transition-colors duration-150",
-                      enabled ? "border-black bg-black" : "border-gray-400 bg-white"
-                    )}>
-                      {enabled && (
-                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 3.5L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </div>
-
-                    {/* Tool info */}
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {tool.handler?.method && (
-                          <span className={cn(
-                            "flex-shrink-0 font-[family-name:--font-geist-mono] text-[9px] tracking-widest px-1.5 py-0.5",
-                            enabled
-                              ? (METHOD_STYLES[tool.handler.method.toUpperCase()] ?? "bg-gray-400 text-white")
-                              : "border border-gray-200 text-gray-300 bg-white"
-                          )}>
-                            {tool.handler.method.toUpperCase()}
-                          </span>
-                        )}
-                        <span className={cn(
-                          "font-[family-name:--font-cinzel] text-[13px] tracking-wider leading-tight truncate",
-                          enabled ? "text-black" : "text-gray-400"
-                        )}>
-                          {tool.function.name}
-                        </span>
-                      </div>
-                      {tool.function.description && (
-                        <span className="text-[11px] text-gray-400 leading-snug font-[family-name:--font-geist-sans] truncate">
-                          {tool.function.description}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
-
-          {/* Footer buttons */}
-          <div className="border-t-[2px] border-black p-6 flex-shrink-0">
-            <button
-              onClick={handleApply}
-              className="font-[family-name:--font-cinzel] w-full cursor-pointer py-4 text-[16px] tracking-widest text-black border-[2px] border-black relative
-                before:absolute before:inset-[4px] before:border-[1px] before:border-black before:pointer-events-none
-                hover:bg-black hover:text-white hover:before:border-white transition-colors duration-300"
-            >
-              Apply & Reset Chat
-            </button>
-          </div>
-        </div>
-
       </div>
+
     </div>
   )
 }

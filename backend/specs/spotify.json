@@ -1,0 +1,224 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Spotify Web API",
+    "version": "1",
+    "description": "Search tracks, albums, artists. Get artist info and recommendations. Requires an OAuth 2.0 access token (Bearer). Get one at: https://accounts.spotify.com/api/token using Client Credentials flow."
+  },
+  "servers": [
+    { "url": "https://api.spotify.com" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://accounts.spotify.com/api/token",
+            "scopes": {}
+          }
+        }
+      }
+    }
+  },
+  "security": [{ "BearerAuth": [] }],
+  "paths": {
+    "/v1/search": {
+      "get": {
+        "operationId": "search",
+        "summary": "Search Spotify catalog",
+        "description": "Search for tracks, albums, artists, playlists, or podcasts. Returns paginated results.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query. E.g. 'Radiohead', 'year:2024 genre:pop', 'artist:Drake album:Certified'.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated list of item types to search: track, album, artist, playlist, show, episode.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of results per type (1-50, default 20).",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Offset for pagination (default 0).",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "required": false,
+            "description": "ISO 3166-1 alpha-2 country code to filter results by market availability. E.g. 'US', 'GB'.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Search results" }
+        }
+      }
+    },
+    "/v1/artists/{id}": {
+      "get": {
+        "operationId": "get_artist",
+        "summary": "Get artist profile",
+        "description": "Returns full artist info: name, genres, popularity score (0-100), follower count, and images.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Spotify artist ID (e.g. '0OdUWJ0sBjDrqHygGUXeCF' for Band of Horses).",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Artist object" }
+        }
+      }
+    },
+    "/v1/artists/{id}/top-tracks": {
+      "get": {
+        "operationId": "get_artist_top_tracks",
+        "summary": "Get an artist's top tracks",
+        "description": "Returns the top 10 tracks for an artist in a given market.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Spotify artist ID.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "required": true,
+            "description": "ISO 3166-1 alpha-2 country code for track availability. E.g. 'US'.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of top tracks" }
+        }
+      }
+    },
+    "/v1/tracks/{id}": {
+      "get": {
+        "operationId": "get_track",
+        "summary": "Get track details",
+        "description": "Returns track info: name, artists, album, duration, popularity, preview URL, and Spotify link.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Spotify track ID.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "required": false,
+            "description": "ISO 3166-1 alpha-2 country code. E.g. 'US'.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Track object" }
+        }
+      }
+    },
+    "/v1/recommendations": {
+      "get": {
+        "operationId": "get_recommendations",
+        "summary": "Get track recommendations",
+        "description": "Returns up to 100 track recommendations based on seed artists, tracks, or genres. Use at least one seed.",
+        "parameters": [
+          {
+            "name": "seed_artists",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated Spotify artist IDs (up to 5 total seeds across all three seed types).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "seed_tracks",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated Spotify track IDs (up to 5 total seeds).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "seed_genres",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated genre names. E.g. 'pop,indie,rock'. See /v1/recommendations/available-genre-seeds for full list.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of recommendations to return (1-100, default 20).",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "required": false,
+            "description": "ISO 3166-1 alpha-2 country code for track availability.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "target_energy",
+            "in": "query",
+            "required": false,
+            "description": "Target energy value (0.0-1.0). Higher = more energetic tracks.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "target_valence",
+            "in": "query",
+            "required": false,
+            "description": "Target valence/mood value (0.0-1.0). Higher = happier, more positive tracks.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "target_danceability",
+            "in": "query",
+            "required": false,
+            "description": "Target danceability value (0.0-1.0). Higher = more danceable.",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Recommended tracks" }
+        }
+      }
+    },
+    "/v1/recommendations/available-genre-seeds": {
+      "get": {
+        "operationId": "get_available_genre_seeds",
+        "summary": "Get available genre seeds for recommendations",
+        "description": "Returns the list of available genres that can be used as seed values for the recommendations endpoint.",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "List of available genre seed strings" }
+        }
+      }
+    }
+  }
+}

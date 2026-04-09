@@ -1,0 +1,128 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "OpenWeatherMap API",
+    "version": "2.5",
+    "description": "Current weather data and 5-day forecast for any city or coordinates."
+  },
+  "servers": [
+    { "url": "https://api.openweathermap.org/data/2.5" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "appid"
+      }
+    }
+  },
+  "security": [{ "ApiKeyAuth": [] }],
+  "paths": {
+    "/weather": {
+      "get": {
+        "operationId": "get_current_weather",
+        "summary": "Get current weather for a city or coordinates",
+        "description": "Returns current temperature, feels-like, humidity, wind speed, weather description, and more. Units: metric=Celsius, imperial=Fahrenheit, standard=Kelvin.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "City name, e.g. 'Chicago' or 'Chicago,US'. Use this OR lat/lon.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude (decimal degrees). Use with lon instead of q.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "description": "Longitude (decimal degrees). Use with lat instead of q.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "units",
+            "in": "query",
+            "required": false,
+            "description": "Temperature unit: 'metric' (°C), 'imperial' (°F), or 'standard' (K). Default: standard.",
+            "schema": { "type": "string", "enum": ["metric", "imperial", "standard"] }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language for weather descriptions (e.g. 'en', 'es', 'fr').",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current weather data"
+          }
+        }
+      }
+    },
+    "/forecast": {
+      "get": {
+        "operationId": "get_5day_forecast",
+        "summary": "Get 5-day / 3-hour weather forecast",
+        "description": "Returns a 5-day forecast with data every 3 hours for a given city or coordinates.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "City name, e.g. 'London' or 'Paris,FR'. Use this OR lat/lon.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude (decimal degrees). Use with lon instead of q.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "description": "Longitude (decimal degrees). Use with lat instead of q.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "units",
+            "in": "query",
+            "required": false,
+            "description": "Temperature unit: 'metric' (°C), 'imperial' (°F), or 'standard' (K).",
+            "schema": { "type": "string", "enum": ["metric", "imperial", "standard"] }
+          },
+          {
+            "name": "cnt",
+            "in": "query",
+            "required": false,
+            "description": "Number of forecast timestamps to return (max 40, i.e. 5 days x 8 per day).",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language for weather descriptions.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "5-day forecast data"
+          }
+        }
+      }
+    }
+  }
+}

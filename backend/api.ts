@@ -2,18 +2,20 @@
 // Handles spec parsing, sandbox session management, and saved server CRUD.
 import dotenv from "dotenv"
 dotenv.config()
-import {generateToolRegistry, parseSwaggerUrl } from "./generate_tool_registry.ts";
+import {generateToolRegistry, parseSwaggerUrl, parseAuthConfig, buildEnrichmentFromAuthConfigs } from "./generate_tool_registry.ts";
+import type { AuthConfig } from "./generate_tool_registry.ts";
 import { connectMongo, createMongo, getMongo, getAllMongo, removeMongo, updateMongo } from "./crud.js";
 import {initializeAgent, callTool, messageAI } from "./sandbox.ts";
 import authRouter from "./auth/auth.routes.js";
 import { authMiddleware } from "./auth/auth.middleware.js";
+import { storeApiKey, getStoredApiKey } from "./auth/apiKeyManager.js";
 import express from "express"
 import cors from "cors"
 import mongoose from "mongoose"
 
 const app = express()
 app.use(cors())
-app.use(express.json({ limit: "10mb" })) // parses JSON bodies so req.body.name etc. work
+app.use(express.json({ limit: "50mb" })) // large limit needed for specs with 50-100+ tools
 
 await connectMongo()
 await mongoose.connect(process.env.MONGODB_URI!)
@@ -30,11 +32,14 @@ function toOpenAITool(tool: any, enabled = true) {
         handler: {
             method: tool.handler.method,
             path: tool.handler.path,
-            query_params: tool.handler.query_params ?? []
+            query_params: tool.handler.query_params ?? [],
+            fixed_query_params: tool.handler.fixed_query_params
         },
         enabled
     }
 }
+
+
 
 // Parses a spec and returns the tool catalog to the frontend for review.
 // Accepts either { url, name } or { spec, name } (raw JSON object from file upload).
@@ -73,7 +78,8 @@ app.post("/api/spec/parse", authMiddleware, async (req, res) => {
         description: tool.description,
         enabled: true,
         input_schema: tool.input_schema,
-        handler: tool.handler
+        handler: tool.handler,
+        enrichment: tool.enrichment
     }))
 
     let baseUrl = registry.baseUrl
@@ -86,7 +92,8 @@ app.post("/api/spec/parse", authMiddleware, async (req, res) => {
         spec,
         baseUrl,
         toolCount: registry.tools.length,
-        catalog
+        catalog,
+        auth: registry.auth
     })
 })
 
@@ -111,29 +118,72 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
 
     try {
         if (req.body.toolsRegistry) {
-            // Pre-built registry passed directly — skip spec loading entirely
+            // Pre-built composite registry — inject integration_id per group
             registry = req.body.toolsRegistry
-            frontendTools = registry.tools.map((tool: any) => toOpenAITool(tool))
+            const groupMap: Record<string, string> = req.body.groupMap ?? {}
+            const authMap: Record<string, AuthConfig[]> = req.body.authMap ?? {}
+            
+            registry = {
+                ...registry,
+                tools: registry.tools.map((tool: any) => {
+                    const groupName = groupMap[tool.name]
+                    let enrichment = tool.enrichment
+                    if (!enrichment) {
+                        const authConfigs: AuthConfig[] = authMap[groupName] ?? [{ type: "none" }]
+                        enrichment = buildEnrichmentFromAuthConfigs(authConfigs)
+                    }
+                    if (enrichment && enrichment.auth && groupName) {
+                        enrichment.auth.integration_id = groupName
+                    }
+                    return { ...tool, enrichment }
+                })
+            }
+            frontendTools = req.body.toolsRegistry.tools.map((tool: any) => toOpenAITool(tool))
         } else if (req.body.spec) {
             // New unsaved server — spec passed directly from frontend (not yet in DB)
             registry = await generateToolRegistry(req.body.spec)
-            // Apply baseUrl fallback passed from frontend if spec didn't declare one
             if (!registry.baseUrl && req.body.baseUrl) {
                 registry = { ...registry, baseUrl: req.body.baseUrl }
             }
+            // Set integration_id on enrichment so server.ts can lookup auth live
+            registry.tools = registry.tools.map((tool: any) => {
+                if (tool.enrichment && tool.enrichment.auth && req.body.specId) {
+                    tool.enrichment.auth.integration_id = req.body.specId
+                }
+                return tool
+            })
         } else {
-            // Existing saved server — load from DB, scoped to the authenticated user
+            // Existing saved server — load from DB
             const doc = await getMongo({ _id: req.body.specId }, req.user!.userId)
             if (!doc) return res.status(404).json({ error: "Spec not found" })
 
+            // ALWAYS generate fresh registry to auto-upgrade to latest enrichment templates
+            registry = await generateToolRegistry(doc)
+            
+            // Apply saved user overrides (renames, descriptions, disable toggles)
             if (doc._catalog && Array.isArray(doc._catalog) && doc._catalog.length > 0) {
-                const enabledTools = doc._catalog.filter((t: any) => t.enabled !== false)
-                if (enabledTools.length === 0) return res.status(400).json({ error: "No enabled tools in saved catalog" })
-                registry = { baseUrl: doc._baseUrl || "", tools: enabledTools }
-                frontendTools = doc._catalog.map((tool: any) => toOpenAITool(tool, tool.enabled !== false))
+                const savedCatalogMap = new Map<string, any>(doc._catalog.map((t: any) => [`${t.handler?.method}:${t.handler?.path}`, t]))
+                registry.tools = registry.tools.map((t: any) => {
+                    const saved = savedCatalogMap.get(`${t.handler?.method}:${t.handler?.path}`)
+                    if (saved) {
+                        return { ...t, name: saved.name, description: saved.description, enabled: saved.enabled !== false }
+                    }
+                    return { ...t, enabled: true }
+                }).filter((t: any) => t.enabled)
+                
+                if (registry.tools.length === 0) return res.status(400).json({ error: "No enabled tools in saved catalog" })
             } else {
-                registry = await generateToolRegistry(doc)
+                registry.tools = registry.tools.map((t: any) => ({ ...t, enabled: true }))
             }
+            frontendTools = registry.tools.map((tool: any) => toOpenAITool(tool))
+
+            // Set integration_id on enrichment so server.ts can lookup auth live
+            registry.tools = registry.tools.map((tool: any) => {
+                if (tool.enrichment && tool.enrichment.auth) {
+                    tool.enrichment.auth.integration_id = req.body.specId
+                }
+                return tool
+            })
         }
     } catch (err: any) {
         return res.status(400).json({ error: "Failed to load spec: " + err.message })
@@ -141,19 +191,31 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
 
     let sessionId: string
     try {
-        sessionId = await initializeAgent(registry)
+        sessionId = await initializeAgent(registry, req.user!.userId)
     } catch (err: any) {
         return res.status(500).json({ error: "Failed to start MCP session: " + err.message })
     }
 
     const openAITools = frontendTools ?? registry.tools.map((tool: any) => toOpenAITool(tool))
 
-    res.json({ sessionId, tools: openAITools })
+    // Build authContext — carries OAuth2/BasicAuth URLs/notes for the AI system prompt
+    const authContextObj: Record<string, string> = {}
+    const registryAuth: AuthConfig[] = registry.auth ?? []
+    for (const a of registryAuth) {
+        if (a.type === "oauth2") {
+            if (a.authorizationUrl) authContextObj.oauth2Url = a.authorizationUrl
+            if (a.tokenUrl) authContextObj.tokenUrl = a.tokenUrl
+        } else if (a.type === "basic_auth") {
+            authContextObj.basicAuthNote = "Enter your credentials as \"username:password\" in the API Keys panel."
+        }
+    }
+
+    res.json({ sessionId, tools: openAITools, authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined })
 })
 
 app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
     const MAX_ITERATIONS = 10;
-    const TOKEN_BUDGET = 25000;
+    const TOKEN_BUDGET = 60000;  // ~96 tools × ~200tk schemas + conversation room
     const MAX_RESPONSE_CHARS = 8000;
 
     const sessionId = req.body.sessionId
@@ -173,9 +235,45 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
     const history = req.body.history
     history.push({ role: "user", content: req.body.message })
 
+    // Build auth-aware context for the system prompt
+    const authHints: string[] = []
+    const toolsRegistry = req.body.tools ?? []
+    const seenAuthTypes = new Set<string>()
+    // Detect auth type hints from tool headers/fixed_query_params patterns
+    for (const tool of toolsRegistry) {
+        const h = tool.handler ?? {}
+        if (h.headers?.Authorization?.startsWith("Bearer ")) seenAuthTypes.add("bearer")
+        if (h.headers?.Authorization?.startsWith("Basic ")) seenAuthTypes.add("basic")
+        if (h.fixed_query_params && Object.keys(h.fixed_query_params).length > 0) seenAuthTypes.add("apikey")
+    }
+    // Detect from tools that have no injected auth (missing auth = possible oauth2/basic flow needed)
+    const authContext = req.body.authContext as { oauth2Url?: string; tokenUrl?: string; basicAuthNote?: string } | undefined
+    if (authContext?.oauth2Url) {
+        authHints.push(`This API uses OAuth 2.0. If the user does not have an access token yet, tell them: "To authorize, visit: ${authContext.oauth2Url} — log in and copy the access_token from the response. Then paste it into the API Keys panel (Tools button → API Keys tab) and save it."`)
+    }
+    if (authContext?.tokenUrl && !authContext?.oauth2Url) {
+        authHints.push(`This API uses OAuth 2.0 Client Credentials. To get an access token, the user must POST to ${authContext.tokenUrl} with their client_id and client_secret. Tell them to paste the resulting access_token into the API Keys panel.`)
+    }
+    if (authContext?.basicAuthNote) {
+        authHints.push(`This API uses Basic Auth. The API key field expects "username:password" (colon-separated, no spaces). ${authContext.basicAuthNote}`)
+    }
+    const authInstruction = authHints.length > 0
+        ? ` AUTH CONTEXT: ${authHints.join(" ")}`
+        : ""
+
+    // Detect if Spotify API is in the toolkit (by checking for Spotify tool names or base URL)
+    const hasSpotify = toolsRegistry.some((t: any) =>
+        (t.handler?.path ?? "").includes("api.spotify.com") ||
+        (t.function?.name ?? t.name ?? "").startsWith("get_an_artist") ||
+        (t.function?.name ?? t.name ?? "").startsWith("search") && (t.handler?.path ?? "").includes("spotify")
+    )
+    const spotifyHints = hasSpotify
+        ? ` SPOTIFY API RULES: (1) Any endpoint that accepts a "market" parameter MUST include market="US" (or the user's country) — omitting it causes a 400 error. (2) For recommendations, seed_genres must be comma-separated lowercase slugs like "indie,rock,pop" — NOT phrases like "indie rock". Call get_recommendation_genres first if you are unsure of valid genre slugs. (3) Use "search" (not get_categories) for finding music by mood or vibe. (4) If a tool returns an API error, read the error message, fix the parameters, and retry once.`
+        : ""
+
     const systemPrompt = {
         role: "system" as const,
-        content: "You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue."
+        content: `You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}${spotifyHints}`
     }
 
     // Chat is stateless — the frontend sends the full history on every request.
@@ -322,18 +420,27 @@ app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
         const doc = await getMongo({ _id: req.params.specId }, req.user!.userId)
         if (!doc) return res.status(404).json({ error: "Spec not found" })
 
-        if (doc._catalog && Array.isArray(doc._catalog) && doc._catalog.length > 0) {
-            return res.json({ catalog: doc._catalog, baseUrl: doc._baseUrl || "", fromSaved: true })
-        }
-
         const registry = await generateToolRegistry(doc)
-        const catalog = registry.tools.map((tool: any) => ({
+        let catalog = registry.tools.map((tool: any) => ({
             name: tool.name,
             description: tool.description,
             enabled: true,
             input_schema: tool.input_schema,
-            handler: tool.handler
+            handler: tool.handler,
+            enrichment: tool.enrichment
         }))
+
+        // Restore overrides from saved catalog if presents
+        if (doc._catalog && Array.isArray(doc._catalog) && doc._catalog.length > 0) {
+            const savedCatalogMap = new Map<string, any>(doc._catalog.map((t: any) => [`${t.handler?.method}:${t.handler?.path}`, t]))
+            catalog = catalog.map((t: any) => {
+                const saved = savedCatalogMap.get(`${t.handler.method}:${t.handler.path}`)
+                if (saved) {
+                    return { ...t, name: saved.name, description: saved.description, enabled: saved.enabled !== false }
+                }
+                return t
+            })
+        }
         res.json({ catalog, baseUrl: registry.baseUrl || "", fromSaved: false })
     } catch (err: any) {
         res.status(500).json({ error: err.message })
@@ -387,6 +494,59 @@ app.get("/api/servers", authMiddleware, async (req, res) => {
             createdAt: s._createdAt || ""
         }))
         res.json({ servers })
+    } catch (err: any) {
+        res.status(500).json({ error: err.message })
+    }
+})
+
+// OAuth2 Client Credentials token exchange — exchanges clientId+clientSecret for an access_token
+// and stores it as the API key for the given integration. No terminal command needed from the user.
+app.post("/api/oauth2/client-credentials", authMiddleware, async (req, res) => {
+    const { integrationId, clientId, clientSecret, tokenUrl } = req.body
+    if (!integrationId || !clientId || !clientSecret || !tokenUrl) {
+        return res.status(400).json({ error: "integrationId, clientId, clientSecret, and tokenUrl are required" })
+    }
+    try {
+        const params = new URLSearchParams({
+            grant_type: "client_credentials",
+            client_id: clientId,
+            client_secret: clientSecret,
+        })
+        const tokenRes = await fetch(tokenUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString(),
+        })
+        const tokenData = await tokenRes.json() as any
+        if (!tokenRes.ok || !tokenData.access_token) {
+            const msg = tokenData.error_description || tokenData.error || "Token exchange failed"
+            return res.status(400).json({ error: msg })
+        }
+        // Store the access_token as the API key — applyAuth will inject it as a Bearer header
+        await storeApiKey(req.user!.userId, String(integrationId), tokenData.access_token)
+        res.json({ ok: true, expiresIn: tokenData.expires_in ?? null })
+    } catch (err: any) {
+        res.status(500).json({ error: "Token exchange request failed: " + err.message })
+    }
+})
+
+// Save an API key for an integration (upserts — calling again overwrites the old key)
+app.post("/api/keys/:integrationId", authMiddleware, async (req, res) => {
+    const { key } = req.body
+    if (!key || typeof key !== "string") return res.status(400).json({ error: "key is required" })
+    try {
+        await storeApiKey(req.user!.userId, String(req.params.integrationId), key)
+        res.json({ ok: true })
+    } catch (err: any) {
+        res.status(500).json({ error: err.message })
+    }
+})
+
+// Check whether a key exists for an integration — returns exists: bool, never the key itself
+app.get("/api/keys/:integrationId/status", authMiddleware, async (req, res) => {
+    try {
+        const record = await getStoredApiKey(req.user!.userId, String(req.params.integrationId))
+        res.json({ exists: !!record })
     } catch (err: any) {
         res.status(500).json({ error: err.message })
     }

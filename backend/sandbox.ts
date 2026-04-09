@@ -52,7 +52,7 @@ function parseSseData(text: string, httpStatus: number): any {
     return parsed
 }
 
-export async function initializeAgent(registry: ToolsFile): Promise<string> {
+export async function initializeAgent(registry: ToolsFile, userId: string): Promise<string> {
     const response = await mcpFetch({
         timeoutMs: 10_000,
         body: {
@@ -63,7 +63,8 @@ export async function initializeAgent(registry: ToolsFile): Promise<string> {
                 protocolVersion: "2024-11-05",
                 capabilities: {},
                 clientInfo: { name: "helios-sandbox", version: "1.0.0" },
-                toolsRegistry: registry
+                toolsRegistry: registry,
+                userId          // server.ts uses this for live per-user auth DB lookups
             }
         }
     })
