@@ -164,10 +164,19 @@ function registerDynamicTool(
       let response: Awaited<ReturnType<typeof fetch>>
       try {
         console.log(`[tool:${endpoint.name}] GET ${url}`)
-        response = await fetch(url, { method: "GET", headers })
+        const controller = new AbortController()
+        const fetchTimer = setTimeout(() => controller.abort(), 10_000)
+        try {
+          response = await fetch(url, { method: "GET", headers, signal: controller.signal })
+        } finally {
+          clearTimeout(fetchTimer)
+        }
       } catch (err: any) {
-        console.error(`[tool:${endpoint.name}] Network error: ${err.message}`)
-        return { content: [{ type: "text", text: `Network error: ${err.message}` }] }
+        const msg = err.name === "AbortError"
+          ? `Request to ${url} timed out after 10 seconds`
+          : `Network error: ${err.message}`
+        console.error(`[tool:${endpoint.name}] ${msg}`)
+        return { content: [{ type: "text", text: msg }] }
       }
 
       const textResponse = await response.text()

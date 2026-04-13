@@ -153,7 +153,7 @@ export default function Verify() {
         if (!res.ok) { setError(data.error || "Failed to save."); setIsSaving(false); return }
         sessionStorage.removeItem(`helios_session_${compositeId}`)
         sessionStorage.removeItem("helios_create_tools")
-        router.push("/")
+        router.push(`/download?specId=${serverName.trim()}`)
         return
       }
 
@@ -172,7 +172,7 @@ export default function Verify() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || "Failed to save."); setIsSaving(false); return }
       sessionStorage.removeItem(`helios_draft_${specId}`)
-      router.push("/")
+      router.push(`/download?specId=${specId}`)
     } catch {
       setError("Failed to reach the server.")
       setIsSaving(false)

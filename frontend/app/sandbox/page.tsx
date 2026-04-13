@@ -45,6 +45,7 @@ interface AuthConfig {
   authorizationUrl?: string
   tokenUrl?: string
   scopes?: Record<string, string>
+  oauthFlow?: "client_credentials" | "authorization_code" | "implicit" | "password"
 }
 
 interface AuthContext {

@@ -1,7 +1,18 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
+import { randomBytes } from "crypto";
 import { User } from "./user.model.js";
 import { signToken } from "./jwt.service.js";
+
+const oauth2Client = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+)
+
+// In-memory CSRF state store — maps state token → expiry timestamp
+const pendingStates = new Map<string, number>()
 
 const SALT_ROUNDS = 12;
 
@@ -93,6 +104,73 @@ export async function login(req: Request, res: Response) {
     });
   } catch {
     res.status(500).json({ error: "Failed to login" });
+  }
+}
+
+// Step 1 — redirect user to Google's consent screen
+export async function googleRedirect(req: Request, res: Response) {
+  const state = randomBytes(16).toString("hex")
+  pendingStates.set(state, Date.now() + 10 * 60 * 1000) // expires in 10 min
+
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["email", "profile"],
+    state,
+    prompt: "select_account",
+  })
+
+  res.redirect(url)
+}
+
+// Step 2 — Google redirects here with ?code=...&state=...
+export async function googleCallback(req: Request, res: Response) {
+  const { code, state } = req.query as { code?: string; state?: string }
+  const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000"
+
+  // CSRF check — state must match what we issued and not be expired
+  const expiry = state ? pendingStates.get(state) : undefined
+  if (!state || !expiry || expiry < Date.now()) {
+    pendingStates.delete(state!)
+    return res.redirect(`${FRONTEND_URL}/auth?error=invalid_state`)
+  }
+  pendingStates.delete(state)
+
+  if (!code) {
+    return res.redirect(`${FRONTEND_URL}/auth?error=no_code`)
+  }
+
+  try {
+    // Exchange authorization code for tokens
+    const { tokens } = await oauth2Client.getToken(code)
+
+    // Verify the ID token and extract user info
+    const ticket = await oauth2Client.verifyIdToken({
+      idToken: tokens.id_token!,
+      audience: process.env.GOOGLE_CLIENT_ID!,
+    })
+    const payload = ticket.getPayload()!
+    const googleId = payload.sub
+    const email = payload.email!.toLowerCase()
+    const name = payload.name ?? null
+    const picture = payload.picture ?? null
+
+    // Find existing user by googleId or email, or create a new one
+    let user = await User.findOne({ $or: [{ googleId }, { email }] })
+
+    if (!user) {
+      user = await User.create({ email, googleId, name, picture })
+    } else if (!user.googleId) {
+      // Existing email/password account — link the Google ID
+      user.googleId = googleId
+      user.name = user.name ?? name
+      user.picture = user.picture ?? picture
+      await user.save()
+    }
+
+    const token = signToken(String(user._id))
+    res.redirect(`${FRONTEND_URL}/auth/callback?token=${token}`)
+  } catch {
+    res.redirect(`${FRONTEND_URL}/auth?error=google_failed`)
   }
 }
 

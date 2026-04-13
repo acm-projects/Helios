@@ -4,6 +4,7 @@ import dotenv from "dotenv"
 dotenv.config()
 import {generateToolRegistry, parseSwaggerUrl, parseAuthConfig, buildEnrichmentFromAuthConfigs } from "./generate_tool_registry.ts";
 import type { AuthConfig } from "./generate_tool_registry.ts";
+import { generateServerZip } from "./generator.ts";
 import { connectMongo, createMongo, getMongo, getAllMongo, removeMongo, updateMongo } from "./crud.js";
 import {initializeAgent, callTool, messageAI } from "./sandbox.ts";
 import authRouter from "./auth/auth.routes.js";
@@ -14,7 +15,8 @@ import cors from "cors"
 import mongoose from "mongoose"
 
 const app = express()
-app.use(cors())
+const ALLOWED_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000"
+app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }))
 app.use(express.json({ limit: "50mb" })) // large limit needed for specs with 50-100+ tools
 
 await connectMongo()
@@ -332,7 +334,7 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
                     }
 
                     try {
-                        const toolResponse = await callTool(req.body.sessionId, toolCall.function.name, args);
+                        const toolResponse = await callTool(sessionId, toolCall.function.name, args);
                         const limited = Array.isArray(toolResponse) && toolResponse.length > 100
                             ? toolResponse.slice(0, 100)
                             : toolResponse;
@@ -524,12 +526,53 @@ app.get("/api/servers", authMiddleware, async (req, res) => {
     }
 })
 
+// Download — generates a standalone MCP server ZIP for the given saved spec
+app.get("/api/servers/:specId/download", authMiddleware, async (req, res) => {
+    const specId = req.params.specId
+    try {
+        const doc = await getMongo({ _id: specId }, req.user!.userId)
+        if (!doc) return res.status(404).json({ error: "Server not found" })
+
+        const catalog = doc._catalog
+        if (!Array.isArray(catalog) || catalog.length === 0) {
+            return res.status(400).json({ error: "No tools found for this server" })
+        }
+
+        const registry = {
+            baseUrl: doc._baseUrl || "",
+            tools: catalog.filter((t: any) => t.enabled !== false),
+            auth: doc._auth || []
+        }
+
+        const zipBuffer = await generateServerZip(specId, registry)
+
+        res.setHeader("Content-Type", "application/zip")
+        res.setHeader("Content-Disposition", `attachment; filename="${specId}-mcp-server.zip"`)
+        res.send(zipBuffer)
+    } catch (err: any) {
+        res.status(500).json({ error: err.message })
+    }
+})
+
 // OAuth2 Client Credentials token exchange — exchanges clientId+clientSecret for an access_token
 // and stores it as the API key for the given integration. No terminal command needed from the user.
 app.post("/api/oauth2/client-credentials", authMiddleware, async (req, res) => {
     const { integrationId, clientId, clientSecret, tokenUrl } = req.body
     if (!integrationId || !clientId || !clientSecret || !tokenUrl) {
         return res.status(400).json({ error: "integrationId, clientId, clientSecret, and tokenUrl are required" })
+    }
+    // SSRF guard: only allow public HTTPS endpoints
+    let parsedTokenUrl: URL
+    try {
+        parsedTokenUrl = new URL(tokenUrl)
+    } catch {
+        return res.status(400).json({ error: "tokenUrl is not a valid URL" })
+    }
+    if (parsedTokenUrl.protocol !== "https:") {
+        return res.status(400).json({ error: "tokenUrl must use HTTPS" })
+    }
+    if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|169\.254\.)/.test(parsedTokenUrl.hostname)) {
+        return res.status(400).json({ error: "tokenUrl must be a public URL" })
     }
     try {
         const params = new URLSearchParams({

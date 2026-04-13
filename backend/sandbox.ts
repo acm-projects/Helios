@@ -8,7 +8,7 @@ import type { ToolsFile } from "./generate_tool_registry.ts"
 dotenv.config();
 
 const MCP_URL = "http://localhost:3000/mcp"
-const openAIClient = new OpenAI({ apiKey: process.env.SANDBOX_OPENAI_KEY })
+const openAIClient = new OpenAI({ apiKey: process.env.SANDBOX_OPENAI_KEY, timeout: 30_000, maxRetries: 2 })
 
 // Shared fetch helper with AbortController timeout
 async function mcpFetch(options: {
