@@ -133,12 +133,18 @@ export default function Verify() {
       if (compositeId) {
         // Composite save — server name entered on this page
         if (!serverName.trim()) { setNameError("Server name is required."); setIsSaving(false); return }
+        let groupMap: Record<string, string> = {}
+        let authMap: Record<string, unknown[]> = {}
+        try {
+          const raw = sessionStorage.getItem(`helios_groups_${compositeId}`)
+          if (raw) { const parsed = JSON.parse(raw); groupMap = parsed.toolMap ?? parsed; authMap = parsed.authMap ?? {} }
+        } catch {}
         const res = await fetch(`http://localhost:8000/api/servers/${serverName.trim()}/catalog`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           body: JSON.stringify({
             catalog,
-            spec: { type: "composite" },
+            spec: { type: "composite", groupMap, authMap },
             baseUrl: "",
             toolCount: catalog.filter(t => t.enabled).length
           })

@@ -9,6 +9,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Search, X, ChevronDown, ChevronRight, Info } from "lucide-react"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
+import yaml from "js-yaml"
 
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
 
@@ -205,7 +206,9 @@ export default function Create() {
 
   const handleJsonFile = useCallback(async (file: File) => {
     if (!jsonName) { setJsonError("API Name is required before uploading."); return }
-    if (!file.name.endsWith(".json")) { setJsonError("Only .json files are supported."); return }
+    const isYaml = file.name.endsWith(".yaml") || file.name.endsWith(".yml")
+    const isJson = file.name.endsWith(".json")
+    if (!isJson && !isYaml) { setJsonError("Only .json, .yaml, or .yml files are supported."); return }
     setJsonError("")
     setIsParsing(true)
     setPopupLoading(true)
@@ -216,9 +219,9 @@ export default function Create() {
     let spec: unknown
     try {
       const text = await file.text()
-      spec = JSON.parse(text)
+      spec = isYaml ? yaml.load(text) : JSON.parse(text)
     } catch {
-      setJsonError("Could not parse file — make sure it is valid JSON.")
+      setJsonError(`Could not parse file — make sure it is valid ${isYaml ? "YAML" : "JSON"}.`)
       setPopupOpen(false)
       setPopupLoading(false)
       setIsParsing(false)

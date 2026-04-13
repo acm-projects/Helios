@@ -1,14 +1,6 @@
 import { Types } from "mongoose";
 import { saveCredential, getCredential } from "../models/integration.helpers.js";
 
-export async function promptForApiKey(): Promise<string> {
-  const readline = await import("readline/promises");
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const apiKey = await rl.question("Enter your API key: ");
-  rl.close();
-  return apiKey;
-}
-
 /**
  * Store a credential (API key) scoped to both userId and integrationId.
  * Uses the ApiKey Mongoose model so the unique index on {userId, integrationId} is enforced.

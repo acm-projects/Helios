@@ -146,6 +146,11 @@ export default function Sandbox() {
     })
       .then(res => res.json())
       .then(data => {
+        if (data.error) {
+          setMessages([{ id: Date.now().toString(), role: "assistant", content: `Failed to load server: ${data.error}`, timestamp: new Date() }])
+          setAllTools([])
+          return
+        }
         const tools: Tool[] = data.tools ?? []
         setSessionId(data.sessionId)
         setAllTools(tools)
@@ -154,6 +159,10 @@ export default function Sandbox() {
         const initialToggles: Record<string, boolean> = {}
         tools.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
         setToolToggles(initialToggles)
+      })
+      .catch(() => {
+        setMessages([{ id: Date.now().toString(), role: "assistant", content: "Could not reach the server. Make sure the backend is running.", timestamp: new Date() }])
+        setAllTools([])
       })
   }, [specId, compositeId, router])
 
@@ -539,7 +548,7 @@ export default function Sandbox() {
                         : "border-gray-300 text-gray-500 before:border-gray-200 hover:border-black hover:text-black hover:before:border-gray-400"
                     )}
                   >
-                    {allTools.length === 0 ? "Loading..." : `Tools  ${enabledCount}/${allTools.length}  ${panelOpen ? "▴" : "▾"}`}
+                    {allTools.length === 0 ? (messages.length > 0 ? "Error" : "Loading...") : `Tools  ${enabledCount}/${allTools.length}  ${panelOpen ? "▴" : "▾"}`}
                   </button>
 
                   {/* Two-tab panel */}

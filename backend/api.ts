@@ -159,9 +159,20 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
 
             // Composite saved servers have no spec to re-parse — rebuild from catalog
             if (doc.type === "composite") {
+                const groupMap: Record<string, string> = doc.groupMap ?? {}
+                const authMap: Record<string, AuthConfig[]> = doc.authMap ?? {}
                 const tools = (doc._catalog ?? [])
                     .filter((t: any) => t.enabled !== false)
-                    .map((t: any) => ({ ...t, enrichment: t.enrichment ?? { auth: null } }))
+                    .map((t: any) => {
+                        const groupName = groupMap[t.name]
+                        let enrichment = t.enrichment
+                        if (!enrichment || !enrichment.auth) {
+                            const authConfigs: AuthConfig[] = authMap[groupName] ?? [{ type: "none" }]
+                            enrichment = buildEnrichmentFromAuthConfigs(authConfigs)
+                        }
+                        if (enrichment?.auth && groupName) enrichment.auth.integration_id = groupName
+                        return { ...t, enrichment }
+                    })
                 registry = { baseUrl: "", tools, auth: [{ type: "none" }] }
             } else {
             // ALWAYS generate fresh registry to auto-upgrade to latest enrichment templates

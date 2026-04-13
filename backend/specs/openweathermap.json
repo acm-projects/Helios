@@ -6,7 +6,9 @@
     "description": "Current weather data and 5-day forecast for any city or coordinates."
   },
   "servers": [
-    { "url": "https://api.openweathermap.org/data/2.5" }
+    {
+      "url": "https://api.openweathermap.org/data/2.5"
+    }
   ],
   "components": {
     "securitySchemes": {
@@ -17,7 +19,11 @@
       }
     }
   },
-  "security": [{ "ApiKeyAuth": [] }],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
   "paths": {
     "/weather": {
       "get": {
@@ -30,35 +36,50 @@
             "in": "query",
             "required": false,
             "description": "City name, e.g. 'Chicago' or 'Chicago,US'. Use this OR lat/lon.",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "lat",
             "in": "query",
             "required": false,
             "description": "Latitude (decimal degrees). Use with lon instead of q.",
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "lon",
             "in": "query",
             "required": false,
             "description": "Longitude (decimal degrees). Use with lat instead of q.",
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "units",
             "in": "query",
             "required": false,
             "description": "Temperature unit: 'metric' (°C), 'imperial' (°F), or 'standard' (K). Default: standard.",
-            "schema": { "type": "string", "enum": ["metric", "imperial", "standard"] }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "metric",
+                "imperial",
+                "standard"
+              ]
+            }
           },
           {
             "name": "lang",
             "in": "query",
             "required": false,
             "description": "Language for weather descriptions (e.g. 'en', 'es', 'fr').",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -79,42 +100,59 @@
             "in": "query",
             "required": false,
             "description": "City name, e.g. 'London' or 'Paris,FR'. Use this OR lat/lon.",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "lat",
             "in": "query",
             "required": false,
             "description": "Latitude (decimal degrees). Use with lon instead of q.",
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "lon",
             "in": "query",
             "required": false,
             "description": "Longitude (decimal degrees). Use with lat instead of q.",
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "units",
             "in": "query",
             "required": false,
             "description": "Temperature unit: 'metric' (°C), 'imperial' (°F), or 'standard' (K).",
-            "schema": { "type": "string", "enum": ["metric", "imperial", "standard"] }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "metric",
+                "imperial",
+                "standard"
+              ]
+            }
           },
           {
             "name": "cnt",
             "in": "query",
             "required": false,
             "description": "Number of forecast timestamps to return (max 40, i.e. 5 days x 8 per day).",
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
           },
           {
             "name": "lang",
             "in": "query",
             "required": false,
             "description": "Language for weather descriptions.",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
