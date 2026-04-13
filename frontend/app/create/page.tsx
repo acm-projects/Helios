@@ -196,9 +196,10 @@ export default function Create() {
   }
 
   const handleCreateTool = async () => {
-    if (!url || !apiName) { setFormError("Spec URL and API Name are required."); return }
+    const trimmedUrl = url.trim()
+    if (!trimmedUrl || !apiName) { setFormError("Spec URL and API Name are required."); return }
     setFormError("")
-    await triggerParse(url, apiName, msg => setFormError(msg))
+    await triggerParse(trimmedUrl, apiName, msg => setFormError(msg))
   }
 
 

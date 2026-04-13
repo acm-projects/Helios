@@ -157,6 +157,13 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
             const doc = await getMongo({ _id: req.body.specId }, req.user!.userId)
             if (!doc) return res.status(404).json({ error: "Spec not found" })
 
+            // Composite saved servers have no spec to re-parse — rebuild from catalog
+            if (doc.type === "composite") {
+                const tools = (doc._catalog ?? [])
+                    .filter((t: any) => t.enabled !== false)
+                    .map((t: any) => ({ ...t, enrichment: t.enrichment ?? { auth: null } }))
+                registry = { baseUrl: "", tools, auth: [{ type: "none" }] }
+            } else {
             // ALWAYS generate fresh registry to auto-upgrade to latest enrichment templates
             registry = await generateToolRegistry(doc)
             
@@ -184,6 +191,7 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
                 }
                 return tool
             })
+            } // end non-composite else
         }
     } catch (err: any) {
         return res.status(400).json({ error: "Failed to load spec: " + err.message })
@@ -419,6 +427,12 @@ app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
     try {
         const doc = await getMongo({ _id: req.params.specId }, req.user!.userId)
         if (!doc) return res.status(404).json({ error: "Spec not found" })
+
+        // Composite servers have no parseable spec — return saved catalog directly
+        if (doc.type === "composite") {
+            const catalog = (doc._catalog ?? []).map((t: any) => ({ ...t, enabled: t.enabled !== false }))
+            return res.json({ catalog, baseUrl: "", fromSaved: true })
+        }
 
         const registry = await generateToolRegistry(doc)
         let catalog = registry.tools.map((tool: any) => ({

@@ -660,12 +660,13 @@ export default function Sandbox() {
                                     } catch { return {} }
                                   })()
                                   const groupAuthConfigs: AuthConfig[] = groupAuthMap[group.name] ?? []
-                                  const isOAuth2 = groupAuthConfigs.some(c => c.type === "oauth2")
-                                    || (group.name === (specId ?? "") && !!authContext?.oauth2Url)
+                                  const isOAuth2ClientCreds = groupAuthConfigs.some(c => c.type === "oauth2" && c.oauthFlow === "client_credentials")
+                                    || (!compositeId && !!authContext?.tokenUrl && !authContext?.oauth2Url)
+                                  const isOAuth2AuthCode = groupAuthConfigs.some(c => c.type === "oauth2" && c.oauthFlow !== "client_credentials")
+                                    || (!compositeId && !!authContext?.oauth2Url)
                                   const isBasicAuth = groupAuthConfigs.some(c => c.type === "basic_auth")
                                     || (group.name === (specId ?? "") && !!authContext?.basicAuthNote)
-                                  const oauth2AuthUrl = isOAuth2 ? (groupAuthConfigs.find(c => c.type === "oauth2")?.authorizationUrl ?? authContext?.oauth2Url) : undefined
-                                  const oauth2TokenUrl = isOAuth2 ? (groupAuthConfigs.find(c => c.type === "oauth2")?.tokenUrl ?? authContext?.tokenUrl) : undefined
+                                  const oauth2TokenUrl = isOAuth2ClientCreds ? (groupAuthConfigs.find(c => c.type === "oauth2")?.tokenUrl ?? authContext?.tokenUrl) : undefined
 
                                   return (
                                     <div key={group.name} className="flex flex-col gap-2">
@@ -680,7 +681,7 @@ export default function Sandbox() {
                                       </div>
 
                                       {/* OAuth2 — Client Credentials connect form */}
-                                      {isOAuth2 && oauth2TokenUrl ? (
+                                      {isOAuth2ClientCreds && oauth2TokenUrl ? (
                                         <div className="flex flex-col gap-2">
                                           <span className="font-[family-name:--font-geist-sans] text-[10px] text-gray-500">
                                             OAuth 2.0 — enter your app credentials to connect:
@@ -721,6 +722,34 @@ export default function Sandbox() {
                                               {oauth2ConnectStatus[group.name].ok ? "✓ " : "✗ "}{oauth2ConnectStatus[group.name].msg}
                                             </span>
                                           )}
+                                        </div>
+                                      ) : isOAuth2AuthCode ? (
+                                        /* OAuth2 Authorization Code — user pastes their own access_token */
+                                        <div className="flex flex-col gap-2">
+                                          <span className="font-[family-name:--font-geist-sans] text-[10px] text-gray-500">
+                                            OAuth 2.0 — paste your access token below.
+                                          </span>
+                                          <div className="flex gap-2">
+                                            <input
+                                              type="password"
+                                              placeholder={savedKeyStatus[group.name] ? "Update token..." : "Paste access_token..."}
+                                              value={apiKeys[group.name] ?? ""}
+                                              onChange={e => setApiKeys(prev => ({ ...prev, [group.name]: e.target.value }))}
+                                              className="flex-1 font-[family-name:--font-geist-mono] text-[12px] border-[1px] border-gray-300 px-3 py-2 outline-none focus:border-black transition-colors duration-200"
+                                            />
+                                            <button
+                                              onClick={() => handleSaveKey(group.name)}
+                                              disabled={!apiKeys[group.name]?.trim() || isSavingKey === group.name}
+                                              className={cn(
+                                                "font-[family-name:--font-cinzel] text-[10px] tracking-widest px-4 py-2 transition-colors duration-200",
+                                                !apiKeys[group.name]?.trim() || isSavingKey === group.name
+                                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                  : "bg-black text-white hover:bg-gray-800 cursor-pointer"
+                                              )}
+                                            >
+                                              {isSavingKey === group.name ? "..." : "Save"}
+                                            </button>
+                                          </div>
                                         </div>
                                       ) : (
                                         /* Regular API key / BasicAuth input */

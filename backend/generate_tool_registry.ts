@@ -58,6 +58,7 @@ export interface AuthConfig {
   authorizationUrl?: string;
   tokenUrl?: string;
   scopes?: Record<string, string>;
+  oauthFlow?: "client_credentials" | "authorization_code" | "implicit" | "password";
 }
 
 export interface ToolsFile {
@@ -155,11 +156,49 @@ function detectFixedQueryParams(parameters: any[], rootSpec: any): Record<string
   return fixed
 }
 
+// ─── Implicit API Key Heuristic ───────────────────────────────────────────────
+
+const IMPLICIT_API_KEY_NAMES = new Set(["key", "api_key", "apikey", "api-key", "token", "access_token", "apitoken", "api_token"])
+
+/**
+ * Some specs (e.g. Weatherbit) never declare a securityDefinitions block —
+ * they just add an API key as a plain query param on every endpoint.
+ * This scans all operations and returns the param name if one of the known
+ * key-like names appears on the majority (>= 50%) of endpoints.
+ */
+function detectImplicitApiKeyParam(spec: any): string | null {
+  const paths = spec.paths || {}
+  const httpMethods = ["get", "post", "put", "patch", "delete"]
+  const allOps: any[] = []
+  for (const pathItem of Object.values(paths) as any[]) {
+    for (const m of httpMethods) {
+      if (pathItem[m]) allOps.push(pathItem[m])
+    }
+  }
+  if (allOps.length === 0) return null
+
+  const counts: Record<string, number> = {}
+  for (const op of allOps) {
+    for (const p of (op.parameters || []) as any[]) {
+      if (p.in === "query" && p.name && IMPLICIT_API_KEY_NAMES.has((p.name as string).toLowerCase())) {
+        counts[p.name] = (counts[p.name] || 0) + 1
+      }
+    }
+  }
+
+  const threshold = allOps.length * 0.5
+  for (const [name, count] of Object.entries(counts)) {
+    if (count >= threshold) return name
+  }
+  return null
+}
+
 // ─── New: Auth Template Detection ─────────────────────────────────────────────
 
 /**
  * Reads the spec's security schemes and returns the auth enrichment that applies
- * to all tools in this spec. integration_id is left empty — api.ts sets it.
+ * to all tools in this spec. Falls back to implicit API key heuristic if no
+ * formal scheme is declared. integration_id is left empty — api.ts sets it.
  */
 function detectAuthTemplate(spec: any): ToolAuthEnrichment | null {
   const schemes = spec.components?.securitySchemes || spec.securityDefinitions || {}
@@ -208,6 +247,12 @@ function detectAuthTemplate(spec: any): ToolAuthEnrichment | null {
     }
   }
 
+  // Fallback: no formal security scheme — scan endpoint params for implicit API key
+  const implicitParam = detectImplicitApiKeyParam(spec)
+  if (implicitParam) {
+    return { template: "api_key_query", integration_id: "", param_name: implicitParam }
+  }
+
   return null
 }
 
@@ -226,7 +271,7 @@ export function buildEnrichmentFromAuthConfigs(authConfigs: AuthConfig[]): ToolE
     case "oauth2":
       return {
         auth: {
-          template: auth.tokenUrl ? "oauth2_client_creds" : "oauth2_auth_code",
+          template: auth.oauthFlow === "client_credentials" ? "oauth2_client_creds" : "oauth2_auth_code",
           integration_id: "",
           token_url: auth.tokenUrl,
         }
@@ -344,10 +389,19 @@ export function parseAuthConfig(spec: any): AuthConfig[] {
     if (scheme.type === "oauth2") {
       if (scheme.flows) {
         const flows = scheme.flows;
-        const flow = flows.authorizationCode || flows.implicit || flows.clientCredentials || flows.password || {};
-        authConfigs.push({ type: "oauth2", authorizationUrl: flow.authorizationUrl, tokenUrl: flow.tokenUrl, scopes: flow.scopes || {} });
+        if (flows.clientCredentials) {
+          authConfigs.push({ type: "oauth2", oauthFlow: "client_credentials", tokenUrl: flows.clientCredentials.tokenUrl, scopes: flows.clientCredentials.scopes || {} });
+        } else if (flows.authorizationCode) {
+          authConfigs.push({ type: "oauth2", oauthFlow: "authorization_code", authorizationUrl: flows.authorizationCode.authorizationUrl, tokenUrl: flows.authorizationCode.tokenUrl, scopes: flows.authorizationCode.scopes || {} });
+        } else if (flows.implicit) {
+          authConfigs.push({ type: "oauth2", oauthFlow: "implicit", authorizationUrl: flows.implicit.authorizationUrl, scopes: flows.implicit.scopes || {} });
+        } else if (flows.password) {
+          authConfigs.push({ type: "oauth2", oauthFlow: "password", tokenUrl: flows.password.tokenUrl, scopes: flows.password.scopes || {} });
+        }
       } else {
-        authConfigs.push({ type: "oauth2", authorizationUrl: scheme.authorizationUrl, tokenUrl: scheme.tokenUrl, scopes: scheme.scopes || {} });
+        // Swagger 2.x: scheme.flow is a string
+        const flowMap: Record<string, AuthConfig["oauthFlow"]> = { application: "client_credentials", accessCode: "authorization_code", implicit: "implicit", password: "password" };
+        authConfigs.push({ type: "oauth2", oauthFlow: flowMap[scheme.flow] ?? "authorization_code", authorizationUrl: scheme.authorizationUrl, tokenUrl: scheme.tokenUrl, scopes: scheme.scopes || {} });
       }
     } else if (scheme.type === "http" && scheme.scheme === "bearer") {
       authConfigs.push({ type: "bearer_token" });
@@ -358,7 +412,13 @@ export function parseAuthConfig(spec: any): AuthConfig[] {
     }
   }
 
-  return authConfigs.length ? authConfigs : [{ type: "none" }];
+  if (authConfigs.length) return authConfigs
+
+  // Fallback: implicit API key param heuristic
+  const implicitParam = detectImplicitApiKeyParam(spec)
+  if (implicitParam) return [{ type: "api_key", in: "query", name: implicitParam }]
+
+  return [{ type: "none" }];
 }
 
 // ─── Main Parser ───────────────────────────────────────────────────────────────
@@ -380,6 +440,9 @@ export function parseOpenApiSpec(spec: any): ToolsFile {
   // Detect auth template once — applies to all tools in this spec
   const authEnrichment = detectAuthTemplate(spec)
 
+  // If auth is injected via query param, exclude it from tool schemas so the AI never sees it
+  const authQueryParamName = authEnrichment?.template === "api_key_query" ? authEnrichment.param_name : undefined
+
   const httpMethods = ["get", "post", "put", "patch", "delete", "head", "options"] as const;
 
   for (const [path, pathItem] of Object.entries(paths)) {
@@ -393,6 +456,9 @@ export function parseOpenApiSpec(spec: any): ToolsFile {
       // Detect params that should be auto-injected (not shown to AI)
       const fixedQueryParams = detectFixedQueryParams(parameters, spec)
       const fixedParamNames = new Set(Object.keys(fixedQueryParams))
+
+      // Also exclude the auth key param — injected by server.ts, not the AI
+      if (authQueryParamName) fixedParamNames.add(authQueryParamName)
 
       const { input_schema, query_params } = buildFromOpenApiParams(
         parameters, requestBody, spec, fixedParamNames
