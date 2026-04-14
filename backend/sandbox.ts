@@ -1,14 +1,14 @@
 // MCP client — called by api.ts to communicate with server.ts (port 3000).
-// Handles session initialization, tool listing, tool execution, and OpenAI calls.
-import OpenAI from "openai";
+// Handles session initialization, tool listing, tool execution, and Claude AI calls.
+import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv"
 import { randomUUID } from "node:crypto"
 import type { ToolsFile } from "./generate_tool_registry.ts"
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const MCP_URL = "http://localhost:3000/mcp"
-const openAIClient = new OpenAI({ apiKey: process.env.SANDBOX_OPENAI_KEY, timeout: 30_000, maxRetries: 2 })
+const anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 // Shared fetch helper with AbortController timeout
 async function mcpFetch(options: {
@@ -105,20 +105,26 @@ export async function callTool(sessionId: string, toolName: string, args: Record
 }
 
 export async function messageAI(
-    messageHistory: OpenAI.Chat.ChatCompletionMessageParam[],
-    tools: any[],
+    system: string,
+    messages: Anthropic.Messages.MessageParam[],
+    tools: Anthropic.Messages.Tool[],
     toolChoice?: "none" | "auto"
-): Promise<{ message: OpenAI.Chat.ChatCompletionMessage, tokens: number }> {
-    const response = await openAIClient.chat.completions.create({
-        model: "gpt-4o-mini",
+): Promise<{ message: Anthropic.Messages.Message, tokens: number }> {
+    // "none" → omit tools entirely (Anthropic has no tool_choice: "none")
+    const toolParams = toolChoice === "none" || tools.length === 0
+        ? {}
+        : { tools, tool_choice: { type: "auto" as const } }
+
+    const response = await anthropicClient.messages.create({
+        model: "claude-sonnet-4-6",
         max_tokens: 4096,
-        messages: messageHistory,
-        tools,
-        ...(toolChoice ? { tool_choice: toolChoice } : {})
-    })
-    if (!response) throw new Error("No response from AI")
+        ...(system ? { system } : {}),
+        messages,
+        ...toolParams
+    }, { timeout: 90_000 })
+
     return {
-        message: response.choices[0].message,
-        tokens: response.usage?.total_tokens ?? 0
+        message: response,
+        tokens: response.usage.input_tokens + response.usage.output_tokens
     }
 }

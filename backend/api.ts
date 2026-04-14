@@ -1,11 +1,12 @@
 // API server — port 8000. The layer between the frontend and the two backend services (MCP + MongoDB).
 // Handles spec parsing, sandbox session management, and saved server CRUD.
 import dotenv from "dotenv"
-dotenv.config()
+dotenv.config({ override: true })
 import {generateToolRegistry, parseSwaggerUrl, parseAuthConfig, buildEnrichmentFromAuthConfigs } from "./generate_tool_registry.ts";
+import { filterToolsByIntent } from "./filterToolsByIntent.ts";
 import type { AuthConfig } from "./generate_tool_registry.ts";
 import { generateServerZip } from "./generator.ts";
-import { connectMongo, createMongo, getMongo, getAllMongo, removeMongo, updateMongo } from "./crud.js";
+import { Spec } from "./models/spec.model.js";
 import {initializeAgent, callTool, messageAI } from "./sandbox.ts";
 import authRouter from "./auth/auth.routes.js";
 import { authMiddleware } from "./auth/auth.middleware.js";
@@ -19,10 +20,9 @@ const ALLOWED_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000"
 app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }))
 app.use(express.json({ limit: "50mb" })) // large limit needed for specs with 50-100+ tools
 
-await connectMongo()
 await mongoose.connect(process.env.MONGODB_URI!)
 
-// Shared shape for tools sent to OpenAI and back to the frontend
+// Shape sent to the frontend — stored in sessionStorage, sent back on every chat request
 function toOpenAITool(tool: any, enabled = true) {
     return {
         type: "function" as const,
@@ -41,6 +41,15 @@ function toOpenAITool(tool: any, enabled = true) {
     }
 }
 
+// Convert frontend tool format → Anthropic tool format for messageAI
+function toAnthropicTool(tool: any) {
+    return {
+        name: tool.function.name,
+        description: tool.function.description ?? "",
+        input_schema: tool.function.parameters ?? { type: "object", properties: {} }
+    }
+}
+
 
 
 // Parses a spec and returns the tool catalog to the frontend for review.
@@ -50,7 +59,7 @@ app.post("/api/spec/parse", authMiddleware, async (req, res) => {
     const specId = req.body.name
     if (!specId) return res.status(400).json({ error: "name cannot be empty" })
 
-    const existing = await getMongo({ _id: specId }, req.user!.userId)
+    const existing = await Spec.findOne({ _id: specId, userId: req.user!.userId })
     if (existing) return res.status(400).json({ error: "The name is already taken. Please choose another name." })
 
     let spec: any
@@ -97,6 +106,24 @@ app.post("/api/spec/parse", authMiddleware, async (req, res) => {
         catalog,
         auth: registry.auth
     })
+})
+
+// Filters a parsed catalog down to tools relevant to the user's intent.
+// Stateless — no DB interaction. Inserts between /api/spec/parse and sandbox start.
+app.post("/api/spec/simplify", authMiddleware, async (req, res) => {
+    const { catalog, userIntent } = req.body
+    if (!Array.isArray(catalog) || catalog.length === 0) {
+        return res.status(400).json({ error: "catalog must be a non-empty array" })
+    }
+    if (!userIntent || typeof userIntent !== "string" || !userIntent.trim()) {
+        return res.status(400).json({ error: "userIntent must be a non-empty string" })
+    }
+    try {
+        const result = await filterToolsByIntent({ baseUrl: "", tools: catalog, auth: [] }, userIntent.trim())
+        res.json({ catalog: result.tools })
+    } catch (err: any) {
+        res.status(500).json({ error: err.message })
+    }
 })
 
 // Starts an MCP session. Three entry paths:
@@ -156,14 +183,14 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
             })
         } else {
             // Existing saved server — load from DB
-            const doc = await getMongo({ _id: req.body.specId }, req.user!.userId)
+            const doc = await Spec.findOne({ _id: req.body.specId, userId: req.user!.userId }).lean()
             if (!doc) return res.status(404).json({ error: "Spec not found" })
 
             // Composite saved servers have no spec to re-parse — rebuild from catalog
             if (doc.type === "composite") {
                 const groupMap: Record<string, string> = doc.groupMap ?? {}
                 const authMap: Record<string, AuthConfig[]> = doc.authMap ?? {}
-                const tools = (doc._catalog ?? [])
+                const tools = (doc.catalog ?? [])
                     .filter((t: any) => t.enabled !== false)
                     .map((t: any) => {
                         const groupName = groupMap[t.name]
@@ -181,8 +208,8 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
             registry = await generateToolRegistry(doc)
             
             // Apply saved user overrides (renames, descriptions, disable toggles)
-            if (doc._catalog && Array.isArray(doc._catalog) && doc._catalog.length > 0) {
-                const savedCatalogMap = new Map<string, any>(doc._catalog.map((t: any) => [`${t.handler?.method}:${t.handler?.path}`, t]))
+            if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
+                const savedCatalogMap = new Map<string, any>(doc.catalog.map((t: any) => [`${t.handler?.method}:${t.handler?.path}`, t]))
                 registry.tools = registry.tools.map((t: any) => {
                     const saved = savedCatalogMap.get(`${t.handler?.method}:${t.handler?.path}`)
                     if (saved) {
@@ -236,7 +263,7 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
 
 app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
     const MAX_ITERATIONS = 10;
-    const TOKEN_BUDGET = 60000;  // ~96 tools × ~200tk schemas + conversation room
+    const TOKEN_BUDGET = 60000;
     const MAX_RESPONSE_CHARS = 8000;
 
     const sessionId = req.body.sessionId
@@ -252,101 +279,92 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
     if (!Array.isArray(req.body.tools)) {
         return res.status(400).json({ error: "tools must be an array" })
     }
+    if (req.body.history.length > 200) {
+        return res.status(400).json({ error: "Conversation history is too long. Please start a new session." })
+    }
 
-    const history = req.body.history
+    // History stored in Anthropic MessageParam format throughout
+    const history: any[] = req.body.history
     history.push({ role: "user", content: req.body.message })
 
-    // Build auth-aware context for the system prompt
+    // Convert frontend tools (OpenAI format) → Anthropic format
+    const anthropicTools = (req.body.tools ?? [])
+        .filter((t: any) => t.function?.name)
+        .map(toAnthropicTool)
+
+    // Build system prompt string
+    const sanitizePromptField = (s: string) => s.replace(/[\n\r`]/g, " ").slice(0, 300)
+
     const authHints: string[] = []
     const toolsRegistry = req.body.tools ?? []
-    const seenAuthTypes = new Set<string>()
-    // Detect auth type hints from tool headers/fixed_query_params patterns
-    for (const tool of toolsRegistry) {
-        const h = tool.handler ?? {}
-        if (h.headers?.Authorization?.startsWith("Bearer ")) seenAuthTypes.add("bearer")
-        if (h.headers?.Authorization?.startsWith("Basic ")) seenAuthTypes.add("basic")
-        if (h.fixed_query_params && Object.keys(h.fixed_query_params).length > 0) seenAuthTypes.add("apikey")
-    }
-    // Detect from tools that have no injected auth (missing auth = possible oauth2/basic flow needed)
     const authContext = req.body.authContext as { oauth2Url?: string; tokenUrl?: string; basicAuthNote?: string } | undefined
     if (authContext?.oauth2Url) {
-        authHints.push(`This API uses OAuth 2.0. If the user does not have an access token yet, tell them: "To authorize, visit: ${authContext.oauth2Url} — log in and copy the access_token from the response. Then paste it into the API Keys panel (Tools button → API Keys tab) and save it."`)
+        authHints.push(`This API uses OAuth 2.0. If the user does not have an access token yet, tell them: "To authorize, visit: ${sanitizePromptField(authContext.oauth2Url)} — log in and copy the access_token from the response. Then paste it into the API Keys panel (Tools button → API Keys tab) and save it."`)
     }
     if (authContext?.tokenUrl && !authContext?.oauth2Url) {
-        authHints.push(`This API uses OAuth 2.0 Client Credentials. To get an access token, the user must POST to ${authContext.tokenUrl} with their client_id and client_secret. Tell them to paste the resulting access_token into the API Keys panel.`)
+        authHints.push(`This API uses OAuth 2.0 Client Credentials. To get an access token, the user must POST to ${sanitizePromptField(authContext.tokenUrl)} with their client_id and client_secret. Tell them to paste the resulting access_token into the API Keys panel.`)
     }
     if (authContext?.basicAuthNote) {
-        authHints.push(`This API uses Basic Auth. The API key field expects "username:password" (colon-separated, no spaces). ${authContext.basicAuthNote}`)
+        authHints.push(`This API uses Basic Auth. The API key field expects "username:password" (colon-separated, no spaces). ${sanitizePromptField(authContext.basicAuthNote)}`)
     }
-    const authInstruction = authHints.length > 0
-        ? ` AUTH CONTEXT: ${authHints.join(" ")}`
-        : ""
+    const authInstruction = authHints.length > 0 ? ` AUTH CONTEXT: ${authHints.join(" ")}` : ""
 
-    // Detect if Spotify API is in the toolkit (by checking for Spotify tool names or base URL)
     const hasSpotify = toolsRegistry.some((t: any) =>
         (t.handler?.path ?? "").includes("api.spotify.com") ||
         (t.function?.name ?? t.name ?? "").startsWith("get_an_artist") ||
         (t.function?.name ?? t.name ?? "").startsWith("search") && (t.handler?.path ?? "").includes("spotify")
     )
     const spotifyHints = hasSpotify
-        ? ` SPOTIFY API RULES: (1) Any endpoint that accepts a "market" parameter MUST include market="US" (or the user's country) — omitting it causes a 400 error. (2) For recommendations, seed_genres must be comma-separated lowercase slugs like "indie,rock,pop" — NOT phrases like "indie rock". Call get_recommendation_genres first if you are unsure of valid genre slugs. (3) Use "search" (not get_categories) for finding music by mood or vibe. (4) If a tool returns an API error, read the error message, fix the parameters, and retry once.`
+        ? ` SPOTIFY API RULES: (1) Any endpoint that accepts a "market" parameter MUST include market="US" — omitting it causes a 400 error. (2) For recommendations, seed_genres must be comma-separated lowercase slugs like "indie,rock,pop". Call get_recommendation_genres first if unsure. (3) Use "search" for finding music by mood or vibe. (4) If a tool returns an API error, fix the parameters and retry once.`
         : ""
 
-    const systemPrompt = {
-        role: "system" as const,
-        content: `You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}${spotifyHints}`
-    }
+    const systemContent = `You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}${spotifyHints}`
 
-    // Chat is stateless — the frontend sends the full history on every request.
     let iterations = 0;
     let totalTokens = 0;
     let forceTextNext = false;
-    let lastToolNames: string = "";
+    let lastToolNames = "";
 
     try {
         while (iterations < MAX_ITERATIONS && totalTokens < TOKEN_BUDGET) {
             const toolChoice = forceTextNext ? "none" : "auto";
             forceTextNext = false;
-            const { message, tokens } = await messageAI([systemPrompt, ...history], req.body.tools, toolChoice);
+            const { message, tokens } = await messageAI(systemContent, history, anthropicTools, toolChoice);
             totalTokens += tokens;
             iterations++;
 
-            // AI returned a plain response — it's done thinking
-            if (!message.tool_calls || message.tool_calls.length === 0) {
-                if (message.content) history.push({ role: "assistant", content: message.content });
-                break;
+            // Extract tool use blocks from Claude's response
+            const toolUseBlocks = message.content.filter((b: any) => b.type === "tool_use") as any[]
+            const textBlocks = message.content.filter((b: any) => b.type === "text") as any[]
+            const textContent = textBlocks.map((b: any) => b.text).join("")
+
+            // No tool calls — model is done
+            if (toolUseBlocks.length === 0) {
+                history.push({ role: "assistant", content: message.content })
+                break
             }
 
-            // AI wants to call tools — execute ALL in parallel
-            history.push(message);
+            // Store assistant turn with full content blocks (tool_use + text)
+            history.push({ role: "assistant", content: message.content })
 
+            // Execute all tool calls in parallel
             const toolResults = await Promise.allSettled(
-                message.tool_calls.map(async (toolCall) => {
-                    if (toolCall.type !== "function") {
-                        return `Tool call skipped: unsupported type "${toolCall.type}".`;
-                    }
-
-                    let args: any;
-                    try {
-                        args = JSON.parse(toolCall.function.arguments);
-                    } catch {
-                        return "Tool call failed: arguments were malformed or too large to parse. Try a shorter input.";
-                    }
+                toolUseBlocks.map(async (block: any) => {
+                    const args = block.input
 
                     try {
-                        const toolResponse = await callTool(sessionId, toolCall.function.name, args);
+                        const toolResponse = await callTool(sessionId, block.name, args)
                         const limited = Array.isArray(toolResponse) && toolResponse.length > 100
                             ? toolResponse.slice(0, 100)
-                            : toolResponse;
-                        let content = JSON.stringify(limited);
+                            : toolResponse
+                        let content = JSON.stringify(limited)
                         if (content.length > MAX_RESPONSE_CHARS) {
-                            content = content.slice(0, MAX_RESPONSE_CHARS) + `... [truncated — ${content.length - MAX_RESPONSE_CHARS} characters omitted]`;
+                            content = content.slice(0, MAX_RESPONSE_CHARS) + `... [truncated — ${content.length - MAX_RESPONSE_CHARS} characters omitted]`
                         }
-                        return content;
+                        return content
                     } catch (toolErr: any) {
-                        // If a non-GET tool fails (e.g. Zod validation in server.ts rejects the args),
-                        // build a fallback simulation from the args we already have so it still shows up.
-                        const toolDef = (req.body.tools ?? []).find((t: any) => t.function?.name === toolCall.function.name)
+                        // Non-GET tool failure → build fallback simulation from the args we have
+                        const toolDef = (req.body.tools ?? []).find((t: any) => t.function?.name === block.name)
                         if (toolDef?.handler?.method && toolDef.handler.method.toUpperCase() !== "GET") {
                             const fallback = {
                                 sandbox_simulation: true,
@@ -360,90 +378,87 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
                             }
                             return JSON.stringify([{ type: "text", text: JSON.stringify(fallback) }])
                         }
-                        // Session expired or evicted — tell the user to refresh instead of a cryptic error
                         if (toolErr.message.includes("-32000") || toolErr.message.includes("Invalid request") || toolErr.message.includes("unexpected response")) {
                             return "SESSION_EXPIRED"
                         }
-                        return `Tool execution error: ${toolErr.message}`;
+                        return `Tool execution error: ${toolErr.message}`
                     }
                 })
-            );
-
-            // Push one response per tool_call — index-paired so the ID is always correct
-            for (let i = 0; i < message.tool_calls.length; i++) {
-                const result = toolResults[i];
-                const content = result.status === "fulfilled"
-                    ? result.value
-                    : `Unexpected error for tool call ${message.tool_calls[i].id}.`;
-                history.push({ role: "tool", tool_call_id: message.tool_calls[i].id, content });
-            }
-
-            const toolNames = message.tool_calls.map(tc => ("function" in tc ? tc.function.name : tc.type)).join(", ");
-            console.log(`[Step ${iterations}] Tools: ${toolNames} | Tokens so far: ${totalTokens}`);
-
-            // Session expired — stop the loop and tell the user to refresh
-            const sessionExpired = history.slice(-message.tool_calls.length).some(
-                (m: any) => m.role === "tool" && m.content === "SESSION_EXPIRED"
             )
+
+            // All tool results go into ONE user message with tool_result blocks (Anthropic requirement)
+            const toolResultBlocks = toolUseBlocks.map((block: any, i: number) => {
+                const result = toolResults[i]
+                return {
+                    type: "tool_result" as const,
+                    tool_use_id: block.id,
+                    content: result.status === "fulfilled" ? result.value : `Unexpected error for tool "${block.name}".`
+                }
+            })
+            history.push({ role: "user", content: toolResultBlocks })
+
+            const toolNames = toolUseBlocks.map((b: any) => b.name).join(", ")
+            console.log(`[Step ${iterations}] Tools: ${toolNames} | Tokens so far: ${totalTokens}`)
+
+            // Session expired — surface clean message and stop
+            const sessionExpired = toolResultBlocks.some((b: any) => b.content === "SESSION_EXPIRED")
             if (sessionExpired) {
                 history.push({ role: "assistant", content: "Your sandbox session has expired. Please refresh the page to start a new one." })
                 break
             }
 
-            // If any tool response was a sandbox simulation, break immediately — no retry
-            const simulationResults = history.slice(-message.tool_calls.length).filter(
-                (m: any) => m.role === "tool" && typeof m.content === "string" && m.content.includes("sandbox_simulation")
-            );
-            if (simulationResults.length > 0) {
-                // Extract the simulated_request text and surface it as the assistant reply
-                const simTexts = simulationResults.map((m: any) => {
+            // Sandbox simulation — extract and surface, then stop
+            const simBlocks = toolResultBlocks.filter((b: any) => typeof b.content === "string" && b.content.includes("sandbox_simulation"))
+            if (simBlocks.length > 0) {
+                const simTexts = simBlocks.map((b: any) => {
                     try {
-                        const parsed = JSON.parse(m.content);
-                        const entry = Array.isArray(parsed) ? parsed.find((e: any) => e.type === "text") : null;
-                        const sim = entry ? JSON.parse(entry.text) : null;
+                        const parsed = JSON.parse(b.content)
+                        const entry = Array.isArray(parsed) ? parsed.find((e: any) => e.type === "text") : null
+                        const sim = entry ? JSON.parse(entry.text) : null
                         if (sim?.simulated_request) {
-                            const r = sim.simulated_request;
-                            return `**Sandbox simulation** — ${r.method} ${r.url}\n\`\`\`json\n${JSON.stringify(r.body ?? {}, null, 2)}\n\`\`\``;
+                            const r = sim.simulated_request
+                            return `**Sandbox simulation** — ${r.method} ${r.url}\n\`\`\`json\n${JSON.stringify(r.body ?? {}, null, 2)}\n\`\`\``
                         }
                     } catch {}
-                    return "Sandbox simulation complete.";
-                });
-                history.push({ role: "assistant", content: simTexts.join("\n\n") });
-                break;
+                    return "Sandbox simulation complete."
+                })
+                history.push({ role: "assistant", content: simTexts.join("\n\n") })
+                break
             }
 
-            // Only cut off tool calls if the exact same tool(s) fired twice in a row
-            if (toolNames === lastToolNames) {
-                forceTextNext = true;
-            }
-            lastToolNames = toolNames;
+            // Same tools twice in a row → force a text response next iteration
+            if (toolNames === lastToolNames) forceTextNext = true
+            lastToolNames = toolNames
         }
 
-        // Hit a limit — tell the user why it stopped
         if (iterations >= MAX_ITERATIONS) {
-            const msg = `I reached my step limit (${MAX_ITERATIONS} attempts) without completing the task. Try breaking it into smaller steps.`;
-            history.push({ role: "assistant", content: msg });
+            history.push({ role: "assistant", content: `I reached my step limit (${MAX_ITERATIONS} attempts) without completing the task. Try breaking it into smaller steps.` })
         } else if (totalTokens >= TOKEN_BUDGET) {
-            const msg = `I used too many tokens (${totalTokens}) and had to stop. The conversation is getting too long — try starting a new one.`;
-            history.push({ role: "assistant", content: msg });
+            history.push({ role: "assistant", content: `I used too many tokens (${totalTokens}) and had to stop. The conversation is getting too long — try starting a new one.` })
         }
     } catch (err: any) {
-        console.error("Chat handler error:", err.message);
-        const msg = `Something went wrong: ${err.message}`;
-        history.push({ role: "assistant", content: msg });
+        console.error("Chat handler error:", err.message)
+        return res.status(500).json({ error: "Internal server error" })
     }
 
-    res.json({ reply: history[history.length - 1].content, history })
+    // Normalize reply to string — history stores full Anthropic content blocks, frontend needs plain text
+    const lastContent = history[history.length - 1].content
+    const reply = typeof lastContent === "string"
+        ? lastContent
+        : Array.isArray(lastContent)
+            ? lastContent.filter((b: any) => b.type === "text").map((b: any) => b.text).join("")
+            : ""
+    res.json({ reply, history })
 })
 
 app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
     try {
-        const doc = await getMongo({ _id: req.params.specId }, req.user!.userId)
+        const doc = await Spec.findOne({ _id: req.params.specId, userId: req.user!.userId }).lean()
         if (!doc) return res.status(404).json({ error: "Spec not found" })
 
         // Composite servers have no parseable spec — return saved catalog directly
         if (doc.type === "composite") {
-            const catalog = (doc._catalog ?? []).map((t: any) => ({ ...t, enabled: t.enabled !== false }))
+            const catalog = (doc.catalog ?? []).map((t: any) => ({ ...t, enabled: t.enabled !== false }))
             return res.json({ catalog, baseUrl: "", fromSaved: true })
         }
 
@@ -458,8 +473,8 @@ app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
         }))
 
         // Restore overrides from saved catalog if presents
-        if (doc._catalog && Array.isArray(doc._catalog) && doc._catalog.length > 0) {
-            const savedCatalogMap = new Map<string, any>(doc._catalog.map((t: any) => [`${t.handler?.method}:${t.handler?.path}`, t]))
+        if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
+            const savedCatalogMap = new Map<string, any>(doc.catalog.map((t: any) => [`${t.handler?.method}:${t.handler?.path}`, t]))
             catalog = catalog.map((t: any) => {
                 const saved = savedCatalogMap.get(`${t.handler.method}:${t.handler.path}`)
                 if (saved) {
@@ -479,20 +494,26 @@ app.post("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
         const { catalog, spec, baseUrl, toolCount } = req.body
         if (!Array.isArray(catalog)) return res.status(400).json({ error: "catalog must be an array" })
 
-        const existing = await getMongo({ _id: req.params.specId }, req.user!.userId)
+        const existing = await Spec.findOne({ _id: req.params.specId, userId: req.user!.userId })
 
         if (!existing) {
             // New server — first time saving. Create the full document now.
             if (!spec) return res.status(400).json({ error: "spec required for new server" })
-            spec._id = req.params.specId
-            spec._baseUrl = baseUrl || ""
-            spec._toolCount = toolCount || catalog.length
-            spec._createdAt = new Date().toISOString()
-            spec._catalog = catalog
-            await createMongo(spec, req.user!.userId)
+            await Spec.create({
+                _id: req.params.specId,
+                userId: req.user!.userId,
+                type: spec.type ?? null,
+                baseUrl: baseUrl || "",
+                toolCount: toolCount || catalog.length,
+                createdAt: new Date().toISOString(),
+                catalog,
+                auth: spec.auth ?? [],
+                groupMap: spec.groupMap ?? null,
+                authMap: spec.authMap ?? null,
+            })
         } else {
             // Existing server — just update the catalog
-            await updateMongo({ _id: req.params.specId }, { _catalog: catalog }, req.user!.userId)
+            await Spec.updateOne({ _id: req.params.specId, userId: req.user!.userId }, { $set: { catalog } })
         }
 
         res.json({ ok: true })
@@ -503,8 +524,8 @@ app.post("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
 
 app.delete("/api/servers/:specId", authMiddleware, async (req, res) => {
     try {
-        const deleted = await removeMongo({ _id: req.params.specId }, req.user!.userId)
-        if (!deleted) return res.status(404).json({ error: "Server not found" })
+        const deleted = await Spec.deleteOne({ _id: req.params.specId, userId: req.user!.userId })
+        if (!deleted.deletedCount) return res.status(404).json({ error: "Server not found" })
         res.json({ ok: true })
     } catch (err: any) {
         res.status(500).json({ error: err.message })
@@ -513,12 +534,12 @@ app.delete("/api/servers/:specId", authMiddleware, async (req, res) => {
 
 app.get("/api/servers", authMiddleware, async (req, res) => {
     try {
-        const all = await getAllMongo(req.user!.userId)
+        const all = await Spec.find({ userId: req.user!.userId }).lean()
         const servers = all.map((s: any) => ({
             id: s._id,
-            baseUrl: s._baseUrl || "",
-            toolCount: Array.isArray(s._catalog) ? s._catalog.filter((t: any) => t.enabled !== false).length : (s._toolCount || 0),
-            createdAt: s._createdAt || ""
+            baseUrl: s.baseUrl || "",
+            toolCount: Array.isArray(s.catalog) ? s.catalog.filter((t: any) => t.enabled !== false).length : (s.toolCount || 0),
+            createdAt: s.createdAt || ""
         }))
         res.json({ servers })
     } catch (err: any) {
@@ -530,18 +551,18 @@ app.get("/api/servers", authMiddleware, async (req, res) => {
 app.get("/api/servers/:specId/download", authMiddleware, async (req, res) => {
     const specId = req.params.specId
     try {
-        const doc = await getMongo({ _id: specId }, req.user!.userId)
+        const doc = await Spec.findOne({ _id: specId, userId: req.user!.userId }).lean()
         if (!doc) return res.status(404).json({ error: "Server not found" })
 
-        const catalog = doc._catalog
+        const catalog = doc.catalog
         if (!Array.isArray(catalog) || catalog.length === 0) {
             return res.status(400).json({ error: "No tools found for this server" })
         }
 
         const registry = {
-            baseUrl: doc._baseUrl || "",
+            baseUrl: doc.baseUrl || "",
             tools: catalog.filter((t: any) => t.enabled !== false),
-            auth: doc._auth || []
+            auth: doc.auth || []
         }
 
         const zipBuffer = await generateServerZip(specId, registry)

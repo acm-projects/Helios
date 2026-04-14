@@ -52,6 +52,8 @@ export default function Home() {
       router.replace("/auth")
       return
     }
+    // Clear the create-flow tool list — user is back at home, flow is over
+    sessionStorage.removeItem("helios_create_tools")
     fetch("http://localhost:8000/api/servers", { headers: getAuthHeaders() })
       .then(res => {
         if (res.status === 401) { router.replace("/auth"); return null }

@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Send, User, Bot } from "lucide-react"
+import { Send, User, Bot, ChevronDown, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
@@ -19,7 +19,8 @@ const METHOD_BADGE_STYLES: Record<string, string> = {
 interface Message {
   id: string
   role: "user" | "assistant" | "tool_call"
-  content: string  // for tool_call: the tool name
+  content: string  // for tool_call: "toolA · toolB" summary
+  toolDetails?: { name: string; input: Record<string, any> }[]  // expandable args
   timestamp: Date
 }
 
@@ -251,17 +252,22 @@ export default function Sandbox() {
       .then(res => res.json())
       .then(data => {
         clearTimeout(timeout)
-        // Parse returned history to detect if a tool was called
-        const history: { role: string; tool_calls?: { function: { name: string } }[] }[] = data.history ?? []
-        const toolCallStep = history.find(m => m.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length > 0)
-        const toolsUsed = toolCallStep?.tool_calls?.map(tc => tc.function?.name).filter(Boolean) ?? []
+        // Collect all tool calls across all agentic steps — Anthropic format: type === "tool_use" blocks
+        const allToolCalls: { name: string; input: Record<string, any> }[] = (data.history ?? [])
+          .filter((m: any) => m.role === "assistant" && Array.isArray(m.content))
+          .flatMap((m: any) =>
+            (m.content as any[])
+              .filter(b => b.type === "tool_use")
+              .map(b => ({ name: b.name, input: b.input ?? {} }))
+          )
 
         const newMessages: Message[] = []
-        if (toolsUsed.length > 0) {
+        if (allToolCalls.length > 0) {
           newMessages.push({
             id: Date.now().toString() + "-tool",
             role: "tool_call",
-            content: toolsUsed.join("  ·  "),
+            content: allToolCalls.map(t => t.name).join("  ·  "),
+            toolDetails: allToolCalls,
             timestamp: new Date()
           })
         }
@@ -296,6 +302,7 @@ export default function Sandbox() {
 
   const enabledCount = Object.values(toolToggles).filter(Boolean).length
 
+  const [expandedToolCalls, setExpandedToolCalls] = useState<Set<string>>(new Set())
   const [panelOpen, setPanelOpen]           = useState(false)
   const [panelTab, setPanelTab]             = useState<"tools" | "keys">("tools")
   const [apiKeys, setApiKeys]               = useState<Record<string, string>>({})
@@ -466,22 +473,55 @@ export default function Sandbox() {
 
               {messages.map((message) => {
                 if (message.role === "tool_call") {
+                  const isExpanded = expandedToolCalls.has(message.id)
                   return (
-                    <div key={message.id} className="flex items-center gap-3 py-1">
-                      <div className="flex-1 h-[1px] bg-gray-200"></div>
-                      <div className="flex items-center gap-2">
-                        <svg viewBox="0 0 64 68" width="22" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" className="text-gray-400 flex-shrink-0">
-                          <g><rect x="18" y="2" width="28" height="12" /><rect x="30" y="14" width="4" height="18" /></g>
-                          <rect x="10" y="42" width="44" height="10" />
-                          <rect x="16" y="52" width="32" height="8" />
-                          <rect x="10" y="60" width="44" height="6" />
-                          <path d="M10 42 L3 47 L10 52" />
-                        </svg>
-                        <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 whitespace-nowrap">
-                          {message.content}
-                        </span>
-                      </div>
-                      <div className="flex-1 h-[1px] bg-gray-200"></div>
+                    <div key={message.id} className="flex flex-col gap-0">
+                      {/* Collapsed row — always visible */}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedToolCalls(prev => {
+                          const next = new Set(prev)
+                          if (next.has(message.id)) next.delete(message.id)
+                          else next.add(message.id)
+                          return next
+                        })}
+                        className="flex items-center gap-3 py-1 w-full cursor-pointer group"
+                      >
+                        <div className="flex-1 h-[1px] bg-gray-200"></div>
+                        <div className="flex items-center gap-2">
+                          {isExpanded
+                            ? <ChevronDown size={13} className="text-gray-400 flex-shrink-0" />
+                            : <ChevronRight size={13} className="text-gray-400 flex-shrink-0" />
+                          }
+                          <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 group-hover:text-black transition-colors whitespace-nowrap">
+                            {message.toolDetails?.length ?? 1} tool{(message.toolDetails?.length ?? 1) !== 1 ? "s" : ""} called
+                          </span>
+                          <span className="font-[family-name:--font-geist-mono] text-[10px] text-gray-300 whitespace-nowrap hidden sm:inline">
+                            {message.content}
+                          </span>
+                        </div>
+                        <div className="flex-1 h-[1px] bg-gray-200"></div>
+                      </button>
+
+                      {/* Expanded detail — one card per tool call */}
+                      {isExpanded && message.toolDetails && (
+                        <div className="flex flex-col gap-2 pt-2 pb-1 px-1">
+                          {message.toolDetails.map((tc, i) => (
+                            <div key={i} className="border-[1px] border-gray-200 px-4 py-3">
+                              <div className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-black mb-2">
+                                {tc.name}
+                              </div>
+                              {Object.keys(tc.input).length > 0 ? (
+                                <pre className="font-[family-name:--font-geist-mono] text-[10px] text-gray-500 whitespace-pre-wrap break-all leading-relaxed">
+                                  {JSON.stringify(tc.input, null, 2)}
+                                </pre>
+                              ) : (
+                                <span className="font-[family-name:--font-geist-mono] text-[10px] text-gray-300">no arguments</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 }

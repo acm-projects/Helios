@@ -97,7 +97,6 @@ export default function Create() {
   const [customOpen, setCustomOpen]     = useState(false)
   const [activeMethod, setActiveMethod] = useState<"url" | "json">("url")
   const [intent, setIntent]             = useState("")
-  const [jsonIntent, setJsonIntent]     = useState("")
   const [isDragging, setIsDragging] = useState(false)
   const [jsonError, setJsonError]   = useState("")
   const [jsonName, setJsonName]     = useState("")
@@ -114,6 +113,11 @@ export default function Create() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState("")
+  const [isSimplifying, setIsSimplifying] = useState(false)
+  const [simplifyPreview, setSimplifyPreview] = useState<{
+    originalCount: number
+    filteredTools: Array<{ name: string; description: string }>
+  } | null>(null)
 
   const MAX_TOOLS_PER_API = 60
 
@@ -144,6 +148,11 @@ export default function Create() {
   useEffect(() => {
     sessionStorage.setItem("helios_create_tools", JSON.stringify(tools))
   }, [tools])
+
+  // Clear simplify preview whenever the tool list or intent changes
+  useEffect(() => {
+    setSimplifyPreview(null)
+  }, [tools, intent])
 
   // Close dropdown when clicking outside the search container
   useEffect(() => {
@@ -343,30 +352,11 @@ export default function Create() {
     setPopupLoading(false)
   }
 
-  const handleGenerate = async () => {
-    if (tools.length === 0 || isGenerating) return
-    setIsGenerating(true)
-    setGenerateError("")
-
-    if (tools.length > MAX_TOOLS_PER_API && !intent.trim()) {
-      setGenerateError(`${tools.length} tools exceeds the ${MAX_TOOLS_PER_API}-tool sandbox limit. Remove tools from the list below, or describe your intent above to let Helios filter them automatically.`)
-      setIsGenerating(false)
-      return
-    }
-
-    const registryTools = tools.map(t => ({
-      name:         t.name,
-      description:  t.description,
-      input_schema: t.input_schema ?? { type: "object", properties: {} },
-      handler: {
-        method:             t.method ?? "GET",
-        path:               t.baseUrl ? `${t.baseUrl}${t.path ?? ""}` : (t.path ?? ""),
-        headers:            {},
-        query_params:       t.handler?.query_params ?? [],
-        fixed_query_params: (t.handler as any)?.fixed_query_params
-      }
-    }))
-
+  // Launch sandbox with whatever registryTools are passed (already filtered or full list)
+  const launchSandbox = async (registryTools: Array<{
+    name: string; description: string; input_schema: object;
+    handler: { method: string; path: string; headers: object; query_params: string[]; fixed_query_params?: any }
+  }>) => {
     try {
       const res  = await fetch("http://localhost:8000/api/sandbox/start", {
         method: "POST",
@@ -384,7 +374,6 @@ export default function Create() {
         sessionId: data.sessionId,
         tools:     data.tools
       }))
-      // Build toolName → apiName map and apiName → AuthConfig[] map from stored drafts
       const toolMap: Record<string, string> = {}
       const authMap: Record<string, AuthConfig[]> = {}
       tools.forEach(t => {
@@ -405,6 +394,70 @@ export default function Create() {
       setGenerateError("Could not reach the server.")
       setIsGenerating(false)
     }
+  }
+
+  const handleGenerate = async () => {
+    if (tools.length === 0 || isGenerating || isSimplifying) return
+    setGenerateError("")
+
+    const registryTools = tools.map(t => ({
+      name:         t.name,
+      description:  t.description,
+      input_schema: t.input_schema ?? { type: "object", properties: {} },
+      handler: {
+        method:             t.method ?? "GET",
+        path:               t.baseUrl ? `${t.baseUrl}${t.path ?? ""}` : (t.path ?? ""),
+        headers:            {},
+        query_params:       t.handler?.query_params ?? [],
+        fixed_query_params: (t.handler as any)?.fixed_query_params
+      }
+    }))
+
+    // If a preview is already showing, user clicked "Launch Sandbox" — go straight in
+    if (simplifyPreview) {
+      setIsGenerating(true)
+      const filteredNames = new Set(simplifyPreview.filteredTools.map(t => t.name))
+      await launchSandbox(registryTools.filter(t => filteredNames.has(t.name)))
+      return
+    }
+
+    if (tools.length > MAX_TOOLS_PER_API && !intent.trim()) {
+      setGenerateError(`${tools.length} tools exceeds the ${MAX_TOOLS_PER_API}-tool sandbox limit. Remove tools from the list below, or describe your intent to let Helios filter them automatically.`)
+      return
+    }
+
+    // No intent — skip straight to sandbox
+    if (!intent.trim()) {
+      setIsGenerating(true)
+      await launchSandbox(registryTools)
+      return
+    }
+
+    // Intent present — run simplify and show preview first
+    setIsSimplifying(true)
+    try {
+      const simplifyRes = await fetch("http://localhost:8000/api/spec/simplify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ catalog: registryTools, userIntent: intent.trim() }),
+      })
+      if (simplifyRes.ok) {
+        const simplifyData = await simplifyRes.json()
+        if (Array.isArray(simplifyData.catalog) && simplifyData.catalog.length > 0) {
+          setSimplifyPreview({
+            originalCount: tools.length,
+            filteredTools: simplifyData.catalog.map((t: any) => ({ name: t.name, description: t.description ?? "" }))
+          })
+          setIsSimplifying(false)
+          return  // Wait for user to confirm
+        }
+      }
+    } catch {
+      // Simplify failed — fall through and launch with full list
+    }
+    setIsSimplifying(false)
+    setIsGenerating(true)
+    await launchSandbox(registryTools)
   }
 
   const q               = searchQuery.toLowerCase()
@@ -642,13 +695,6 @@ export default function Create() {
                       value={apiName}
                       onChange={e => setApiName(e.target.value)}
                     />
-                    <textarea
-                      className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[13px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400 resize-none"
-                      rows={2}
-                      placeholder="What do you want to do with this API? (optional)"
-                      value={intent}
-                      onChange={e => setIntent(e.target.value)}
-                    />
                     <button
                       type="button"
                       onClick={handleCreateTool}
@@ -709,13 +755,6 @@ export default function Create() {
                       placeholder="API Name"
                       value={jsonName}
                       onChange={e => setJsonName(e.target.value)}
-                    />
-                    <textarea
-                      className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[13px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400 resize-none"
-                      rows={2}
-                      placeholder="What do you want to do with this API? (optional)"
-                      value={jsonIntent}
-                      onChange={e => setJsonIntent(e.target.value)}
                     />
                     <button
                       type="button"
@@ -814,23 +853,84 @@ export default function Create() {
             )
           })()}
 
-          {/* Generate */}
+          {/* Intent + Generate */}
+          <textarea
+            className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[13px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400 resize-none w-full"
+            rows={2}
+            placeholder="What do you want to do with these tools? Helios will filter to only what's needed. (optional)"
+            value={intent}
+            onChange={e => setIntent(e.target.value)}
+          />
+          {/* Simplify preview card */}
+          {isSimplifying && (
+            <div className="border-[1px] border-gray-200 px-5 py-4 flex items-center gap-3">
+              <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-gray-400 animate-pulse">
+                Helios is filtering tools to match your intent...
+              </span>
+            </div>
+          )}
+
+          {simplifyPreview && !isSimplifying && (
+            <div className="border-[1px] border-black px-5 py-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-gray-500 uppercase">
+                  Intent Filter Preview
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSimplifyPreview(null)}
+                  className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 hover:text-black transition-colors cursor-pointer"
+                >
+                  Change Intent
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-gray-400 line-through">
+                  {simplifyPreview.originalCount} tools
+                </span>
+                <span className="text-gray-300">→</span>
+                <span className="font-[family-name:--font-cinzel] text-[15px] tracking-wider text-black font-semibold">
+                  {simplifyPreview.filteredTools.length} tools
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
+                {simplifyPreview.filteredTools.map(t => (
+                  <span
+                    key={t.name}
+                    className="font-[family-name:--font-cinzel] text-[10px] tracking-wider border-[1px] border-gray-300 px-2 py-0.5 text-gray-600"
+                  >
+                    {t.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {generateError && (
             <p className="font-[family-name:--font-cinzel] text-red-600 text-[11px] tracking-wider text-center">{generateError}</p>
           )}
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={tools.length === 0 || isGenerating}
+            disabled={tools.length === 0 || isGenerating || isSimplifying}
             className={cn(
               "font-[family-name:--font-cinzel] w-full py-4 text-[16px] tracking-widest border-[2px] relative",
               "before:absolute before:inset-[4px] before:border-[1px] before:pointer-events-none transition-colors duration-300",
-              tools.length === 0 || isGenerating
+              tools.length === 0 || isGenerating || isSimplifying
                 ? "cursor-not-allowed text-gray-300 border-gray-200 before:border-gray-200"
                 : "cursor-pointer text-black border-black before:border-black hover:bg-black hover:text-white hover:before:border-white"
             )}
           >
-            {isGenerating ? "Starting..." : tools.length > 0 ? `Generate Server · ${tools.length} tool${tools.length !== 1 ? "s" : ""}` : "Generate Server"}
+            {isSimplifying
+              ? "Filtering..."
+              : isGenerating
+              ? "Starting..."
+              : simplifyPreview
+              ? `Launch Sandbox · ${simplifyPreview.filteredTools.length} tool${simplifyPreview.filteredTools.length !== 1 ? "s" : ""}`
+              : tools.length > 0
+              ? `Generate Server · ${tools.length} tool${tools.length !== 1 ? "s" : ""}`
+              : "Generate Server"
+            }
           </button>
 
         </div>
