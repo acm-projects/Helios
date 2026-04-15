@@ -1,2 +1,14 @@
 node_modules
+dist
+
+# env
 .env
+.env.*
+
+# logs
+npm-debug.log*
+*.log
+
+# misc
+.DS_Store
+Thumbs.db
