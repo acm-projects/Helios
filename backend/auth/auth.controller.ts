@@ -14,6 +14,9 @@ const oauth2Client = new OAuth2Client(
 // In-memory CSRF state store — maps state token → expiry timestamp
 const pendingStates = new Map<string, number>()
 
+// One-time code store — maps code → { userId, expiry }
+const pendingTokens = new Map<string, { userId: string; expiry: number }>()
+
 const SALT_ROUNDS = 12;
 
 function isValidEmail(email: string): boolean {
@@ -109,6 +112,17 @@ export async function login(req: Request, res: Response) {
 
 // Step 1 — redirect user to Google's consent screen
 export async function googleRedirect(req: Request, res: Response) {
+  // Evict expired entries before adding a new one — prevents unbounded accumulation
+  const now = Date.now()
+  for (const [k, expiry] of pendingStates) {
+    if (expiry < now) pendingStates.delete(k)
+  }
+
+  // Hard cap — bots or abandoned flows can't grow the map beyond this
+  if (pendingStates.size > 500) {
+    return res.status(429).json({ error: "Too many pending auth sessions. Try again shortly." })
+  }
+
   const state = randomBytes(16).toString("hex")
   pendingStates.set(state, Date.now() + 10 * 60 * 1000) // expires in 10 min
 
@@ -167,11 +181,31 @@ export async function googleCallback(req: Request, res: Response) {
       await user.save()
     }
 
-    const token = signToken(String(user._id))
-    res.redirect(`${FRONTEND_URL}/auth/callback?token=${token}`)
+    // Issue a one-time code instead of the JWT — keeps the token out of the URL
+    const oneTimeCode = randomBytes(32).toString("hex")
+    pendingTokens.set(oneTimeCode, { userId: String(user._id), expiry: Date.now() + 60_000 })
+    res.redirect(`${FRONTEND_URL}/auth/callback?code=${oneTimeCode}`)
   } catch {
     res.redirect(`${FRONTEND_URL}/auth?error=google_failed`)
   }
+}
+
+export async function exchangeCode(req: Request, res: Response) {
+  const { code } = req.body as { code?: string }
+
+  if (!code || typeof code !== "string") {
+    return res.status(400).json({ error: "Missing code" })
+  }
+
+  const entry = pendingTokens.get(code)
+  pendingTokens.delete(code) // always delete — one-time use
+
+  if (!entry || entry.expiry < Date.now()) {
+    return res.status(410).json({ error: "Code expired or invalid" })
+  }
+
+  const token = signToken(entry.userId)
+  return res.json({ token })
 }
 
 export async function me(req: Request, res: Response) {

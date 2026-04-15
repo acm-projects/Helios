@@ -8,15 +8,30 @@ function CallbackHandler() {
   const params = useSearchParams()
 
   useEffect(() => {
-    const token = params.get("token")
+    const code = params.get("code")
     const error = params.get("error")
 
-    if (token) {
-      setToken(token)
-      router.replace("/")
-    } else {
+    if (!code) {
       router.replace(`/auth?error=${error ?? "unknown"}`)
+      return
     }
+
+    fetch("http://localhost:8000/api/auth/exchange", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("exchange_failed")
+        return res.json()
+      })
+      .then((data: { token: string }) => {
+        setToken(data.token)
+        router.replace("/")
+      })
+      .catch(() => {
+        router.replace("/auth?error=exchange_failed")
+      })
   }, [params, router])
 
   return (

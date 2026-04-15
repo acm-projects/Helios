@@ -1,13 +1,12 @@
 // Create page — user assembles a tool list from multiple sources, then launches the sandbox.
 // Start: cd backend → npx tsx server.ts && npx tsx api.ts | cd frontend → npm run dev
-// Runs on: http://localhost:3001/create
 
 "use client"
 import Image from "next/image"
 import Link from "next/link"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Search, X, ChevronDown, ChevronRight, Info } from "lucide-react"
+import { Search, X, ChevronDown, ChevronRight, Link2, FileText, Upload, Sparkles } from "lucide-react"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
 import yaml from "js-yaml"
 
@@ -67,49 +66,41 @@ interface ParseSpecResponse {
 }
 
 const METHOD_STYLES: Record<string, string> = {
-  GET:    "border border-gray-300 text-gray-500 bg-white",
-  POST:   "bg-gray-800 text-white",
-  PUT:    "bg-gray-600 text-white",
-  PATCH:  "bg-gray-500 text-white",
-  DELETE: "bg-black text-white",
+  GET:    "method-get",
+  POST:   "method-post",
+  PUT:    "method-put",
+  PATCH:  "method-patch",
+  DELETE: "method-delete",
 }
 
 const RECOMMENDED_APIS = [
-  { name: "Stripe",      description: "Payments & billing",   color: "bg-[#635BFF]", initials: "St" },
-  { name: "GitHub",      description: "Code repositories",    color: "bg-[#24292E]", initials: "GH" },
-  { name: "Slack",       description: "Team messaging",       color: "bg-[#4A154B]", initials: "Sl" },
-  { name: "OpenWeather", description: "Weather data",         color: "bg-[#E8421C]", initials: "OW" },
-  { name: "Notion",      description: "Docs & databases",     color: "bg-black",     initials: "No" },
-  { name: "Linear",      description: "Issue tracking",       color: "bg-[#5E6AD2]", initials: "Li" },
-  { name: "Twilio",      description: "SMS & voice",          color: "bg-[#F22F46]", initials: "Tw" },
-  { name: "Airtable",    description: "Spreadsheet database", color: "bg-[#18BFFF]", initials: "At" },
+  { name: "Stripe",      description: "Payments & billing",   color: "#635BFF", initials: "St" },
+  { name: "GitHub",      description: "Code repositories",    color: "#24292E", initials: "GH" },
+  { name: "Slack",       description: "Team messaging",       color: "#4A154B", initials: "Sl" },
+  { name: "OpenWeather", description: "Weather data",         color: "#E8421C", initials: "OW" },
+  { name: "Notion",      description: "Docs & databases",     color: "#000000", initials: "No" },
+  { name: "Linear",      description: "Issue tracking",       color: "#5E6AD2", initials: "Li" },
+  { name: "Twilio",      description: "SMS & voice",          color: "#F22F46", initials: "Tw" },
+  { name: "Airtable",    description: "Spreadsheet database", color: "#18BFFF", initials: "At" },
 ]
 
 export default function Create() {
-  const [url, setUrl]           = useState("")
-  const [apiName, setApiName]   = useState("")
+  const [url, setUrl]       = useState("")
+  const [apiName, setApiName] = useState("")
   const [formError, setFormError] = useState("")
   const [isCreating, setIsCreating] = useState(false)
 
   const [servers, setServers]   = useState<SavedServer[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [customOpen, setCustomOpen]     = useState(false)
-  const [activeMethod, setActiveMethod] = useState<"url" | "json">("url")
-  const [intent, setIntent]             = useState("")
+  const [intent, setIntent] = useState("")
+  const [page, setPage] = useState<0 | 1>(0)
   const [isDragging, setIsDragging] = useState(false)
-  const [jsonError, setJsonError]   = useState("")
-  const [jsonName, setJsonName]     = useState("")
-  const [isParsing, setIsParsing]   = useState(false)
+  const [jsonError, setJsonError] = useState("")
+  const [isParsing, setIsParsing] = useState(false)
   const [duplicateNotice, setDuplicateNotice] = useState<string[]>([])
 
-  const [tools, setTools]       = useState<ToolItem[]>(() => {
-    if (typeof window === "undefined") return []
-    try {
-      const saved = sessionStorage.getItem("helios_create_tools")
-      return saved ? JSON.parse(saved) : []
-    } catch { return [] }
-  })
+  const [tools, setTools] = useState<ToolItem[]>([])
+  const skipFirstSave = useRef(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState("")
@@ -121,17 +112,21 @@ export default function Create() {
 
   const MAX_TOOLS_PER_API = 60
 
-  const [popupOpen, setPopupOpen]           = useState(false)
-  const [popupLoading, setPopupLoading]     = useState(false)
-  const [popupTools, setPopupTools]         = useState<PopupTool[]>([])
-  const [popupSelected, setPopupSelected]   = useState<Set<string>>(new Set())
-  const [pendingSource, setPendingSource]   = useState<"custom" | "premade" | "past">("custom")
+  const [popupOpen, setPopupOpen]         = useState(false)
+  const [popupLoading, setPopupLoading]   = useState(false)
+  const [popupTools, setPopupTools]       = useState<PopupTool[]>([])
+  const [popupSelected, setPopupSelected] = useState<Set<string>>(new Set())
+  const [pendingSource, setPendingSource] = useState<"custom" | "premade" | "past">("custom")
   const [pendingApiName, setPendingApiName] = useState("")
-  const [pendingDraft, setPendingDraft]     = useState<PendingDraft | null>(null)
+  const [pendingDraft, setPendingDraft]   = useState<PendingDraft | null>(null)
 
   const router      = useRouter()
-  const searchRef   = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [pageReady, setPageReady] = useState(false)
+  useEffect(() => {
+    document.fonts.ready.then(() => requestAnimationFrame(() => setPageReady(true)))
+  }, [])
 
   useEffect(() => {
     if (!isLoggedIn()) { router.replace("/auth"); return }
@@ -144,35 +139,22 @@ export default function Create() {
       .catch(() => {})
   }, [router])
 
-  // Persist assembled tools across navigation (back from sandbox)
   useEffect(() => {
-    sessionStorage.setItem("helios_create_tools", JSON.stringify(tools))
-  }, [tools])
-
-  // Clear simplify preview whenever the tool list or intent changes
-  useEffect(() => {
-    setSimplifyPreview(null)
-  }, [tools, intent])
-
-  // Close dropdown when clicking outside the search container
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
+    try {
+      const saved = sessionStorage.getItem("helios_create_tools")
+      if (saved) setTools(JSON.parse(saved))
+    } catch {}
   }, [])
 
-  // Core parse logic — shared by the spec URL form and recommended API clicks
-  const triggerParse = async (specUrl: string, name: string, onError: (msg: string) => void) => {
-    setIsCreating(true)
-    setPopupLoading(true)
-    setPopupOpen(true)
-    setPendingSource("custom")
-    setPendingApiName(name)
+  useEffect(() => {
+    if (skipFirstSave.current) { skipFirstSave.current = false; return }
+    sessionStorage.setItem("helios_create_tools", JSON.stringify(tools))
+  }, [tools])
+  useEffect(() => { setSimplifyPreview(null) }, [tools, intent])
 
+  const triggerParse = async (specUrl: string, name: string, onError: (msg: string) => void) => {
+    setIsCreating(true); setPopupLoading(true); setPopupOpen(true)
+    setPendingSource("custom"); setPendingApiName(name)
     let res: Response, data: ParseSpecResponse
     try {
       res  = await fetch("http://localhost:8000/api/spec/parse", {
@@ -183,26 +165,19 @@ export default function Create() {
       data = await res.json()
     } catch {
       onError("Could not reach the server.")
-      setPopupOpen(false)
-      setPopupLoading(false)
-      setIsCreating(false)
+      setPopupOpen(false); setPopupLoading(false); setIsCreating(false)
       return
     }
-
     if (!res.ok) {
       onError(data.error ?? "Failed to parse spec.")
-      setPopupOpen(false)
-      setPopupLoading(false)
-      setIsCreating(false)
+      setPopupOpen(false); setPopupLoading(false); setIsCreating(false)
       return
     }
-
     const catalog: PopupTool[] = data.catalog ?? []
     setPendingDraft({ specId: data.specId, spec: data.spec, baseUrl: data.baseUrl ?? "", toolCount: data.toolCount, catalog, auth: data.auth })
     setPopupTools(catalog)
     setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
-    setPopupLoading(false)
-    setIsCreating(false)
+    setPopupLoading(false); setIsCreating(false)
   }
 
   const handleCreateTool = async () => {
@@ -212,66 +187,49 @@ export default function Create() {
     await triggerParse(trimmedUrl, apiName, msg => setFormError(msg))
   }
 
-
   const handleJsonFile = useCallback(async (file: File) => {
-    if (!jsonName) { setJsonError("API Name is required before uploading."); return }
+    if (!apiName) { setJsonError("Enter an API Name first."); return }
     const isYaml = file.name.endsWith(".yaml") || file.name.endsWith(".yml")
     const isJson = file.name.endsWith(".json")
     if (!isJson && !isYaml) { setJsonError("Only .json, .yaml, or .yml files are supported."); return }
-    setJsonError("")
-    setIsParsing(true)
-    setPopupLoading(true)
-    setPopupOpen(true)
-    setPendingSource("custom")
-    setPendingApiName(jsonName)
-
+    setJsonError(""); setIsParsing(true); setPopupLoading(true); setPopupOpen(true)
+    setPendingSource("custom"); setPendingApiName(apiName)
     let spec: unknown
     try {
       const text = await file.text()
       spec = isYaml ? yaml.load(text) : JSON.parse(text)
     } catch {
       setJsonError(`Could not parse file — make sure it is valid ${isYaml ? "YAML" : "JSON"}.`)
-      setPopupOpen(false)
-      setPopupLoading(false)
-      setIsParsing(false)
+      setPopupOpen(false); setPopupLoading(false); setIsParsing(false)
       return
     }
-
     let res: Response, data: ParseSpecResponse
     try {
       res  = await fetch("http://localhost:8000/api/spec/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ spec, name: jsonName }),
+        body: JSON.stringify({ spec, name: apiName }),
       })
       data = await res.json()
     } catch {
       setJsonError("Could not reach the server.")
-      setPopupOpen(false)
-      setPopupLoading(false)
-      setIsParsing(false)
+      setPopupOpen(false); setPopupLoading(false); setIsParsing(false)
       return
     }
-
     if (!res.ok) {
       setJsonError(data.error ?? "Failed to parse spec.")
-      setPopupOpen(false)
-      setPopupLoading(false)
-      setIsParsing(false)
+      setPopupOpen(false); setPopupLoading(false); setIsParsing(false)
       return
     }
-
     const catalog: PopupTool[] = data.catalog ?? []
     setPendingDraft({ specId: data.specId, spec: data.spec, baseUrl: data.baseUrl ?? "", toolCount: data.toolCount, catalog, auth: data.auth })
     setPopupTools(catalog)
     setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
-    setPopupLoading(false)
-    setIsParsing(false)
-  }, [jsonName])
+    setPopupLoading(false); setIsParsing(false)
+  }, [apiName])
 
   const handlePopupConfirm = () => {
     const selected = popupTools.filter(t => popupSelected.has(t.name))
-
     const newTools: ToolItem[] = selected.map(t => ({
       id:           `${pendingApiName}-${t.name}-${Date.now()}`,
       name:         t.name,
@@ -284,7 +242,6 @@ export default function Create() {
       input_schema: t.input_schema,
       handler:      t.handler,
     }))
-
     setTools(prev => {
       const existingNames = new Set(prev.map(t => t.name))
       const unique     = newTools.filter(t => !existingNames.has(t.name))
@@ -292,59 +249,38 @@ export default function Create() {
       if (duplicates.length > 0) setDuplicateNotice(duplicates.map(t => t.name))
       return unique.length > 0 ? [...prev, ...unique] : prev
     })
-
     if (pendingDraft?.specId) {
-      // Store only auth/baseUrl — omit spec and catalog (too large for sessionStorage on big APIs)
       try {
         sessionStorage.setItem(`helios_draft_${pendingDraft.specId}`, JSON.stringify({
-          specId:    pendingDraft.specId,
-          baseUrl:   pendingDraft.baseUrl,
-          auth:      pendingDraft.auth,
-          toolCount: pendingDraft.toolCount,
+          specId: pendingDraft.specId, baseUrl: pendingDraft.baseUrl, auth: pendingDraft.auth, toolCount: pendingDraft.toolCount,
         }))
-      } catch {
-        // Storage full even after stripping spec — non-fatal, auth lookup will just skip
-      }
+      } catch {}
     }
-    setPopupOpen(false)
-    setUrl("")
-    setApiName("")
+    setPopupOpen(false); setUrl(""); setApiName("")
   }
 
   const toggleSelectAll = () => {
     setPopupSelected(
-      popupSelected.size === popupTools.length
-        ? new Set()
-        : new Set(popupTools.map(t => t.name))
+      popupSelected.size === popupTools.length ? new Set() : new Set(popupTools.map(t => t.name))
     )
   }
 
-  const removeTool = (id: string) => setTools(prev => prev.filter(t => t.id !== id))
-
+  const removeTool   = (id: string) => setTools(prev => prev.filter(t => t.id !== id))
   const toggleExpand = (apiName: string) => {
     setExpanded(prev => {
       const next = new Set(prev)
-      if (next.has(apiName)) { next.delete(apiName) } else { next.add(apiName) }
+      if (next.has(apiName)) next.delete(apiName)
+      else next.add(apiName)
       return next
     })
   }
 
   const handlePastServerClick = async (serverId: string) => {
-    setPopupLoading(true)
-    setPopupOpen(true)
-    setPendingSource("past")
-    setPendingApiName(serverId)
-    setPendingDraft(null)
-
+    setPopupLoading(true); setPopupOpen(true)
+    setPendingSource("past"); setPendingApiName(serverId); setPendingDraft(null)
     const res  = await fetch(`http://localhost:8000/api/servers/${serverId}/catalog`, { headers: getAuthHeaders() })
     const data = await res.json()
-
-    if (!res.ok || data.error) {
-      setPopupOpen(false)
-      setPopupLoading(false)
-      return
-    }
-
+    if (!res.ok || data.error) { setPopupOpen(false); setPopupLoading(false); return }
     const catalog: PopupTool[] = (data.catalog ?? []).filter((t: PopupTool) => t.enabled !== false)
     setPendingDraft({ baseUrl: data.baseUrl ?? "" })
     setPopupTools(catalog)
@@ -352,7 +288,6 @@ export default function Create() {
     setPopupLoading(false)
   }
 
-  // Launch sandbox with whatever registryTools are passed (already filtered or full list)
   const launchSandbox = async (registryTools: Array<{
     name: string; description: string; input_schema: object;
     handler: { method: string; path: string; headers: object; query_params: string[]; fixed_query_params?: any }
@@ -364,16 +299,9 @@ export default function Create() {
         body: JSON.stringify({ toolsRegistry: { baseUrl: "", tools: registryTools } })
       })
       const data = await res.json()
-      if (!res.ok) {
-        setGenerateError(data.error ?? "Failed to start sandbox.")
-        setIsGenerating(false)
-        return
-      }
+      if (!res.ok) { setGenerateError(data.error ?? "Failed to start sandbox."); setIsGenerating(false); return }
       const syntheticId = `_composite_${Date.now()}`
-      sessionStorage.setItem(`helios_session_${syntheticId}`, JSON.stringify({
-        sessionId: data.sessionId,
-        tools:     data.tools
-      }))
+      sessionStorage.setItem(`helios_session_${syntheticId}`, JSON.stringify({ sessionId: data.sessionId, tools: data.tools }))
       const toolMap: Record<string, string> = {}
       const authMap: Record<string, AuthConfig[]> = {}
       tools.forEach(t => {
@@ -381,25 +309,25 @@ export default function Create() {
         if (!authMap[t.apiName] && t.apiName) {
           try {
             const draftRaw = sessionStorage.getItem(`helios_draft_${t.apiName}`)
-            if (draftRaw) {
-              const draft: PendingDraft = JSON.parse(draftRaw)
-              if (draft.auth && draft.auth.length > 0) authMap[t.apiName] = draft.auth
-            }
+            if (draftRaw) { const draft: PendingDraft = JSON.parse(draftRaw); if (draft.auth && draft.auth.length > 0) authMap[t.apiName] = draft.auth }
           } catch {}
         }
       })
       sessionStorage.setItem(`helios_groups_${syntheticId}`, JSON.stringify({ toolMap, authMap }))
-      router.push(`/sandbox?compositeId=${syntheticId}`)
+      const editSource = sessionStorage.getItem("helios_edit_source") ?? ""
+      if (editSource) sessionStorage.removeItem("helios_edit_source")
+      const sandboxUrl = editSource
+        ? `/sandbox?specId=${encodeURIComponent(editSource)}&compositeId=${syntheticId}`
+        : `/sandbox?compositeId=${syntheticId}`
+      router.push(sandboxUrl)
     } catch {
-      setGenerateError("Could not reach the server.")
-      setIsGenerating(false)
+      setGenerateError("Could not reach the server."); setIsGenerating(false)
     }
   }
 
   const handleGenerate = async () => {
     if (tools.length === 0 || isGenerating || isSimplifying) return
     setGenerateError("")
-
     const registryTools = tools.map(t => ({
       name:         t.name,
       description:  t.description,
@@ -413,27 +341,18 @@ export default function Create() {
       }
     }))
 
-    // If a preview is already showing, user clicked "Launch Sandbox" — go straight in
     if (simplifyPreview) {
       setIsGenerating(true)
       const filteredNames = new Set(simplifyPreview.filteredTools.map(t => t.name))
       await launchSandbox(registryTools.filter(t => filteredNames.has(t.name)))
       return
     }
-
     if (tools.length > MAX_TOOLS_PER_API && !intent.trim()) {
-      setGenerateError(`${tools.length} tools exceeds the ${MAX_TOOLS_PER_API}-tool sandbox limit. Remove tools from the list below, or describe your intent to let Helios filter them automatically.`)
+      setGenerateError(`${tools.length} tools exceeds the ${MAX_TOOLS_PER_API}-tool sandbox limit. Remove tools or describe your intent to auto-filter.`)
       return
     }
+    if (!intent.trim()) { setIsGenerating(true); await launchSandbox(registryTools); return }
 
-    // No intent — skip straight to sandbox
-    if (!intent.trim()) {
-      setIsGenerating(true)
-      await launchSandbox(registryTools)
-      return
-    }
-
-    // Intent present — run simplify and show preview first
     setIsSimplifying(true)
     try {
       const simplifyRes = await fetch("http://localhost:8000/api/spec/simplify", {
@@ -449,534 +368,610 @@ export default function Create() {
             filteredTools: simplifyData.catalog.map((t: any) => ({ name: t.name, description: t.description ?? "" }))
           })
           setIsSimplifying(false)
-          return  // Wait for user to confirm
+          return
         }
       }
-    } catch {
-      // Simplify failed — fall through and launch with full list
-    }
-    setIsSimplifying(false)
-    setIsGenerating(true)
+    } catch {}
+    setIsSimplifying(false); setIsGenerating(true)
     await launchSandbox(registryTools)
   }
 
   const q               = searchQuery.toLowerCase()
+  const addedServerIds  = new Set(tools.filter(t => t.source === "past").map(t => t.apiName))
   const filteredApis    = RECOMMENDED_APIS.filter(a => a.name.toLowerCase().includes(q) || a.description.toLowerCase().includes(q))
-  const filteredServers = servers.filter(s => s.id.toLowerCase().includes(q))
+  const filteredServers = servers.filter(s => s.id.toLowerCase().includes(q) && !addedServerIds.has(s.id))
+
+  // Derived: groups of added tools for bottom bar chips
+  const toolGroupNames: string[] = []
+  const toolGroupsMap: Record<string, number> = {}
+  tools.forEach(t => {
+    if (!toolGroupsMap[t.apiName]) { toolGroupsMap[t.apiName] = 0; toolGroupNames.push(t.apiName) }
+    toolGroupsMap[t.apiName]++
+  })
 
   return (
-    <div className="flex flex-col h-screen w-full bg-white">
+    <div className={cn("min-h-screen relative flex flex-col", pageReady ? "animate-page-enter" : "opacity-0")}>
 
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 pl-20 flex-shrink-0">
+      {/* ── Page content — blurs when popup is open ────────────────────── */}
+      <div className={cn("flex flex-col flex-1 transition-[filter] duration-300", popupOpen && "blur-sm brightness-90")}>
+
+      {/* ── Nav ────────────────────────────────────────────────────────── */}
+      <nav className="glass-nav flex items-center justify-between px-8 h-[62px] flex-shrink-0">
         <Link href="/">
-          <Image src="/logoName.svg" alt="Helios" width={200} height={200} className="cursor-pointer" />
+          <Image src="/logoName.svg" alt="Helios" width={110} height={36} className="brightness-0 invert opacity-90 cursor-pointer" />
         </Link>
-        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[32px] tracking-widest">
-          <span className="flex flex-col items-center text-black">
-            Create
-            <span className="block h-[2px] w-full bg-black mt-[-4px]"></span>
-          </span>
-          <span className="text-gray-400 text-[20px] mb-1">✦</span>
-          <span className="text-gray-400">Sandbox</span>
-          <span className="text-gray-400 text-[20px] mb-1">✦</span>
-          <span className="text-gray-400">Verify</span>
-          <span className="text-gray-400 text-[20px] mb-1">✦</span>
-          <span className="text-gray-400">Download</span>
+        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[16px] tracking-[0.18em]">
+          <span className="step-active pb-1">Create</span>
+          <span className="step-divider text-[10px]">✦</span>
+          <span className="step-inactive">Sandbox</span>
+          <span className="step-divider text-[10px]">✦</span>
+          <span className="step-inactive">Verify</span>
+          <span className="step-divider text-[10px]">✦</span>
+          <span className="step-inactive">Download</span>
         </div>
-        <div className="flex items-center justify-end w-[220px]">
-          <button
-            onClick={() => { sessionStorage.removeItem("helios_create_tools"); router.push("/") }}
-            className="font-[family-name:--font-cinzel] text-[14px] tracking-widest text-gray-400 border-[2px] border-gray-300 px-4 py-2 hover:border-black hover:text-black transition-colors duration-200 cursor-pointer"
-          >
-            Cancel
-          </button>
-        </div>
+        <button
+          onClick={() => { sessionStorage.removeItem("helios_create_tools"); router.push("/") }}
+          className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.14em] glass px-5 py-2 rounded-xl
+            text-white/40 hover:text-white/70 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer"
+        >
+          Cancel
+        </button>
       </nav>
 
-      {/* Body — centered column */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[600px] mx-auto pt-16 pb-16 px-6 flex flex-col gap-8">
+      {/* ── Centered card ─────────────────────────────────────────────── */}
+      <main className="flex-1 flex items-center justify-center px-6 py-3">
+        <div className="glass-mid rounded-3xl w-full max-w-[1152px] h-[768px] flex flex-col overflow-hidden
+          shadow-[0_40px_120px_rgba(0,0,0,0.5)] animate-fade-up">
 
-          {/* Heading */}
-          <div className="flex flex-col gap-1">
-            <h1 className="font-[family-name:--font-cinzel] text-[28px] tracking-widest text-black">Build Your Server</h1>
-            <p className="font-[family-name:--font-geist-sans] text-[13px] text-gray-400">
-              Add tools from your past servers, recommended APIs, or a custom spec URL.
-            </p>
-          </div>
-
-          {/* Search bar + dropdown */}
-          <div ref={searchRef} className="relative">
+          {/* ── Slide container ─── holds both panels side by side ───── */}
+          <div className="flex-1 overflow-hidden min-h-0">
             <div
-              className={cn(
-                "flex items-center gap-3 border-[2px] px-4 py-3.5 transition-colors duration-200 cursor-text",
-                dropdownOpen ? "border-black" : "border-gray-300 hover:border-gray-400"
-              )}
-              onClick={() => setDropdownOpen(true)}
+              className="flex h-full transition-transform duration-500 ease-in-out"
+              style={{ width: "200%", transform: page === 0 ? "translateX(0)" : "translateX(-50%)" }}
             >
-              <Search size={15} strokeWidth={1.5} className="text-gray-400 flex-shrink-0" />
-              <input
-                type="text"
-                placeholder="Search your servers or recommended APIs..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onFocus={() => setDropdownOpen(true)}
-                className="flex-1 font-[family-name:--font-cinzel] text-[13px] tracking-wider outline-none placeholder:text-gray-400 bg-transparent"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  onClick={e => { e.stopPropagation(); setSearchQuery("") }}
-                  className="text-gray-400 hover:text-black transition-colors"
-                >
-                  <X size={13} strokeWidth={1.5} />
-                </button>
-              )}
-            </div>
 
-            {/* Dropdown */}
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 right-0 border-[2px] border-t-0 border-black bg-white z-20 max-h-[380px] overflow-y-auto">
+              {/* ══════════════════ PAGE 0 — CREATE ══════════════════════ */}
+              <div className="flex h-full overflow-hidden" style={{ width: "50%" }}>
 
-                {/* Your Servers */}
-                {filteredServers.length > 0 && (
-                  <>
-                    <div className="px-5 pt-3 pb-2">
-                      <span className="font-[family-name:--font-cinzel] text-[10px] tracking-widest text-gray-400 uppercase">Your Servers</span>
-                    </div>
-                    {filteredServers.map((server, i) => (
-                      <div
-                        key={server.id}
-                        onClick={() => { handlePastServerClick(server.id); setDropdownOpen(false); setSearchQuery("") }}
-                        className={cn(
-                          "flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 transition-colors",
-                          i !== filteredServers.length - 1 && "border-b-[1px] border-gray-100"
-                        )}
-                      >
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-black truncate">{server.id}</span>
-                          <span className="font-[family-name:--font-geist-mono] text-[11px] text-gray-400 truncate">{server.baseUrl || "—"}</span>
-                        </div>
-                        <span className="font-[family-name:--font-cinzel] text-[11px] text-gray-400 flex-shrink-0 ml-4">{server.toolCount} tools</span>
-                      </div>
-                    ))}
-                  </>
-                )}
+                {/* LEFT: API sources */}
+                <div className="w-[42%] flex-shrink-0 flex flex-col overflow-hidden border-r border-white/[0.08]">
 
-                {/* Recommended APIs */}
-                {filteredApis.length > 0 && (
-                  <>
-                    <div className={cn("px-5 pt-3 pb-2", filteredServers.length > 0 && "border-t-[1px] border-gray-200 mt-1")}>
-                      <span className="font-[family-name:--font-cinzel] text-[10px] tracking-widest text-gray-400 uppercase">Recommended</span>
-                    </div>
-                    {filteredApis.map((api, i) => (
-                      <div
-                        key={api.name}
-                        className={cn(
-                          "flex items-center gap-3 px-5 py-3 cursor-not-allowed opacity-50",
-                          i !== filteredApis.length - 1 && "border-b-[1px] border-gray-100"
-                        )}
-                      >
-                        <div className={cn("w-7 h-7 flex items-center justify-center flex-shrink-0", api.color)}>
-                          <span className="font-[family-name:--font-cinzel] text-[9px] tracking-wider text-white">{api.initials}</span>
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-black truncate">{api.name}</span>
-                          <span className="font-[family-name:--font-geist-sans] text-[11px] text-gray-400 truncate">{api.description}</span>
-                        </div>
-                        <span className="ml-auto font-[family-name:--font-cinzel] text-[10px] tracking-widest text-gray-300 flex-shrink-0">SOON</span>
-                      </div>
-                    ))}
-                  </>
-                )}
-
-                {filteredServers.length === 0 && filteredApis.length === 0 && (
-                  <div className="px-5 py-8 text-center">
-                    <span className="font-[family-name:--font-cinzel] text-[13px] text-gray-400 tracking-wider">No matches.</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Custom Tools — single card, expands with tabbed form */}
-          <div className="flex flex-col">
-            <button
-              type="button"
-              onClick={() => setCustomOpen(v => !v)}
-              className={cn(
-                "flex items-center justify-between px-5 py-4 border-[2px] relative cursor-pointer transition-colors duration-200",
-                "before:absolute before:inset-[4px] before:border-[1px] before:pointer-events-none before:transition-colors before:duration-200",
-                customOpen
-                  ? "border-black bg-black text-white before:border-white"
-                  : "border-black text-black hover:bg-black hover:text-white before:border-black hover:before:border-white"
-              )}
-            >
-              <div className="flex flex-col items-start gap-1">
-                <span className="font-[family-name:--font-cinzel] text-[14px] tracking-widest">Custom Tools</span>
-                <span className={cn(
-                  "font-[family-name:--font-geist-sans] text-[11px] transition-colors duration-200",
-                  customOpen ? "text-gray-300" : "text-gray-400"
-                )}>
-                  Add tools from a spec URL or a downloaded JSON file
-                </span>
-              </div>
-              <ChevronDown
-                size={15}
-                strokeWidth={1.5}
-                className={cn("flex-shrink-0 ml-4 transition-transform duration-200", customOpen ? "rotate-180" : "")}
-              />
-            </button>
-
-            {customOpen && (
-              <div className="border-[2px] border-t-0 border-black">
-                {/* Tabs */}
-                <div className="flex border-b-[1px] border-gray-200">
-                  {/* Spec URL tab */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveMethod("url")}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-3 font-[family-name:--font-cinzel] text-[12px] tracking-widest transition-colors duration-150",
-                      activeMethod === "url" ? "text-black border-b-[2px] border-black" : "text-gray-400 hover:text-black"
-                    )}
-                  >
-                    Spec URL
-                    <div className="relative group" onClick={e => e.stopPropagation()}>
-                      <Info size={13} strokeWidth={1.5} className="text-black cursor-default" />
-                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[260px] bg-black text-white px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30">
-                        <p className="font-[family-name:--font-geist-sans] text-[11px] leading-relaxed">
-                          A Spec URL points directly to an API&apos;s OpenAPI or Swagger documentation file (usually .json or .yaml). Most public APIs publish one — check the API&apos;s developer docs and look for an &quot;OpenAPI&quot;, &quot;Swagger&quot;, or &quot;API Reference&quot; link. Example: https://petstore.swagger.io/v2/swagger.json
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* JSON File tab */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveMethod("json")}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-3 font-[family-name:--font-cinzel] text-[12px] tracking-widest transition-colors duration-150",
-                      activeMethod === "json" ? "text-black border-b-[2px] border-black" : "text-gray-400 hover:text-black"
-                    )}
-                  >
-                    JSON File
-                    <div className="relative group" onClick={e => e.stopPropagation()}>
-                      <Info size={13} strokeWidth={1.5} className="text-black cursor-default" />
-                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[260px] bg-black text-white px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30">
-                        <p className="font-[family-name:--font-geist-sans] text-[11px] leading-relaxed">
-                          The same OpenAPI/Swagger spec, but as a downloaded file. If you navigated to the spec URL in your browser and saved the page, or someone shared the file with you, drop it here. This is the raw API specification from the provider — not a tools.json generated by Helios.
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-
-                {/* Spec URL form */}
-                {activeMethod === "url" && (
-                  <div className="flex flex-col gap-3 px-5 py-5">
-                    {formError && (
-                      <p className="font-[family-name:--font-cinzel] text-red-600 text-[11px] tracking-wider">{formError}</p>
-                    )}
-                    <input
-                      className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[13px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400"
-                      type="text"
-                      placeholder="Spec URL"
-                      value={url}
-                      onChange={e => setUrl(e.target.value)}
-                    />
-                    <input
-                      className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[13px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400"
-                      type="text"
-                      placeholder="API Name"
-                      value={apiName}
-                      onChange={e => setApiName(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleCreateTool}
-                      disabled={isCreating}
-                      className={cn(
-                        "font-[family-name:--font-cinzel] w-full py-3 text-[14px] tracking-widest border-[2px] relative",
-                        "before:absolute before:inset-[3px] before:border-[1px] before:pointer-events-none transition-colors duration-300",
-                        isCreating
-                          ? "cursor-not-allowed text-gray-400 border-gray-300 before:border-gray-300"
-                          : "cursor-pointer text-black border-black before:border-black hover:bg-black hover:text-white hover:before:border-white"
-                      )}
-                    >
-                      {isCreating ? "Parsing..." : "Add Tools"}
-                    </button>
-                  </div>
-                )}
-
-                {/* JSON file form */}
-                {activeMethod === "json" && (
-                  <div className="flex flex-col gap-3 px-5 py-5">
-                    {jsonError && (
-                      <p className="font-[family-name:--font-cinzel] text-red-600 text-[11px] tracking-wider">{jsonError}</p>
-                    )}
-                    <div
-                      className={cn(
-                        "flex flex-col items-center justify-center gap-2 border-[2px] border-dashed py-10 transition-colors duration-150 cursor-pointer",
-                        isDragging ? "border-black bg-gray-50" : "border-gray-300 hover:border-black"
-                      )}
-                      onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
-                      onDragLeave={() => setIsDragging(false)}
-                      onDrop={e => {
-                        e.preventDefault()
-                        setIsDragging(false)
-                        const file = e.dataTransfer.files[0]
-                        if (file) handleJsonFile(file)
-                      }}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-gray-400">
-                        {isParsing ? "Parsing..." : "Drop API spec .json here"}
-                      </span>
-                      <span className="font-[family-name:--font-geist-sans] text-[11px] text-gray-300">or click to browse</span>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".json"
-                      className="hidden"
-                      onChange={e => {
-                        const file = e.target.files?.[0]
-                        if (file) handleJsonFile(file)
-                        e.target.value = ""
-                      }}
-                    />
-                    <input
-                      className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[13px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400"
-                      type="text"
-                      placeholder="API Name"
-                      value={jsonName}
-                      onChange={e => setJsonName(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { if (fileInputRef.current?.files?.[0]) handleJsonFile(fileInputRef.current.files[0]) }}
-                      disabled={isParsing}
-                      className={cn(
-                        "font-[family-name:--font-cinzel] w-full py-3 text-[14px] tracking-widest border-[2px] relative",
-                        "before:absolute before:inset-[3px] before:border-[1px] before:pointer-events-none transition-colors duration-300",
-                        isParsing
-                          ? "cursor-not-allowed text-gray-400 border-gray-300 before:border-gray-300"
-                          : "cursor-pointer text-black border-black before:border-black hover:bg-black hover:text-white hover:before:border-white"
-                      )}
-                    >
-                      {isParsing ? "Parsing..." : "Add Tools"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Tool groups */}
-          {tools.length > 0 && (() => {
-            const groups: { apiName: string; source: ToolItem["source"]; items: ToolItem[] }[] = []
-            tools.forEach(tool => {
-              const g = groups.find(g => g.apiName === tool.apiName)
-              if (g) g.items.push(tool)
-              else groups.push({ apiName: tool.apiName, source: tool.source, items: [tool] })
-            })
-            return (
-              <div className="border-[1px] border-gray-200">
-                {groups.map((group, gi) => {
-                  const isExpanded = expanded.has(group.apiName)
-                  return (
-                    <div key={group.apiName} className={cn(gi !== groups.length - 1 && "border-b-[1px] border-gray-200")}>
-                      <div
-                        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                        onClick={() => toggleExpand(group.apiName)}
-                      >
-                        {isExpanded
-                          ? <ChevronDown  size={13} strokeWidth={1.5} className="flex-shrink-0 text-gray-400" />
-                          : <ChevronRight size={13} strokeWidth={1.5} className="flex-shrink-0 text-gray-400" />
-                        }
-                        <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-black flex-1 truncate">
-                          {group.apiName}
-                        </span>
-                        <span className="font-[family-name:--font-cinzel] text-[11px] text-gray-400 tracking-widest flex-shrink-0">
-                          {group.items.length} tool{group.items.length !== 1 ? "s" : ""}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label={`Remove all tools from ${group.apiName}`}
-                          onClick={e => { e.stopPropagation(); group.items.forEach(t => removeTool(t.id)) }}
-                          className="flex-shrink-0 text-gray-300 hover:text-black transition-colors ml-2 cursor-pointer"
-                        >
-                          <X size={13} strokeWidth={1.5} />
+                  {/* Search bar — filters the sections below inline */}
+                  <div className="relative px-5 pt-5 pb-3 flex-shrink-0">
+                    <div className="flex items-center gap-2.5 glass rounded-xl px-4 py-2.5 transition-all duration-200">
+                      <Search size={14} strokeWidth={1.5} className="text-white/45 flex-shrink-0" />
+                      <input
+                        type="text"
+                        placeholder="Search servers or APIs..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="flex-1 bg-transparent font-[family-name:--font-cinzel] text-[14px] tracking-wider
+                          text-white/85 placeholder:text-white/35 outline-none cursor-text"
+                      />
+                      {searchQuery && (
+                        <button type="button" onClick={() => setSearchQuery("")}
+                          className="text-white/35 hover:text-white/65 transition-colors cursor-pointer">
+                          <X size={12} strokeWidth={1.5} />
                         </button>
-                      </div>
-                      {isExpanded && (
-                        <div className="border-t-[1px] border-gray-100">
-                          {group.items.map((tool, ti) => (
-                            <div
-                              key={tool.id}
-                              className={cn(
-                                "flex items-center gap-3 pl-9 pr-4 py-2.5 bg-gray-50",
-                                ti !== group.items.length - 1 && "border-b-[1px] border-gray-100"
-                              )}
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── TOP HALF: Server sources (scrollable) ─────────────── */}
+                  <div className="overflow-y-auto px-5 pb-3 min-h-0" style={{ flex: "1 1 0", scrollbarGutter: "stable" }}>
+
+                    {/* Previous servers — 3 cols, same card style as Premade */}
+                    {filteredServers.length > 0 && (
+                      <div className="mb-4">
+                        <p className="font-[family-name:--font-cinzel] text-[11px] tracking-[0.28em] text-white/50 uppercase mb-2.5">Previous</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {filteredServers.map(server => (
+                            <button
+                              key={server.id}
+                              onClick={() => handlePastServerClick(server.id)}
+                              className="glass rounded-xl p-2.5 flex flex-col items-center gap-1.5 cursor-pointer hover:bg-white/[0.10] transition-all duration-200 group"
                             >
-                              {tool.method && (
-                                <span className={cn(
-                                  "flex-shrink-0 font-[family-name:--font-geist-mono] text-[8px] tracking-widest px-1.5 py-0.5",
-                                  METHOD_STYLES[tool.method.toUpperCase()] ?? "bg-gray-400 text-white"
-                                )}>
-                                  {tool.method.toUpperCase()}
+                              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/[0.08] group-hover:bg-white/[0.13] transition-colors flex-shrink-0">
+                                <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white/65">
+                                  {server.id.slice(0, 2).toUpperCase()}
                                 </span>
-                              )}
-                              <span className="font-[family-name:--font-cinzel] text-[12px] tracking-wider text-black truncate flex-1">
-                                {tool.name}
-                              </span>
-                              <button
-                                type="button"
-                                aria-label="Remove tool"
-                                onClick={() => removeTool(tool.id)}
-                                className="flex-shrink-0 text-gray-300 hover:text-black transition-colors cursor-pointer"
-                              >
-                                <X size={12} strokeWidth={1.5} />
-                              </button>
+                              </div>
+                              <span className="font-[family-name:--font-cinzel] text-[11px] tracking-wider text-white/70 truncate w-full text-center leading-tight">{server.id}</span>
+                              <span className="font-[family-name:--font-cormorant] text-[13px] text-white/35">{server.toolCount} tools</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Premade APIs — 3 cols, same grid size */}
+                    {filteredApis.length > 0 && (
+                      <div className="mb-3">
+                        <p className="font-[family-name:--font-cinzel] text-[11px] tracking-[0.28em] text-white/50 uppercase mb-2.5">Premade APIs</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {filteredApis.map(api => (
+                            <div
+                              key={api.name}
+                              className="glass rounded-xl p-2.5 flex flex-col items-center gap-1.5 opacity-45 cursor-not-allowed"
+                            >
+                              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ background: api.color }}>
+                                <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white">{api.initials}</span>
+                              </div>
+                              <span className="font-[family-name:--font-cinzel] text-[11px] tracking-wider text-white/60 truncate w-full text-center">{api.name}</span>
                             </div>
                           ))}
                         </div>
-                      )}
+                        <p className="font-[family-name:--font-cormorant] text-[15px] italic text-white/35 mt-2 text-center">Coming soon</p>
+                      </div>
+                    )}
+
+                    {/* No results state */}
+                    {searchQuery && filteredServers.length === 0 && filteredApis.length === 0 && (
+                      <p className="font-[family-name:--font-cormorant] text-[15px] italic text-white/30 px-1">
+                        No matches for &ldquo;{searchQuery}&rdquo;
+                      </p>
+                    )}
+
+                  </div>
+
+                  {/* ── Divider ───────────────────────────────────────────── */}
+                  <div className="h-px bg-white/[0.09] mx-5 flex-shrink-0" />
+
+                  {/* ── BOTTOM HALF: Added tools (scrollable) ─────────────── */}
+                  <div className="overflow-y-auto px-5 pt-3 pb-3 min-h-0" style={{ flex: "1 1 0", scrollbarGutter: "stable" }}>
+                    <p className="font-[family-name:--font-cinzel] text-[11px] tracking-[0.28em] text-white/50 uppercase mb-2.5">Added Tools</p>
+                    {tools.length === 0 ? (
+                      <p className="font-[family-name:--font-cormorant] text-[15px] italic text-white/40 px-1">
+                        Add an API to see tools here.
+                      </p>
+                    ) : (
+                      (() => {
+                        const groups: { apiName: string; source: ToolItem["source"]; items: ToolItem[] }[] = []
+                        tools.forEach(tool => {
+                          const g = groups.find(g => g.apiName === tool.apiName)
+                          if (g) g.items.push(tool)
+                          else groups.push({ apiName: tool.apiName, source: tool.source, items: [tool] })
+                        })
+                        return (
+                          <div className="glass rounded-xl overflow-hidden">
+                            {groups.map((group, gi) => {
+                              const isExpanded = expanded.has(group.apiName)
+                              return (
+                                <div key={group.apiName} className={cn(gi !== groups.length - 1 && "border-b border-white/[0.07]")}>
+                                  <div
+                                    className="flex items-center gap-2.5 px-4 py-3 cursor-pointer hover:bg-white/[0.05] transition-colors"
+                                    onClick={() => toggleExpand(group.apiName)}
+                                  >
+                                    {isExpanded
+                                      ? <ChevronDown  size={12} strokeWidth={1.5} className="flex-shrink-0 text-white/40" />
+                                      : <ChevronRight size={12} strokeWidth={1.5} className="flex-shrink-0 text-white/40" />}
+                                    <span className="font-[family-name:--font-cinzel] text-[14px] tracking-wider text-white/80 flex-1 truncate">
+                                      {group.apiName}
+                                    </span>
+                                    <span className="font-[family-name:--font-cinzel] text-[13px] text-white/45 tracking-widest flex-shrink-0">
+                                      {group.items.length}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={e => { e.stopPropagation(); group.items.forEach(t => removeTool(t.id)) }}
+                                      className="flex-shrink-0 text-white/25 hover:text-white/60 transition-colors ml-1 cursor-pointer"
+                                    >
+                                      <X size={12} strokeWidth={1.5} />
+                                    </button>
+                                  </div>
+                                  <div
+                                    className="overflow-hidden transition-all duration-300 ease-in-out"
+                                    style={{ maxHeight: isExpanded ? `${group.items.length * 48}px` : "0px" }}
+                                  >
+                                    <div className="border-t border-white/[0.07]">
+                                      {group.items.map((tool, ti) => (
+                                        <div key={tool.id} className={cn(
+                                          "flex items-center gap-2.5 pl-8 pr-4 py-2 bg-black/[0.06]",
+                                          ti !== group.items.length - 1 && "border-b border-white/[0.05]"
+                                        )}>
+                                          {tool.method && (
+                                            <span className={cn(
+                                              "flex-shrink-0 font-[family-name:--font-geist-mono] text-[12px] tracking-widest px-1.5 py-0.5 rounded",
+                                              METHOD_STYLES[tool.method.toUpperCase()] ?? "method-get"
+                                            )}>
+                                              {tool.method.toUpperCase()}
+                                            </span>
+                                          )}
+                                          <span className="font-[family-name:--font-cinzel] text-[14px] tracking-wider text-white/70 truncate flex-1">
+                                            {tool.name}
+                                          </span>
+                                          <button type="button" onClick={() => removeTool(tool.id)}
+                                            className="flex-shrink-0 text-white/25 hover:text-white/60 transition-colors cursor-pointer">
+                                            <X size={11} strokeWidth={1.5} />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()
+                    )}
+                  </div>
+
+                </div>
+
+                {/* RIGHT: Input methods */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto px-6 pt-5 pb-4">
+
+                    {/* API Name */}
+                    <div className="mb-4">
+                      <h2 className="font-[family-name:--font-cinzel] text-[20px] tracking-[0.18em] text-white text-center mb-4">
+                        Custom Tools
+                      </h2>
+                      <label className="block font-[family-name:--font-cinzel] text-[13px] tracking-[0.22em] text-white uppercase mb-2">
+                        API Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Stripe, GitHub, MyCustomAPI"
+                        value={apiName}
+                        onChange={e => setApiName(e.target.value)}
+                        className="glass-input w-full rounded-xl px-4 py-3 text-[17px] font-[family-name:--font-cinzel] tracking-wider text-white"
+                      />
                     </div>
-                  )
-                })}
+
+                    {/* Spec URL panel */}
+                    <div className="glass rounded-2xl p-4 mb-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.07] flex-shrink-0">
+                          <Link2 size={15} strokeWidth={1.5} className="text-white/60" />
+                        </div>
+                        <div>
+                          <p className="font-[family-name:--font-cinzel] text-[17px] tracking-[0.12em] text-white/92">Paste Spec URL</p>
+                          <p className="font-[family-name:--font-cormorant] text-[17px] italic text-white/65">Link to an OpenAPI/Swagger JSON or YAML file</p>
+                        </div>
+                      </div>
+                      {formError && <p className="font-[family-name:--font-cinzel] text-red-400 text-[14px] tracking-wider mb-3">{formError}</p>}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="https://api.example.com/openapi.json"
+                          value={url}
+                          onChange={e => setUrl(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") handleCreateTool() }}
+                          className="glass-input flex-1 rounded-xl px-4 py-2.5 text-[16px] font-[family-name:--font-geist-mono]"
+                        />
+                        <div className="relative flex-shrink-0 group/addbtn">
+                          <button
+                            type="button"
+                            onClick={handleCreateTool}
+                            disabled={isCreating || !url.trim() || !apiName.trim()}
+                            className={cn(
+                              "font-[family-name:--font-cinzel] text-[14px] tracking-[0.14em] px-5 py-2.5 rounded-xl transition-all duration-200",
+                              isCreating || !url.trim() || !apiName.trim()
+                                ? "bg-white/[0.05] text-white/25 cursor-not-allowed"
+                                : "btn-gold cursor-pointer"
+                            )}
+                          >
+                            {isCreating ? "..." : "Add"}
+                          </button>
+                          {!apiName.trim() && (
+                            <div className="pointer-events-none absolute bottom-full right-0 mb-2 opacity-0 group-hover/addbtn:opacity-100 transition-opacity duration-150">
+                              <div className="glass rounded-lg px-3 py-2 whitespace-nowrap shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+                                <span className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.12em] text-white/80">
+                                  Enter an API name first
+                                </span>
+                              </div>
+                              <div className="w-2 h-2 bg-white/[0.13] border-r border-b border-white/[0.20] rotate-45 ml-auto mr-3 -mt-1" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* OR */}
+                    <div className="flex items-center gap-3 py-2.5 px-2">
+                      <div className="flex-1 h-px bg-white/[0.08]" />
+                      <span className="font-[family-name:--font-cormorant] text-[17px] italic text-white/30">or</span>
+                      <div className="flex-1 h-px bg-white/[0.08]" />
+                    </div>
+
+                    {/* File upload panel */}
+                    <div className="glass rounded-2xl p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.07] flex-shrink-0">
+                          <Upload size={14} strokeWidth={1.5} className="text-white/60" />
+                        </div>
+                        <div>
+                          <p className="font-[family-name:--font-cinzel] text-[17px] tracking-[0.12em] text-white/92">Upload OpenAPI File</p>
+                          <p className="font-[family-name:--font-cormorant] text-[17px] italic text-white/65">Drop a .json, .yaml, or .yml spec file</p>
+                        </div>
+                      </div>
+                      {jsonError && <p className="font-[family-name:--font-cinzel] text-red-400 text-[14px] tracking-wider mb-3">{jsonError}</p>}
+                      <div
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-6 transition-all duration-150 cursor-pointer",
+                          isDragging
+                            ? "border-[#C9A84C]/50 bg-[#C9A84C]/[0.06]"
+                            : "border-white/[0.13] hover:border-white/[0.25] hover:bg-white/[0.03]"
+                        )}
+                        onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={e => {
+                          e.preventDefault(); setIsDragging(false)
+                          const file = e.dataTransfer.files[0]
+                          if (file) handleJsonFile(file)
+                        }}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <FileText size={20} strokeWidth={1} className={isDragging ? "text-[#C9A84C]/60" : "text-white/30"} />
+                        <span className="font-[family-name:--font-cinzel] text-[16px] tracking-wider text-white/50">
+                          {isParsing ? "Parsing..." : "Drop API spec here"}
+                        </span>
+                        <span className="font-[family-name:--font-cormorant] text-[17px] italic text-white/30">or click to browse</span>
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".json,.yaml,.yml"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (file) handleJsonFile(file)
+                          e.target.value = ""
+                        }}
+                      />
+                    </div>
+
+                    {/* Duplicate notice */}
+                    {duplicateNotice.length > 0 && (
+                      <div className="glass rounded-xl px-4 py-3 mt-3 flex items-center justify-between">
+                        <span className="font-[family-name:--font-cormorant] text-[18px] italic text-white/55">
+                          {duplicateNotice.length} duplicate tool{duplicateNotice.length !== 1 ? "s" : ""} skipped
+                        </span>
+                        <button type="button" onClick={() => setDuplicateNotice([])} className="text-white/30 hover:text-white/60 transition-colors cursor-pointer">
+                          <X size={13} strokeWidth={1.5} />
+                        </button>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
               </div>
-            )
-          })()}
+              {/* ── end PAGE 0 ── */}
 
-          {/* Intent + Generate */}
-          <textarea
-            className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[13px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400 resize-none w-full"
-            rows={2}
-            placeholder="What do you want to do with these tools? Helios will filter to only what's needed. (optional)"
-            value={intent}
-            onChange={e => setIntent(e.target.value)}
-          />
-          {/* Simplify preview card */}
-          {isSimplifying && (
-            <div className="border-[1px] border-gray-200 px-5 py-4 flex items-center gap-3">
-              <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-gray-400 animate-pulse">
-                Helios is filtering tools to match your intent...
-              </span>
+              {/* ══════════════════ PAGE 1 — INTENT ══════════════════════ */}
+              <div className="flex flex-col overflow-hidden" style={{ width: "50%" }}>
+
+                {/* Intent page header with back arrow */}
+                <div className="flex items-center gap-4 px-8 pt-6 pb-4 flex-shrink-0 border-b border-white/[0.07]">
+                  <button
+                    type="button"
+                    onClick={() => { setPage(0); setSimplifyPreview(null) }}
+                    className="flex items-center gap-2 text-white/45 hover:text-white/80 transition-colors duration-200 cursor-pointer group"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="group-hover:-translate-x-0.5 transition-transform duration-200">
+                      <path d="M11 4L6 9L11 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="font-[family-name:--font-cinzel] text-[14px] tracking-[0.16em]">Back</span>
+                  </button>
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#C9A84C]/[0.12]">
+                      <Sparkles size={13} strokeWidth={1.5} className="text-[#C9A84C]/80" />
+                    </div>
+                    <span className="font-[family-name:--font-cinzel] text-[18px] tracking-[0.14em] text-white/90">Describe Your Intent</span>
+                  </div>
+                  <div className="flex-1" />
+                  <span className="font-[family-name:--font-cormorant] text-[17px] italic text-white/55">Optional</span>
+                </div>
+
+                {/* Intent body */}
+                <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-5">
+                  <p className="font-[family-name:--font-cormorant] text-[20px] italic text-white/70 leading-relaxed">
+                    Tell Helios what you're trying to build. It will filter your {tools.length} tool{tools.length !== 1 ? "s" : ""} down to only the ones that match your goal — you can always review them in the sandbox.
+                  </p>
+
+                  <textarea
+                    placeholder="e.g. I want to retrieve user profiles and send email notifications when their subscription expires..."
+                    value={intent}
+                    onChange={e => setIntent(e.target.value)}
+                    rows={6}
+                    className="glass-input w-full rounded-2xl px-5 py-4 text-[18px] font-[family-name:--font-cormorant] leading-relaxed resize-none"
+                    autoFocus={page === 1}
+                  />
+
+                  {/* Simplify preview — shows after Helios filters */}
+                  {isSimplifying && (
+                    <div className="glass rounded-xl px-5 py-3 flex items-center gap-3">
+                      <div className="flex gap-1.5 items-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#C9A84C]/60 dot-1" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#C9A84C]/60 dot-2" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#C9A84C]/60 dot-3" />
+                      </div>
+                      <span className="font-[family-name:--font-cinzel] text-[14px] tracking-wider text-white/45">
+                        Filtering tools to match your intent...
+                      </span>
+                    </div>
+                  )}
+
+                  {simplifyPreview && !isSimplifying && (
+                    <div className="glass-mid rounded-xl px-5 py-4 flex flex-col gap-3 border border-white/[0.18]">
+                      <div className="flex items-center justify-between">
+                        <span className="font-[family-name:--font-cinzel] text-[14px] tracking-[0.18em] text-white/70 uppercase">
+                          Intent Filter Preview
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSimplifyPreview(null)}
+                          className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white/50 hover:text-white/80 transition-colors cursor-pointer"
+                        >
+                          Change Intent
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-[family-name:--font-cinzel] text-[16px] tracking-wider text-white/40 line-through">
+                          {simplifyPreview.originalCount} tools
+                        </span>
+                        <span className="text-white/40 text-sm">→</span>
+                        <span className="font-[family-name:--font-cinzel] text-[24px] tracking-wider text-white/95 font-semibold">
+                          {simplifyPreview.filteredTools.length} tools
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 max-h-[72px] overflow-y-auto">
+                        {simplifyPreview.filteredTools.map(t => (
+                          <span key={t.name}
+                            className="font-[family-name:--font-cinzel] text-[12px] tracking-wider bg-white/[0.12] border border-white/[0.25] text-white/85 px-2 py-0.5 rounded">
+                            {t.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {generateError && (
+                    <p className="font-[family-name:--font-cinzel] text-red-400 text-[14px] tracking-wider">{generateError}</p>
+                  )}
+                </div>
+              </div>
+              {/* ── end PAGE 1 ── */}
+
             </div>
-          )}
+          </div>
+          {/* ── end slide container ── */}
 
-          {simplifyPreview && !isSimplifying && (
-            <div className="border-[1px] border-black px-5 py-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-gray-500 uppercase">
-                  Intent Filter Preview
-                </span>
+          {/* ── Bottom bar — inside the card ────────────────────────────── */}
+          <div className="border-t border-white/[0.09] px-6 py-3.5 flex-shrink-0 flex items-center gap-3"
+            style={{ background: "rgba(0,0,0,0.18)" }}>
+
+            {page === 0 ? (
+              <>
+                {/* Page 0: chips + Next button */}
+                <div className="flex-1 flex items-center gap-2 overflow-x-auto min-w-0">
+                  {toolGroupNames.length === 0 ? (
+                    <span className="font-[family-name:--font-cormorant] text-[18px] italic text-white/55 whitespace-nowrap">
+                      No tools added yet — select an API above
+                    </span>
+                  ) : (
+                    toolGroupNames.map(name => (
+                      <div
+                        key={name}
+                        className="flex items-center gap-1.5 flex-shrink-0 glass rounded-full px-3 py-1.5 border border-white/[0.11]"
+                      >
+                        <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white/70 whitespace-nowrap">
+                          {name}
+                        </span>
+                        <span className="font-[family-name:--font-geist-mono] text-[12px] text-white/40">
+                          {toolGroupsMap[name]}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const idsToRemove = tools.filter(t => t.apiName === name).map(t => t.id)
+                            setTools(prev => prev.filter(t => !idsToRemove.includes(t.id)))
+                          }}
+                          className="text-white/28 hover:text-white/65 transition-colors cursor-pointer ml-0.5"
+                        >
+                          <X size={10} strokeWidth={2} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setSimplifyPreview(null)}
-                  className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 hover:text-black transition-colors cursor-pointer"
+                  onClick={() => { if (tools.length > 0) setPage(1) }}
+                  disabled={tools.length === 0}
+                  className={cn(
+                    "flex-shrink-0 flex items-center gap-2 font-[family-name:--font-cinzel] text-[16px] tracking-[0.14em] px-7 py-3 rounded-xl transition-all duration-200",
+                    tools.length === 0
+                      ? "bg-white/[0.05] text-white/20 cursor-not-allowed border border-white/[0.07]"
+                      : "btn-gold cursor-pointer"
+                  )}
                 >
-                  Change Intent
+                  Next
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 7H11M8 4L11 7L8 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-gray-400 line-through">
-                  {simplifyPreview.originalCount} tools
+              </>
+            ) : (
+              <>
+                {/* Page 1: skip hint + Launch Sandbox */}
+                <span className="flex-1 font-[family-name:--font-cormorant] text-[18px] italic text-white/55">
+                  Leave blank to skip intent filtering
                 </span>
-                <span className="text-gray-300">→</span>
-                <span className="font-[family-name:--font-cinzel] text-[15px] tracking-wider text-black font-semibold">
-                  {simplifyPreview.filteredTools.length} tools
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
-                {simplifyPreview.filteredTools.map(t => (
-                  <span
-                    key={t.name}
-                    className="font-[family-name:--font-cinzel] text-[10px] tracking-wider border-[1px] border-gray-300 px-2 py-0.5 text-gray-600"
-                  >
-                    {t.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {generateError && (
-            <p className="font-[family-name:--font-cinzel] text-red-600 text-[11px] tracking-wider text-center">{generateError}</p>
-          )}
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={tools.length === 0 || isGenerating || isSimplifying}
-            className={cn(
-              "font-[family-name:--font-cinzel] w-full py-4 text-[16px] tracking-widest border-[2px] relative",
-              "before:absolute before:inset-[4px] before:border-[1px] before:pointer-events-none transition-colors duration-300",
-              tools.length === 0 || isGenerating || isSimplifying
-                ? "cursor-not-allowed text-gray-300 border-gray-200 before:border-gray-200"
-                : "cursor-pointer text-black border-black before:border-black hover:bg-black hover:text-white hover:before:border-white"
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={isGenerating || isSimplifying}
+                  className={cn(
+                    "flex-shrink-0 font-[family-name:--font-cinzel] text-[16px] tracking-[0.14em] px-7 py-3 rounded-xl transition-all duration-200",
+                    isGenerating || isSimplifying
+                      ? "bg-white/[0.05] text-white/20 cursor-not-allowed border border-white/[0.07]"
+                      : "btn-gold cursor-pointer"
+                  )}
+                >
+                  {isSimplifying
+                    ? "Filtering..."
+                    : isGenerating
+                    ? "Starting..."
+                    : simplifyPreview
+                    ? `Launch Sandbox · ${simplifyPreview.filteredTools.length} tool${simplifyPreview.filteredTools.length !== 1 ? "s" : ""}`
+                    : `Launch Sandbox · ${tools.length} tool${tools.length !== 1 ? "s" : ""}`}
+                </button>
+              </>
             )}
-          >
-            {isSimplifying
-              ? "Filtering..."
-              : isGenerating
-              ? "Starting..."
-              : simplifyPreview
-              ? `Launch Sandbox · ${simplifyPreview.filteredTools.length} tool${simplifyPreview.filteredTools.length !== 1 ? "s" : ""}`
-              : tools.length > 0
-              ? `Generate Server · ${tools.length} tool${tools.length !== 1 ? "s" : ""}`
-              : "Generate Server"
-            }
-          </button>
+          </div>
 
         </div>
-      </div>
+      </main>
 
-      {/* ── Tool Selection Popup ──────────────────────────────── */}
+      </div>{/* end blurrable wrapper */}
+
+      {/* ── Tool Selection Popup ───────────────────────────────────────── */}
       {popupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => !popupLoading && setPopupOpen(false)} />
-          <div className="relative bg-white border-[2px] border-black w-[560px] max-h-[70vh] flex flex-col
-            before:absolute before:inset-[6px] before:border-[1px] before:border-black before:pointer-events-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+          <div className="fixed inset-0 bg-black/50" onClick={() => !popupLoading && setPopupOpen(false)} />
+          <div className="relative glass-mid rounded-3xl w-[560px] max-h-[72vh] flex flex-col
+            shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-fade-up overflow-hidden">
 
             {/* Header */}
             <div className="flex items-center justify-between px-8 pt-7 pb-4 flex-shrink-0">
-              <span className="font-[family-name:--font-cinzel] text-[20px] tracking-widest">Select Tools</span>
+              <span className="font-[family-name:--font-cinzel] text-[22px] tracking-[0.15em] text-white/90">Select Tools</span>
               {!popupLoading && (
-                <button type="button" aria-label="Close" onClick={() => setPopupOpen(false)} className="text-gray-400 hover:text-black transition-colors cursor-pointer">
+                <button type="button" onClick={() => setPopupOpen(false)}
+                  className="text-white/30 hover:text-white/65 transition-colors cursor-pointer">
                   <X size={18} strokeWidth={1.5} />
                 </button>
               )}
             </div>
-            <div className="h-[1px] bg-gray-200 mx-8 flex-shrink-0"></div>
+            <div className="h-px bg-white/[0.09] mx-6 flex-shrink-0" />
 
             {popupLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <span className="font-[family-name:--font-cinzel] text-[13px] tracking-widest text-gray-400">
-                  Parsing spec...
-                </span>
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="flex gap-2 items-center">
+                  <div className="w-2 h-2 rounded-full bg-[#C9A84C]/60 dot-1" />
+                  <div className="w-2 h-2 rounded-full bg-[#C9A84C]/60 dot-2" />
+                  <div className="w-2 h-2 rounded-full bg-[#C9A84C]/60 dot-3" />
+                </div>
+                <span className="font-[family-name:--font-cinzel] text-[14px] tracking-widest text-white/35">Parsing spec...</span>
               </div>
             ) : (
               <>
-                {/* Select all bar */}
-                <div className="px-8 py-3 flex items-center justify-between flex-shrink-0 border-b-[1px] border-gray-100">
-                  <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-gray-400">
+                <div className="px-8 py-3 flex items-center justify-between flex-shrink-0 border-b border-white/[0.07]">
+                  <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white/40">
                     {popupSelected.size} / {popupTools.length} selected
                   </span>
-                  <button
-                    type="button"
-                    onClick={toggleSelectAll}
-                    className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 hover:text-black transition-colors cursor-pointer"
-                  >
+                  <button type="button" onClick={toggleSelectAll}
+                    className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white/35 hover:text-[#C9A84C]/80 transition-colors cursor-pointer">
                     {popupSelected.size === popupTools.length ? "Deselect All" : "Select All"}
                   </button>
                 </div>
 
-                {/* Tool list */}
                 <div className="flex-1 overflow-y-auto">
                   {popupTools.map((tool, i) => {
                     const sel = popupSelected.has(tool.name)
@@ -985,44 +980,46 @@ export default function Create() {
                         key={tool.name}
                         onClick={() => setPopupSelected(prev => {
                           const next = new Set(prev)
-                          if (sel) { next.delete(tool.name) } else { next.add(tool.name) }
+                          if (sel) next.delete(tool.name)
+                          else next.add(tool.name)
                           return next
                         })}
                         className={cn(
-                          "flex items-start gap-4 px-8 py-3 cursor-pointer transition-colors duration-150",
-                          i !== popupTools.length - 1 && "border-b-[1px] border-gray-100",
-                          sel ? "bg-white hover:bg-gray-50" : "bg-gray-50 hover:bg-gray-100"
+                          "flex items-start gap-4 px-8 py-3 cursor-pointer transition-colors border-b border-white/[0.05]",
+                          sel ? "hover:bg-white/[0.04]" : "bg-black/[0.08] hover:bg-black/[0.04]"
                         )}
                       >
                         <div className={cn(
-                          "flex-shrink-0 w-4 h-4 border-[2px] mt-0.5 flex items-center justify-center transition-colors duration-150",
-                          sel ? "border-black bg-black" : "border-gray-300 bg-white"
+                          "flex-shrink-0 w-4 h-4 rounded mt-0.5 border flex items-center justify-center transition-all",
+                          sel ? "border-[#C9A84C]/50 bg-[#C9A84C]/15" : "border-white/[0.18] bg-transparent"
                         )}>
                           {sel && (
                             <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                              <path d="M1 2.5L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M1 3L3 5L7 1" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           )}
                         </div>
-                        <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex flex-col gap-0.5 min-w-0">
                           <div className="flex items-center gap-2">
                             {tool.handler?.method && (
                               <span className={cn(
-                                "flex-shrink-0 font-[family-name:--font-geist-mono] text-[9px] tracking-widest px-1.5 py-0.5",
-                                sel ? (METHOD_STYLES[tool.handler.method.toUpperCase()] ?? "bg-gray-400 text-white") : "border border-gray-200 text-gray-300"
+                                "flex-shrink-0 font-[family-name:--font-geist-mono] text-[11px] tracking-widest px-1.5 py-0.5 rounded",
+                                sel
+                                  ? (METHOD_STYLES[tool.handler.method.toUpperCase()] ?? "method-get")
+                                  : "bg-white/[0.04] text-white/20 border border-white/[0.07]"
                               )}>
                                 {tool.handler.method.toUpperCase()}
                               </span>
                             )}
                             <span className={cn(
-                              "font-[family-name:--font-cinzel] text-[12px] tracking-wider truncate",
-                              sel ? "text-black" : "text-gray-400"
+                              "font-[family-name:--font-cinzel] text-[14px] tracking-wider truncate",
+                              sel ? "text-white/85" : "text-white/35"
                             )}>
                               {tool.name}
                             </span>
                           </div>
                           {tool.description && (
-                            <span className="font-[family-name:--font-geist-sans] text-[11px] text-gray-400 leading-snug">
+                            <span className="font-[family-name:--font-cormorant] text-[16px] text-white/30 leading-snug line-clamp-1">
                               {tool.description}
                             </span>
                           )}
@@ -1032,18 +1029,16 @@ export default function Create() {
                   })}
                 </div>
 
-                {/* Confirm */}
-                <div className="px-8 pb-7 pt-4 flex-shrink-0 border-t-[1px] border-gray-100">
+                <div className="border-t border-white/[0.09] p-5 flex-shrink-0">
                   <button
                     type="button"
                     onClick={handlePopupConfirm}
                     disabled={popupSelected.size === 0}
                     className={cn(
-                      "font-[family-name:--font-cinzel] w-full py-4 text-[15px] tracking-widest border-[2px] relative",
-                      "before:absolute before:inset-[4px] before:border-[1px] before:pointer-events-none transition-colors duration-300",
+                      "w-full font-[family-name:--font-cinzel] py-3.5 text-[16px] tracking-[0.14em] rounded-xl transition-all duration-200",
                       popupSelected.size === 0
-                        ? "cursor-not-allowed text-gray-300 border-gray-200 before:border-gray-200"
-                        : "cursor-pointer text-black border-black before:border-black hover:bg-black hover:text-white hover:before:border-white"
+                        ? "bg-white/[0.05] text-white/20 cursor-not-allowed"
+                        : "btn-gold cursor-pointer"
                     )}
                   >
                     Add {popupSelected.size} Tool{popupSelected.size !== 1 ? "s" : ""}
@@ -1055,34 +1050,6 @@ export default function Create() {
         </div>
       )}
 
-      {/* Duplicate tools notice */}
-      {duplicateNotice.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setDuplicateNotice([])} />
-          <div className="relative bg-white border-[2px] border-black px-10 py-8 flex flex-col gap-5 max-w-[420px] w-full mx-6
-            before:absolute before:inset-[6px] before:border-[1px] before:border-black before:pointer-events-none">
-            <span className="font-[family-name:--font-cinzel] text-[18px] tracking-widest text-black">Duplicate Tools</span>
-            <p className="font-[family-name:--font-geist-sans] text-[13px] text-gray-500 leading-relaxed">
-              The following tools were not added because they already exist in your session:
-            </p>
-            <ul className="flex flex-col gap-1 max-h-[200px] overflow-y-auto">
-              {duplicateNotice.map(name => (
-                <li key={name} className="font-[family-name:--font-cinzel] text-[12px] tracking-wider text-black border-b-[1px] border-gray-100 pb-1">
-                  {name}
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={() => setDuplicateNotice([])}
-              className="font-[family-name:--font-cinzel] text-[13px] tracking-widest text-white bg-black border-[2px] border-black px-6 py-3 relative
-                before:absolute before:inset-[4px] before:border-[1px] before:border-white before:pointer-events-none
-                hover:bg-white hover:text-black hover:before:border-black transition-colors duration-300 cursor-pointer"
-            >
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -1,6 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ToolsFile } from "./generate_tool_registry.ts";
 
+let _anthropicClient: Anthropic | null = null
+function getAnthropicClient(): Anthropic {
+  if (!_anthropicClient) _anthropicClient = new Anthropic()
+  return _anthropicClient
+}
+
 // System prompt is static — cached after first call so subsequent calls pay only cache read cost
 const systemPrompt: Anthropic.Messages.TextBlockParam = {
   type: "text",
@@ -25,8 +31,8 @@ export async function filterToolsByIntent(
   // Fail-open: nothing to filter
   if (!registry?.tools || registry.tools.length === 0) return registry
 
-  // Client instantiated here (not at module load) so it reads the env key AFTER dotenv runs
-  const client = new Anthropic()
+  // Lazy singleton — reads env key after dotenv runs, shared across all calls
+  const client = getAnthropicClient()
 
   // Sanitize intent — strip backticks that could break prompt, cap length
   const safeIntent = userIntent.replace(/`/g, "'").trim().slice(0, 500)

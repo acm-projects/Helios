@@ -11,6 +11,8 @@ export interface ISpec extends Document {
   auth?: any[];
   groupMap?: Record<string, string>;
   authMap?: Record<string, any[]>;
+  starX?: number;
+  starY?: number;
 }
 
 const SpecSchema = new Schema<ISpec>(
@@ -25,6 +27,8 @@ const SpecSchema = new Schema<ISpec>(
     auth: { type: [Schema.Types.Mixed], default: [] },
     groupMap: { type: Schema.Types.Mixed, default: null },
     authMap: { type: Schema.Types.Mixed, default: null },
+    starX: { type: Number, default: null },
+    starY: { type: Number, default: null },
   },
   {
     collection: "specs",

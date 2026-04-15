@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -8,19 +8,11 @@ import { getAuthHeaders } from "@/lib/auth"
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
 
 const METHOD_STYLES: Record<string, string> = {
-  GET:    "border border-gray-300 text-gray-500 bg-white",
-  POST:   "bg-gray-800 text-white",
-  PUT:    "bg-gray-600 text-white",
-  PATCH:  "bg-gray-500 text-white",
-  DELETE: "bg-black text-white",
-}
-
-const METHOD_COLORS: Record<string, string> = {
-  GET:    "bg-gray-200",
-  POST:   "bg-gray-700",
-  PUT:    "bg-gray-500",
-  PATCH:  "bg-gray-400",
-  DELETE: "bg-black",
+  GET:    "method-get",
+  POST:   "method-post",
+  PUT:    "method-put",
+  PATCH:  "method-patch",
+  DELETE: "method-delete",
 }
 
 interface CatalogEntry {
@@ -40,22 +32,27 @@ interface CatalogEntry {
   }
 }
 
-export default function Verify() {
+function VerifyContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const specId      = searchParams.get("specId")
   const compositeId = searchParams.get("compositeId")
+
+  const [pageReady, setPageReady] = useState(false)
+  useEffect(() => {
+    document.fonts.ready.then(() => requestAnimationFrame(() => setPageReady(true)))
+  }, [])
 
   const [catalog, setCatalog] = useState<CatalogEntry[]>(() => {
     if (compositeId) {
       const raw = sessionStorage.getItem(`helios_session_${compositeId}`)
       if (!raw) return []
       const { tools } = JSON.parse(raw)
-      return (tools ?? []).map((t: any) => ({
-        name:         t.function.name,
-        description:  t.function.description ?? "",
+      return (tools ?? []).map((t: CatalogEntry & { function?: { name: string; description?: string; parameters?: CatalogEntry["input_schema"] }; enabled?: boolean }) => ({
+        name:         t.function?.name ?? t.name,
+        description:  t.function?.description ?? t.description ?? "",
         enabled:      t.enabled ?? true,
-        input_schema: t.function.parameters ?? { type: "object", properties: {} },
+        input_schema: t.function?.parameters ?? t.input_schema ?? { type: "object", properties: {} },
         handler: { method: t.handler?.method ?? "GET", path: t.handler?.path ?? "", headers: {}, query_params: [] }
       }))
     }
@@ -64,6 +61,7 @@ export default function Verify() {
     const draftData = draft ? JSON.parse(draft) : null
     return draftData?.catalog ?? []
   })
+
   const [isLoading, setIsLoading] = useState(() => {
     if (compositeId) return false
     if (!specId) return false
@@ -71,51 +69,50 @@ export default function Verify() {
     const draftData = draft ? JSON.parse(draft) : null
     return !draftData?.catalog
   })
+  // Any time specId is known we're modifying an existing server
+  const isExistingServer = !!specId
+  const isEditMode = !!(compositeId && specId)  // compositeId flow after Edit button
   const [isSaving, setIsSaving] = useState(false)
-  const [serverName, setServerName] = useState("")
+  const [serverName, setServerName] = useState(specId ?? "")
   const [nameError, setNameError]   = useState("")
   const [error, setError] = useState(!specId && !compositeId ? "No spec ID provided." : "")
   const [editingSet, setEditingSet] = useState<Set<number>>(new Set())
 
   useEffect(() => {
-    if (compositeId) return // catalog already loaded from sessionStorage in useState
+    if (compositeId) return
     if (!specId) return
     const draft = sessionStorage.getItem(`helios_draft_${specId}`)
     const draftData = draft ? JSON.parse(draft) : null
-    if (draftData?.catalog) return  // already initialized via useState
+    if (draftData?.catalog) return
 
-    // Existing saved server — fetch from DB, then apply any sandbox toggle overrides
     fetch(`http://localhost:8000/api/servers/${specId}/catalog`, { headers: getAuthHeaders() })
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) { setError(data.error); setIsLoading(false); return }
-          let catalog = data.catalog ?? []
-          const togglesRaw = sessionStorage.getItem(`helios_toggles_${specId}`)
-          if (togglesRaw) {
-            const toggles: Record<string, boolean> = JSON.parse(togglesRaw)
-            catalog = catalog.map((item: CatalogEntry) =>
-              item.name in toggles ? { ...item, enabled: toggles[item.name] } : item
-            )
-            sessionStorage.removeItem(`helios_toggles_${specId}`)
-          }
-          setCatalog(catalog)
-          setIsLoading(false)
-        })
-        .catch(() => { setError("Failed to reach the server."); setIsLoading(false) })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) { setError(data.error); setIsLoading(false); return }
+        let fetchedCatalog = data.catalog ?? []
+        const togglesRaw = sessionStorage.getItem(`helios_toggles_${specId}`)
+        if (togglesRaw) {
+          const toggles: Record<string, boolean> = JSON.parse(togglesRaw)
+          fetchedCatalog = fetchedCatalog.map((item: CatalogEntry) =>
+            item.name in toggles ? { ...item, enabled: toggles[item.name] } : item
+          )
+          sessionStorage.removeItem(`helios_toggles_${specId}`)
+        }
+        setCatalog(fetchedCatalog)
+        setIsLoading(false)
+      })
+      .catch(() => { setError("Failed to reach the server."); setIsLoading(false) })
   }, [specId])
 
   const handleNameChange = (index: number, value: string) => {
     setCatalog(prev => prev.map((entry, i) => i === index ? { ...entry, name: value } : entry))
   }
-
   const handleDescriptionChange = (index: number, value: string) => {
     setCatalog(prev => prev.map((entry, i) => i === index ? { ...entry, description: value } : entry))
   }
-
   const handleToggle = (index: number) => {
     setCatalog(prev => prev.map((entry, i) => i === index ? { ...entry, enabled: !entry.enabled } : entry))
   }
-
   const toggleEdit = (index: number) => {
     setEditingSet(prev => {
       const next = new Set(prev)
@@ -126,28 +123,20 @@ export default function Verify() {
   }
 
   const handleSave = async () => {
-    setIsSaving(true)
-    setError("")
-
+    setIsSaving(true); setError("")
     try {
       if (compositeId) {
-        // Composite save — server name entered on this page
         if (!serverName.trim()) { setNameError("Server name is required."); setIsSaving(false); return }
         let groupMap: Record<string, string> = {}
         let authMap: Record<string, unknown[]> = {}
         try {
           const raw = sessionStorage.getItem(`helios_groups_${compositeId}`)
           if (raw) { const parsed = JSON.parse(raw); groupMap = parsed.toolMap ?? parsed; authMap = parsed.authMap ?? {} }
-        } catch {}
+        } catch { /* ignore */ }
         const res = await fetch(`http://localhost:8000/api/servers/${serverName.trim()}/catalog`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-          body: JSON.stringify({
-            catalog,
-            spec: { type: "composite", groupMap, authMap },
-            baseUrl: "",
-            toolCount: catalog.filter(t => t.enabled).length
-          })
+          body: JSON.stringify({ catalog, spec: { type: "composite", groupMap, authMap }, baseUrl: "", toolCount: catalog.filter(t => t.enabled).length })
         })
         const data = await res.json()
         if (!res.ok) { setError(data.error || "Failed to save."); setIsSaving(false); return }
@@ -156,32 +145,28 @@ export default function Verify() {
         router.push(`/download?specId=${serverName.trim()}`)
         return
       }
-
       if (!specId) return
+      const targetId = serverName.trim() || specId
+      if (!targetId) { setNameError("Server name is required."); setIsSaving(false); return }
       const draft = sessionStorage.getItem(`helios_draft_${specId}`)
       const draftData = draft ? JSON.parse(draft) : null
-
-      const res = await fetch(`http://localhost:8000/api/servers/${specId}/catalog`, {
+      const res = await fetch(`http://localhost:8000/api/servers/${encodeURIComponent(targetId)}/catalog`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({
-          catalog,
-          ...(draftData ? { spec: draftData.spec, baseUrl: draftData.baseUrl, toolCount: draftData.toolCount } : {})
-        })
+        body: JSON.stringify({ catalog, ...(draftData ? { spec: draftData.spec, baseUrl: draftData.baseUrl, toolCount: draftData.toolCount } : {}) })
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || "Failed to save."); setIsSaving(false); return }
       sessionStorage.removeItem(`helios_draft_${specId}`)
-      router.push(`/download?specId=${specId}`)
+      router.push(`/download?specId=${encodeURIComponent(targetId)}`)
     } catch {
       setError("Failed to reach the server.")
       setIsSaving(false)
     }
   }
 
-  // Derived stats
-  const totalCount   = catalog.length
-  const enabledCount = catalog.filter(e => e.enabled).length
+  const totalCount    = catalog.length
+  const enabledCount  = catalog.filter(e => e.enabled).length
   const disabledCount = totalCount - enabledCount
 
   const methodCounts: Record<string, number> = {}
@@ -191,64 +176,92 @@ export default function Verify() {
   })
   const methodOrder = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 
-  const withDescription = catalog.filter(e => e.description?.trim()).length
-  const withParams = catalog.filter(e => Object.keys(e.input_schema?.properties ?? {}).length > 0).length
-  const totalParams = catalog.reduce((sum, e) => sum + Object.keys(e.input_schema?.properties ?? {}).length, 0)
-  const avgParams = totalCount > 0 ? (totalParams / totalCount).toFixed(1) : "0"
+  const methodStatsStr = methodOrder
+    .filter(m => methodCounts[m])
+    .map(m => `${methodCounts[m]} ${m}`)
+    .join(" · ")
+
+  const backHref = compositeId
+    ? isEditMode
+      ? `/sandbox?compositeId=${compositeId}&specId=${encodeURIComponent(specId ?? "")}`
+      : `/sandbox?compositeId=${compositeId}`
+    : `/sandbox?specId=${specId}`
 
   return (
-    <div className="flex flex-col h-screen w-full bg-white">
+    <div className={cn("flex flex-col h-screen w-full relative overflow-hidden", pageReady ? "animate-page-enter" : "opacity-0")}>
 
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 pl-20 flex-shrink-0">
+      {/* ── Nav ───────────────────────────────────────────────────────── */}
+      <nav className="glass-nav flex items-center justify-between px-8 h-[62px] flex-shrink-0">
         <Link href="/">
-          <Image src="/logoName.svg" alt="Helios" width={200} height={200} className="cursor-pointer" />
+          <Image src="/logoName.svg" alt="Helios" width={110} height={36} className="brightness-0 invert opacity-90 cursor-pointer" />
         </Link>
-        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[32px] tracking-widest">
-          <span className="text-gray-400">Create</span>
-          <span className="text-gray-400 text-[20px] mb-1">✦</span>
-          <span className="text-gray-400">Sandbox</span>
-          <span className="text-gray-400 text-[20px] mb-1">✦</span>
-          <span className="flex flex-col items-center text-black">
-            Verify
-            <span className="block h-[2px] w-full bg-black mt-[-4px]"></span>
-          </span>
-          <span className="text-gray-400 text-[20px] mb-1">✦</span>
-          <span className="text-gray-400">Download</span>
+        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[16px] tracking-[0.18em]">
+          <Link href="/create" className="step-inactive cursor-pointer">Create</Link>
+          <span className="step-divider text-[10px]">✦</span>
+          <Link href={backHref} className="step-inactive cursor-pointer">Sandbox</Link>
+          <span className="step-divider text-[10px]">✦</span>
+          <span className="step-active pb-1">Verify</span>
+          <span className="step-divider text-[10px]">✦</span>
+          <span className="step-inactive">Download</span>
         </div>
-        <div className="w-[220px]"></div>
+        <div className="w-[110px]" />
       </nav>
 
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden border-t-[2px] border-black">
+      {/* ── Main ──────────────────────────────────────────────────────── */}
+      <main className="flex-1 flex items-center justify-center px-4 py-4 min-h-0">
+        <div
+          className="glass-mid rounded-3xl w-full max-w-[900px] flex flex-col overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.4)] animate-fade-up"
+          style={{ maxHeight: "calc(100vh - 100px)", minHeight: "500px" }}
+        >
 
-        {/* Left panel — tool catalog (60%) */}
-        <div className="flex flex-col flex-1 overflow-hidden border-r-[2px] border-black">
-
-          {/* Summary bar */}
-          <div className="px-6 py-4 flex items-baseline justify-between flex-shrink-0">
-            <span className="font-[family-name:--font-cinzel] text-[22px] tracking-widest">Tool Catalog</span>
-            {!isLoading && (
-              <span className="font-[family-name:--font-cinzel] text-[14px] text-gray-400 tracking-widest">
-                {totalCount} tools · {enabledCount} enabled · {disabledCount} disabled
+          {/* ── Panel header ────────────────────────────────────────── */}
+          <div className="px-8 py-5 flex items-center justify-between flex-shrink-0">
+            <h1 className="font-[family-name:--font-cinzel] text-[20px] tracking-wide text-white/90">
+              Tool Catalog
+            </h1>
+            {!isLoading && totalCount > 0 && (
+              <span className="font-[family-name:--font-geist-mono] text-[11px] text-white/50 tracking-wide">
+                {totalCount} tools&nbsp;·&nbsp;{enabledCount} enabled&nbsp;·&nbsp;{disabledCount} disabled
+                {methodStatsStr ? <>&nbsp;·&nbsp;{methodStatsStr}</> : null}
               </span>
             )}
           </div>
-          <div className="h-[2px] bg-black flex-shrink-0"></div>
 
-          {/* Tool list */}
-          <div className="flex-1 overflow-y-auto">
+          {/* Server name input — always shown when specId is known or for new composite */}
+          {(compositeId || isExistingServer) && (
+            <div className="px-8 pb-4 flex-shrink-0 flex flex-col gap-1.5">
+              <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/35 uppercase">
+                {isExistingServer ? "Server Name — editing existing" : "Server Name"}
+              </label>
+              <input
+                type="text"
+                value={serverName}
+                onChange={e => { setServerName(e.target.value); setNameError("") }}
+                placeholder="my-server-name"
+                className="glass-input rounded-xl px-4 py-2.5 text-[13px] font-[family-name:--font-cinzel] tracking-wider"
+              />
+              {nameError && (
+                <span className="font-[family-name:--font-cinzel] text-red-400 text-[11px] tracking-wider">{nameError}</span>
+              )}
+            </div>
+          )}
+
+          {/* ── Divider ─────────────────────────────────────────────── */}
+          <div className="h-px bg-white/[0.09] flex-shrink-0 mx-0" />
+
+          {/* ── Scrollable tool list ─────────────────────────────────── */}
+          <div className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <span className="font-[family-name:--font-cinzel] text-gray-400 text-[14px] tracking-widest">Loading catalog...</span>
+              <div className="flex items-center justify-center h-40">
+                <span className="font-[family-name:--font-cinzel] text-white/30 text-[13px] tracking-widest">Loading catalog...</span>
               </div>
             ) : error && catalog.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <span className="font-[family-name:--font-cinzel] text-red-600 text-[14px] tracking-widest">{error}</span>
+              <div className="flex items-center justify-center h-40">
+                <span className="font-[family-name:--font-cinzel] text-red-400 text-[13px] tracking-widest">{error}</span>
               </div>
             ) : catalog.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <span className="font-[family-name:--font-cinzel] text-gray-400 text-[14px] tracking-widest">No tools found.</span>
+              <div className="flex items-center justify-center h-40">
+                <span className="font-[family-name:--font-cinzel] text-white/30 text-[13px] tracking-widest">No tools found.</span>
               </div>
             ) : (
               catalog.map((entry, i) => {
@@ -257,83 +270,87 @@ export default function Verify() {
                   <div
                     key={i}
                     className={cn(
-                      "transition-colors duration-150",
-                      i !== catalog.length - 1 && "border-b-[1px] border-gray-200",
-                      entry.enabled ? "bg-white" : "bg-gray-50"
+                      "border-b border-white/[0.06]",
+                      entry.enabled ? "bg-transparent" : "bg-black/[0.10]",
+                      !isEditing && "hover:bg-white/[0.04]"
                     )}
                   >
-                    {/* Main row */}
-                    <div className="flex items-center gap-4 px-6 py-4">
+                    {/* Tool row */}
+                    <div className="flex items-center gap-3 pl-8 pr-6 py-4">
+
+                      {/* Toggle checkbox */}
                       <div
                         onClick={() => handleToggle(i)}
                         className={cn(
-                          "flex-shrink-0 w-5 h-5 border-[2px] flex items-center justify-center cursor-pointer transition-colors duration-150",
-                          entry.enabled ? "border-black bg-black" : "border-gray-400 bg-white"
+                          "flex-shrink-0 w-5 h-5 rounded flex items-center justify-center cursor-pointer border",
+                          entry.enabled
+                            ? "border-[#C9A84C]/60 bg-[#C9A84C]/20"
+                            : "border-white/[0.18] bg-transparent"
                         )}
                       >
                         {entry.enabled && (
-                          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                            <path d="M1 3.5L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                            <path d="M1 3L3.5 5.5L8 1" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-1 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {entry.handler?.method && (
-                            <span className={cn(
-                              "flex-shrink-0 font-[family-name:--font-geist-mono] text-[9px] tracking-widest px-1.5 py-0.5",
-                              entry.enabled
-                                ? (METHOD_STYLES[entry.handler.method.toUpperCase()] ?? "bg-gray-400 text-white")
-                                : "border border-gray-200 text-gray-300 bg-white"
-                            )}>
-                              {entry.handler.method.toUpperCase()}
-                            </span>
-                          )}
-                          <span className={cn(
-                            "font-[family-name:--font-cinzel] text-[13px] tracking-wider truncate",
-                            entry.enabled ? "text-black" : "text-gray-400"
-                          )}>
-                            {entry.name}
-                          </span>
-                        </div>
+                      {/* Method badge */}
+                      {entry.handler?.method && (
+                        <span className={cn(
+                          "flex-shrink-0 font-[family-name:--font-geist-mono] text-[9px] tracking-widest px-1.5 py-0.5 rounded",
+                          entry.enabled
+                            ? (METHOD_STYLES[entry.handler.method.toUpperCase()] ?? "method-get")
+                            : "bg-white/[0.04] text-white/20 border border-white/[0.07]"
+                        )}>
+                          {entry.handler.method.toUpperCase()}
+                        </span>
+                      )}
+
+                      {/* Name + description */}
+                      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                        <span className={cn(
+                          "font-[family-name:--font-cinzel] text-[12px] tracking-wider truncate",
+                          entry.enabled ? "text-white/85" : "text-white/30"
+                        )}>
+                          {entry.name}
+                        </span>
                         {entry.description && (
-                          <span className="font-[family-name:--font-geist-sans] text-[11px] text-gray-400 leading-snug truncate">
+                          <span className="font-[family-name:--font-cormorant] text-[13px] text-white/40 leading-snug truncate">
                             {entry.description}
                           </span>
                         )}
                       </div>
 
+                      {/* Edit / Done button */}
                       <button
                         onClick={() => toggleEdit(i)}
                         className={cn(
-                          "flex-shrink-0 font-[family-name:--font-cinzel] text-[10px] tracking-widest px-3 py-1.5 border transition-colors duration-150",
+                          "flex-shrink-0 font-[family-name:--font-cinzel] text-[9px] tracking-[0.18em] uppercase px-3 py-1.5 rounded-lg border cursor-pointer",
                           isEditing
-                            ? "border-black bg-black text-white"
-                            : "border-gray-300 text-gray-400 hover:border-black hover:text-black"
+                            ? "border-[#C9A84C]/50 bg-[#C9A84C]/15 text-[#C9A84C]"
+                            : "border-white/[0.12] text-white/35 hover:border-white/25 hover:text-white/65"
                         )}
                       >
-                        {isEditing ? "DONE" : "EDIT"}
+                        {isEditing ? "Done" : "Edit"}
                       </button>
                     </div>
 
-                    {/* Edit panel */}
+                    {/* Edit expand */}
                     {isEditing && (
-                      <div className="px-6 pb-5 flex flex-col gap-4 border-t-[1px] border-gray-100 bg-gray-50">
-                        <div className="flex flex-col gap-1 pt-4">
-                          <label htmlFor={`tool-name-${i}`} className="font-[family-name:--font-cinzel] text-[9px] tracking-widest text-gray-400 uppercase">Tool Name</label>
+                      <div className="px-6 pb-5 pt-1 flex flex-col gap-3 bg-white/[0.025]">
+                        <div className="flex flex-col gap-1">
+                          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/30 uppercase">Tool Name</label>
                           <input
-                            id={`tool-name-${i}`}
                             type="text"
                             value={entry.name}
                             onChange={e => handleNameChange(i, e.target.value)}
-                            className="font-[family-name:--font-cinzel] text-[13px] tracking-wider bg-white border-[1px] border-gray-300 px-3 py-2 outline-none focus:border-black transition-colors text-black"
+                            className="glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-cinzel] tracking-wider"
                           />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <label htmlFor={`tool-description-${i}`} className="font-[family-name:--font-cinzel] text-[9px] tracking-widest text-gray-400 uppercase">Description</label>
+                          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/30 uppercase">Description</label>
                           <textarea
-                            id={`tool-description-${i}`}
                             value={entry.description}
                             onChange={e => {
                               handleDescriptionChange(i, e.target.value)
@@ -341,11 +358,11 @@ export default function Verify() {
                               e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"
                             }}
                             rows={2}
-                            className="font-[family-name:--font-geist-sans] text-[11px] text-black leading-snug bg-white border-[1px] border-gray-300 px-3 py-2 outline-none focus:border-black transition-colors resize-none"
+                            className="glass-input rounded-lg px-3 py-2 text-[13px] font-[family-name:--font-cormorant] leading-snug resize-none"
                           />
                         </div>
                         {entry.handler?.path && (
-                          <span className="font-[family-name:--font-geist-mono] text-[10px] text-gray-300">{entry.handler.path}</span>
+                          <span className="font-[family-name:--font-geist-mono] text-[10px] text-white/20">{entry.handler.path}</span>
                         )}
                       </div>
                     )}
@@ -355,16 +372,15 @@ export default function Verify() {
             )}
           </div>
 
-          {/* Footer — Back + Save */}
-          <div className="border-t-[2px] border-black p-6 flex-shrink-0">
+          {/* ── Footer ──────────────────────────────────────────────── */}
+          <div className="border-t border-white/[0.09] px-6 py-4 flex-shrink-0 flex flex-col gap-3">
             {error && catalog.length > 0 && (
-              <p className="font-[family-name:--font-cinzel] text-red-600 text-[12px] tracking-wider mb-3 text-center">{error}</p>
+              <p className="font-[family-name:--font-cinzel] text-red-400 text-[11px] tracking-wider text-center">{error}</p>
             )}
-            <div className="flex gap-4">
-              <Link href={compositeId ? `/sandbox?compositeId=${compositeId}` : `/sandbox?specId=${specId}`} className="flex-1">
-                <button className="font-[family-name:--font-cinzel] w-full cursor-pointer py-4 text-[16px] tracking-widest text-gray-400 border-[2px] border-gray-300 relative
-                  before:absolute before:inset-[4px] before:border-[1px] before:border-gray-300 before:pointer-events-none
-                  hover:border-black hover:text-black hover:before:border-black transition-colors duration-300">
+            <div className="flex gap-3">
+              <Link href={backHref} className="flex-1">
+                <button className="font-[family-name:--font-cinzel] w-full cursor-pointer py-3.5 text-[13px] tracking-[0.15em]
+                  glass rounded-xl text-white/45 hover:text-white/75 hover:bg-white/[0.10]">
                   ← Back
                 </button>
               </Link>
@@ -372,126 +388,27 @@ export default function Verify() {
                 onClick={handleSave}
                 disabled={isSaving || isLoading}
                 className={cn(
-                  "flex-1 font-[family-name:--font-cinzel] py-4 text-[16px] tracking-widest border-[2px] border-black relative before:absolute before:inset-[4px] before:border-[1px] before:pointer-events-none transition-colors duration-300",
+                  "flex-1 font-[family-name:--font-cinzel] py-3.5 text-[13px] tracking-[0.15em] rounded-xl",
                   isSaving || isLoading
-                    ? "cursor-not-allowed opacity-50 before:border-black text-black"
-                    : "cursor-pointer text-black before:border-black hover:bg-black hover:text-white hover:before:border-white"
+                    ? "cursor-not-allowed opacity-40 bg-[#C9A84C]/30 text-[#C9A84C]/60"
+                    : "btn-gold cursor-pointer"
                 )}
               >
-                {isSaving ? "Saving..." : "Confirm & Save"}
+                {isSaving ? "Saving..." : isExistingServer ? "Save Changes" : "Confirm & Save"}
               </button>
             </div>
           </div>
+
         </div>
-
-        {/* Right panel — statistics (40%) */}
-        <div className="w-[40%] flex-shrink-0 flex flex-col overflow-hidden bg-white">
-
-          {/* Header */}
-          <div className="px-6 py-4 flex-shrink-0">
-            <span className="font-[family-name:--font-cinzel] text-[22px] tracking-widest">Statistics</span>
-          </div>
-          <div className="h-[2px] bg-black flex-shrink-0"></div>
-
-          <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-8">
-
-            {/* Server Name — composite sessions only */}
-            {compositeId && (
-              <div className="flex flex-col gap-3">
-                <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 uppercase">Server Name</span>
-                <input
-                  type="text"
-                  value={serverName}
-                  onChange={e => { setServerName(e.target.value); setNameError("") }}
-                  placeholder="my-server-name"
-                  className="font-[family-name:--font-cinzel] border-[1px] border-gray-300 px-4 py-3 text-[14px] tracking-wider outline-none focus:border-black transition-colors duration-200 placeholder:text-gray-400"
-                />
-                {nameError && <span className="font-[family-name:--font-cinzel] text-red-600 text-[11px] tracking-wider">{nameError}</span>}
-              </div>
-            )}
-
-            {/* Overview */}
-            <div className="flex flex-col gap-3">
-              <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 uppercase">Overview</span>
-              <div className="flex flex-col gap-2">
-                {[
-                  { label: "Total Tools",   value: totalCount },
-                  { label: "Enabled",       value: enabledCount },
-                  { label: "Disabled",      value: disabledCount },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between border-b-[1px] border-gray-100 pb-2">
-                    <span className="font-[family-name:--font-geist-sans] text-[13px] text-gray-500">{label}</span>
-                    <span className="font-[family-name:--font-cinzel] text-[16px] tracking-wider text-black">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Methods */}
-            <div className="flex flex-col gap-3">
-              <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 uppercase">Methods</span>
-              <div className="flex flex-col gap-2">
-                {methodOrder.map(method => {
-                  const count = methodCounts[method] ?? 0
-                  const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0
-                  return (
-                    <div key={method} className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-[family-name:--font-geist-mono] text-[11px] tracking-widest text-gray-500">{method}</span>
-                        <span className="font-[family-name:--font-cinzel] text-[13px] text-black">{count}</span>
-                      </div>
-                      <div className="h-[3px] bg-gray-100 w-full">
-                        <div
-                          className={cn("h-full transition-all duration-300", METHOD_COLORS[method] ?? "bg-gray-400")}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Coverage */}
-            <div className="flex flex-col gap-3">
-              <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 uppercase">Coverage</span>
-              <div className="flex flex-col gap-2">
-                {[
-                  { label: "With descriptions", value: `${withDescription} / ${totalCount}` },
-                  { label: "With parameters",   value: `${withParams} / ${totalCount}` },
-                  { label: "Avg params / tool",  value: avgParams },
-                  { label: "Total parameters",   value: totalParams },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between border-b-[1px] border-gray-100 pb-2">
-                    <span className="font-[family-name:--font-geist-sans] text-[13px] text-gray-500">{label}</span>
-                    <span className="font-[family-name:--font-cinzel] text-[16px] tracking-wider text-black">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Placeholders */}
-            <div className="flex flex-col gap-3">
-              <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-gray-400 uppercase">Coming Soon</span>
-              <div className="flex flex-col gap-2">
-                {[
-                  "API coverage score",
-                  "Estimated token budget",
-                  "MCP server file size",
-                  "Tool quality score",
-                ].map(label => (
-                  <div key={label} className="flex items-center justify-between border-b-[1px] border-gray-100 pb-2">
-                    <span className="font-[family-name:--font-geist-sans] text-[13px] text-gray-400">{label}</span>
-                    <span className="font-[family-name:--font-cinzel] text-[14px] text-gray-300">—</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-      </div>
+      </main>
     </div>
+  )
+}
+
+export default function Verify() {
+  return (
+    <Suspense>
+      <VerifyContent />
+    </Suspense>
   )
 }

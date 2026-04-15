@@ -1,10 +1,5 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #000000;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,17 +7,407 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #ffffff;
-    --foreground: #000000;
-  }
+:root {
+  --gold: #C9A84C;
+  --gold-bright: #E8C46A;
+  --gold-dim: #9A7A30;
+  --glass: rgba(255, 255, 255, 0.07);
+  --glass-hover: rgba(255, 255, 255, 0.11);
+  --glass-border: rgba(255, 255, 255, 0.13);
+  --glass-input: rgba(255, 255, 255, 0.06);
 }
 
 body {
-  background: #f2f2f7;
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-cormorant), Georgia, serif;
+  color: rgba(255, 255, 255, 0.92);
+  background: #070c18;
   overflow-y: scroll;
 }
 
+/* ── Prevent text cursor on non-interactive elements ─────── */
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+label,
+div {
+  cursor: default;
+}
+
+/* ── Glass utilities ─────────────────────────────────────── */
+
+.glass {
+  background: rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.glass-mid {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.glass-nav {
+  background: rgba(15, 18, 30, 0.45);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.403);
+  color: rgba(255, 255, 255, 0.92);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.085);
+  border-color: rgba(201, 168, 76, 0.55);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.07);
+}
+
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* ── Method badges — dark-theme adapted ───────────────────── */
+
+.method-get {
+  background: rgba(52, 211, 153, 0.15);
+  color: #6EE7B7;
+  border: 1px solid rgba(52, 211, 153, 0.28);
+}
+
+.method-post {
+  background: rgba(96, 165, 250, 0.15);
+  color: #93C5FD;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+}
+
+.method-put {
+  background: rgba(251, 191, 36, 0.15);
+  color: #FCD34D;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+}
+
+.method-patch {
+  background: rgba(167, 139, 250, 0.15);
+  color: #C4B5FD;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+}
+
+.method-delete {
+  background: rgba(248, 113, 113, 0.15);
+  color: #FCA5A5;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+}
+
+/* ── Gold accent button ───────────────────────────────────── */
+
+.btn-gold {
+  background: linear-gradient(135deg, #C9A84C 0%, #E8C46A 50%, #C9A84C 100%);
+  color: #1a1200;
+  font-weight: 600;
+  border: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 20px rgba(201, 168, 76, 0.30);
+}
+
+.btn-gold:hover:not(:disabled) {
+  box-shadow: 0 6px 28px rgba(201, 168, 76, 0.50);
+  transform: translateY(-1px);
+}
+
+.btn-gold:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ── Animations ───────────────────────────────────────────── */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-gold {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.0);
+  }
+
+  50% {
+    box-shadow: 0 0 24px 4px rgba(201, 168, 76, 0.22);
+  }
+}
+
+@keyframes shimmer-bar {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes dot-bounce {
+
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+
+  40% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+.animate-fade-up {
+  animation: fadeInUp 0.65s ease forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+/* Full-page enter — applied to root divs after fonts are ready */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-page-enter {
+  animation: pageEnter 0.55s ease both;
+}
+
+.animate-bg-in {
+  animation: fadeIn 0.6s ease both;
+}
+
+.animate-gold-pulse {
+  animation: pulse-gold 2.8s ease-in-out infinite;
+}
+
+.dot-1 {
+  animation: dot-bounce 1.2s ease-in-out infinite 0.0s;
+}
+
+.dot-2 {
+  animation: dot-bounce 1.2s ease-in-out infinite 0.2s;
+}
+
+.dot-3 {
+  animation: dot-bounce 1.2s ease-in-out infinite 0.4s;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+/* ── Star constellation ──────────────────────────────────── */
+
+/* Spin via CSS rotate property — does not conflict with scale/opacity */
+@keyframes starSpin {
+  from { rotate: 0deg; }
+  to   { rotate: 360deg; }
+}
+
+/* Twinkle via CSS scale + opacity — does not conflict with rotate */
+@keyframes starTwinkle {
+  0%, 100% { scale: 1;    opacity: 0.78; }
+  50%       { scale: 1.22; opacity: 1;    }
+}
+
+/* Shooting entry — on the wrapper, uses translate + opacity + filter for comet trail */
+@keyframes shootingEntry {
+  0% {
+    translate: 200px -130px;
+    opacity: 0;
+    filter:
+      drop-shadow(35px -23px 5px rgba(255,255,255,0.95))
+      drop-shadow(72px -47px 12px rgba(255,255,255,0.68))
+      drop-shadow(118px -77px 22px rgba(201,168,76,0.40))
+      drop-shadow(185px -120px 35px rgba(201,168,76,0.14));
+  }
+  10% { opacity: 1; }
+  40% {
+    filter:
+      drop-shadow(22px -14px 4px rgba(255,255,255,0.62))
+      drop-shadow(46px -30px 10px rgba(255,255,255,0.38))
+      drop-shadow(78px -51px 18px rgba(201,168,76,0.20));
+  }
+  78% {
+    translate: 10px -7px;
+    filter: drop-shadow(4px -3px 2px rgba(255,255,255,0.18));
+  }
+  100% {
+    translate: 0px 0px;
+    opacity: 1;
+    filter: none;
+  }
+}
+
+/* 4-pointed star shape */
+.star-dot {
+  clip-path: polygon(50% 0%, 63% 37%, 100% 50%, 63% 63%, 50% 100%, 37% 63%, 0% 50%, 37% 37%);
+  background: linear-gradient(135deg, #ffffff 0%, #e8f0ff 50%, #ffffff 100%);
+  cursor: pointer;
+  pointer-events: auto;
+  will-change: rotate, scale, opacity;
+  position: relative;
+}
+
+/* Existing stars: spin + twinkle immediately */
+.star-dot.is-existing {
+  animation:
+    starSpin var(--rotate-dur, 28s) linear infinite,
+    starTwinkle var(--twinkle-dur, 3s) ease-in-out infinite var(--twinkle-delay, 0s);
+}
+
+/* New star: spin + twinkle kick in after shooting entry settles (1.5s delay + 2.5s anim ≈ 4s) */
+.star-dot.is-new {
+  animation:
+    starSpin var(--rotate-dur, 28s) linear infinite 4.2s,
+    starTwinkle var(--twinkle-dur, 3s) ease-in-out infinite 4.3s;
+}
+
+/* Hover: gold glow + scale up, cancel running animations */
+.star-wrapper:hover .star-dot {
+  scale: 2.5 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #C9A84C 45%, #ffffff 100%) !important;
+  filter:
+    drop-shadow(0 0 6px rgba(201,168,76,0.85))
+    drop-shadow(0 0 20px rgba(201,168,76,0.38)) !important;
+  animation: none !important;
+}
+
+/* Shooting entry animation on wrapper for new stars */
+.star-wrapper.is-new {
+  animation: shootingEntry 2.5s cubic-bezier(0.22, 1, 0.36, 1) both 1.5s;
+}
+
+/* Tooltip label — centered below the wrapper */
+.star-label {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6px);
+  white-space: nowrap;
+  font-family: var(--font-cinzel, serif);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.90);
+  background: rgba(7,12,24,0.84);
+  border: 1px solid rgba(201,168,76,0.35);
+  border-radius: 6px;
+  padding: 3px 9px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateX(-50%) translateY(4px);
+  backdrop-filter: blur(8px);
+  z-index: 20;
+}
+
+.star-wrapper:hover .star-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 44×44 hit area centered on the star position */
+.star-wrapper {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* ── Breadcrumb step indicator ───────────────────────────── */
+
+.step-active {
+  color: rgba(255, 255, 255, 0.95);
+  position: relative;
+}
+
+.step-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  border-radius: 2px;
+}
+
+.step-inactive {
+  color: rgba(255, 255, 255, 0.30);
+  transition: color 0.2s ease;
+}
+
+.step-inactive:hover {
+  color: rgba(255, 255, 255, 0.60);
+}
+
+.step-divider {
+  color: rgba(255, 255, 255, 0.18);
+}

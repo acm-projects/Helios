@@ -313,7 +313,6 @@ function buildFromOpenApiParams(
     // Skip params that are auto-injected — the AI never needs to see them
     if (fixedParamNames.has(p.name)) continue
 
-    console.log(`[param] name=${p.name} in=${p.in} type=${p.type} hasSchema=${!!p.schema}`)
     const name = p.name;
     const rawSchema = p.schema || (p.type ? { type: p.type, items: p.items, enum: p.enum, description: p.description } : {})
     const schema = resolveSchema(rawSchema, rootSpec);
@@ -490,8 +489,20 @@ export function parseOpenApiSpec(spec: any): ToolsFile {
 }
 
 export async function parseSwaggerUrl(specUrl: string): Promise<any> {
-  const spec = await SwaggerParser.dereference(specUrl);
-  return spec;
+  const timeoutMs = 15_000
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Spec fetch timed out after ${timeoutMs / 1000}s`)), timeoutMs)
+  })
+  try {
+    const spec = await Promise.race([
+      SwaggerParser.dereference(specUrl),
+      timeoutPromise
+    ])
+    return spec
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
 }
 
 export async function generateToolRegistry(spec: string): Promise<ToolsFile> {

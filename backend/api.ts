@@ -20,7 +20,13 @@ const ALLOWED_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000"
 app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }))
 app.use(express.json({ limit: "50mb" })) // large limit needed for specs with 50-100+ tools
 
-await mongoose.connect(process.env.MONGODB_URI!)
+try {
+  await mongoose.connect(process.env.MONGODB_URI!)
+  console.log("[db] MongoDB connected")
+} catch (err) {
+  console.error("[db] Failed to connect to MongoDB:", err)
+  process.exit(1)
+}
 
 // Shape sent to the frontend — stored in sessionStorage, sent back on every chat request
 function toOpenAITool(tool: any, enabled = true) {
@@ -52,12 +58,38 @@ function toAnthropicTool(tool: any) {
 
 
 
+function assignStarPosition(existingPositions: Array<{ starX: number; starY: number }>): { starX: number; starY: number } {
+  const MIN_DIST = 9
+  for (let attempt = 0; attempt < 120; attempt++) {
+    const side = Math.random() < 0.5 ? "left" : "right"
+    const starX = side === "left"
+      ? 3  + Math.random() * 34   // 3–37%  (left zone)
+      : 63 + Math.random() * 33   // 63–96% (right zone)
+    const starY = 10 + Math.random() * 50 // 10–60vh
+    const tooClose = existingPositions.some(p => {
+      const dx = p.starX - starX
+      const dy = (p.starY - starY) * 0.55
+      return Math.sqrt(dx * dx + dy * dy) < MIN_DIST
+    })
+    if (!tooClose) return { starX, starY }
+  }
+  // Fallback — place anywhere in the zone if all attempts fail
+  const side = Math.random() < 0.5 ? "left" : "right"
+  return {
+    starX: side === "left" ? 3 + Math.random() * 34 : 63 + Math.random() * 33,
+    starY: 10 + Math.random() * 50,
+  }
+}
+
 // Parses a spec and returns the tool catalog to the frontend for review.
 // Accepts either { url, name } or { spec, name } (raw JSON object from file upload).
 // Does NOT save to the DB yet — that only happens when the user confirms via POST /catalog.
 app.post("/api/spec/parse", authMiddleware, async (req, res) => {
     const specId = req.body.name
     if (!specId) return res.status(400).json({ error: "name cannot be empty" })
+    if (!/^[a-zA-Z0-9_\-]{1,64}$/.test(specId)) {
+        return res.status(400).json({ error: "Name must be 1–64 characters (letters, numbers, hyphens, underscores only)" })
+    }
 
     const existing = await Spec.findOne({ _id: specId, userId: req.user!.userId })
     if (existing) return res.status(400).json({ error: "The name is already taken. Please choose another name." })
@@ -204,22 +236,14 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
                     })
                 registry = { baseUrl: "", tools, auth: [{ type: "none" }] }
             } else {
-            // ALWAYS generate fresh registry to auto-upgrade to latest enrichment templates
-            registry = await generateToolRegistry(doc)
-            
-            // Apply saved user overrides (renames, descriptions, disable toggles)
             if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
-                const savedCatalogMap = new Map<string, any>(doc.catalog.map((t: any) => [`${t.handler?.method}:${t.handler?.path}`, t]))
-                registry.tools = registry.tools.map((t: any) => {
-                    const saved = savedCatalogMap.get(`${t.handler?.method}:${t.handler?.path}`)
-                    if (saved) {
-                        return { ...t, name: saved.name, description: saved.description, enabled: saved.enabled !== false }
-                    }
-                    return { ...t, enabled: true }
-                }).filter((t: any) => t.enabled)
-                
-                if (registry.tools.length === 0) return res.status(400).json({ error: "No enabled tools in saved catalog" })
+                // Saved catalog exists — skip expensive re-parse and use stored tools directly
+                const enabledTools = doc.catalog.filter((t: any) => t.enabled !== false)
+                if (enabledTools.length === 0) return res.status(400).json({ error: "No enabled tools in saved catalog" })
+                registry = { baseUrl: doc.baseUrl || doc.spec?.servers?.[0]?.url || "", tools: enabledTools, auth: doc.auth ?? [] }
             } else {
+                // No saved catalog yet — must parse from spec
+                registry = await generateToolRegistry(doc)
                 registry.tools = registry.tools.map((t: any) => ({ ...t, enabled: true }))
             }
             frontendTools = registry.tools.map((tool: any) => toOpenAITool(tool))
@@ -258,7 +282,7 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
         }
     }
 
-    res.json({ sessionId, tools: openAITools, authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined })
+    res.json({ sessionId, tools: openAITools, baseUrl: registry.baseUrl ?? "", authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined })
 })
 
 app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
@@ -318,7 +342,9 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
         ? ` SPOTIFY API RULES: (1) Any endpoint that accepts a "market" parameter MUST include market="US" — omitting it causes a 400 error. (2) For recommendations, seed_genres must be comma-separated lowercase slugs like "indie,rock,pop". Call get_recommendation_genres first if unsure. (3) Use "search" for finding music by mood or vibe. (4) If a tool returns an API error, fix the parameters and retry once.`
         : ""
 
-    const systemContent = `You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}${spotifyHints}`
+    const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+
+    const systemContent = `Today's date is ${todayStr}. You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}${spotifyHints}`
 
     let iterations = 0;
     let totalTokens = 0;
@@ -462,8 +488,15 @@ app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
             return res.json({ catalog, baseUrl: "", fromSaved: true })
         }
 
+        if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
+            // Saved catalog exists — return it directly, no re-parse needed
+            const catalog = doc.catalog.map((t: any) => ({ ...t, enabled: t.enabled !== false }))
+            return res.json({ catalog, baseUrl: doc.baseUrl || "", fromSaved: true })
+        }
+
+        // No saved catalog — parse from spec and return defaults
         const registry = await generateToolRegistry(doc)
-        let catalog = registry.tools.map((tool: any) => ({
+        const catalog = registry.tools.map((tool: any) => ({
             name: tool.name,
             description: tool.description,
             enabled: true,
@@ -471,18 +504,6 @@ app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
             handler: tool.handler,
             enrichment: tool.enrichment
         }))
-
-        // Restore overrides from saved catalog if presents
-        if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
-            const savedCatalogMap = new Map<string, any>(doc.catalog.map((t: any) => [`${t.handler?.method}:${t.handler?.path}`, t]))
-            catalog = catalog.map((t: any) => {
-                const saved = savedCatalogMap.get(`${t.handler.method}:${t.handler.path}`)
-                if (saved) {
-                    return { ...t, name: saved.name, description: saved.description, enabled: saved.enabled !== false }
-                }
-                return t
-            })
-        }
         res.json({ catalog, baseUrl: registry.baseUrl || "", fromSaved: false })
     } catch (err: any) {
         res.status(500).json({ error: err.message })
@@ -499,6 +520,9 @@ app.post("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
         if (!existing) {
             // New server — first time saving. Create the full document now.
             if (!spec) return res.status(400).json({ error: "spec required for new server" })
+            const allSpecs = await Spec.find({ userId: req.user!.userId }, { starX: 1, starY: 1 }).lean()
+            const existingPositions = allSpecs.filter(s => s.starX != null).map(s => ({ starX: s.starX!, starY: s.starY! }))
+            const { starX, starY } = assignStarPosition(existingPositions)
             await Spec.create({
                 _id: req.params.specId,
                 userId: req.user!.userId,
@@ -510,6 +534,8 @@ app.post("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
                 auth: spec.auth ?? [],
                 groupMap: spec.groupMap ?? null,
                 authMap: spec.authMap ?? null,
+                starX,
+                starY,
             })
         } else {
             // Existing server — just update the catalog
@@ -535,11 +561,35 @@ app.delete("/api/servers/:specId", authMiddleware, async (req, res) => {
 app.get("/api/servers", authMiddleware, async (req, res) => {
     try {
         const all = await Spec.find({ userId: req.user!.userId }).lean()
+
+        // Lazily assign star positions for any server that doesn't have one yet.
+        // Mutate in-memory FIRST so this response always has coordinates, then
+        // persist fire-and-forget so a DB error can't block the mutation.
+        const existingPositions = (all as any[])
+            .filter(s => s.starX != null)
+            .map(s => ({ starX: s.starX as number, starY: s.starY as number }))
+
+        for (const s of all as any[]) {
+            if (s.starX == null) {
+                const pos = assignStarPosition(existingPositions)
+                s.starX = pos.starX   // mutate in-memory before any await
+                s.starY = pos.starY
+                existingPositions.push(pos)
+                // Persist in the background — failure just means next load retries
+                Spec.updateOne(
+                    { _id: s._id, userId: req.user!.userId },
+                    { $set: { starX: pos.starX, starY: pos.starY } }
+                ).catch(() => {})
+            }
+        }
+
         const servers = all.map((s: any) => ({
             id: s._id,
             baseUrl: s.baseUrl || "",
             toolCount: Array.isArray(s.catalog) ? s.catalog.filter((t: any) => t.enabled !== false).length : (s.toolCount || 0),
-            createdAt: s.createdAt || ""
+            createdAt: s.createdAt || "",
+            starX: s.starX,
+            starY: s.starY,
         }))
         res.json({ servers })
     } catch (err: any) {
@@ -601,11 +651,19 @@ app.post("/api/oauth2/client-credentials", authMiddleware, async (req, res) => {
             client_id: clientId,
             client_secret: clientSecret,
         })
-        const tokenRes = await fetch(tokenUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: params.toString(),
-        })
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 10_000)
+        let tokenRes: Response
+        try {
+            tokenRes = await fetch(tokenUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params.toString(),
+                signal: controller.signal,
+            })
+        } finally {
+            clearTimeout(timer)
+        }
         const tokenData = await tokenRes.json() as any
         if (!tokenRes.ok || !tokenData.access_token) {
             const msg = tokenData.error_description || tokenData.error || "Token exchange failed"
