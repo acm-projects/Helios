@@ -1,0 +1,4338 @@
+{
+  "baseUrl": "https://circleci.com/api/v2",
+  "auth": [
+    {
+      "type": "api_key",
+      "in": "header",
+      "name": "Circle-Token"
+    },
+    {
+      "type": "basic_auth"
+    },
+    {
+      "type": "api_key",
+      "in": "query",
+      "name": "circle-token"
+    }
+  ],
+  "tools": [
+    {
+      "name": "getProjectWorkflowsPageData",
+      "description": "Get summary metrics and trends for a project across it's workflows and branches",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "reporting-window": {
+            "type": "string",
+            "description": "The time window used to calculate summary metrics. If not provided, defaults to last-90-days"
+          },
+          "branches": {
+            "type": "object",
+            "description": "The names of VCS branches to include in branch-level workflow metrics."
+          },
+          "workflow-names": {
+            "type": "object",
+            "description": "The names of workflows to include in workflow-level metrics."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/pages/{project-slug}/summary",
+        "headers": {},
+        "query_params": [
+          "reporting-window",
+          "branches",
+          "workflow-names"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getJobTimeseries",
+      "description": "Job timeseries data",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "workflow-name": {
+            "type": "string",
+            "description": "The name of the workflow."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The name of a vcs branch. If not passed we will scope the API call to the default branch."
+          },
+          "granularity": {
+            "type": "string",
+            "description": "The granularity for which to query timeseries data."
+          },
+          "start-date": {
+            "type": "string",
+            "description": "Include only executions that started at or after this date. This must be specified if an end-date is provided."
+          },
+          "end-date": {
+            "type": "string",
+            "description": "Include only executions that started before this date. This date can be at most 90 days after the start-date."
+          }
+        },
+        "required": [
+          "project-slug",
+          "workflow-name"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/time-series/{project-slug}/workflows/{workflow-name}/jobs",
+        "headers": {},
+        "query_params": [
+          "branch",
+          "granularity",
+          "start-date",
+          "end-date"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getOrgSummaryData",
+      "description": "Get summary metrics with trends for the entire org, and for each project.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org-slug": {
+            "type": "string",
+            "description": "Org slug in the form `vcs-slug/org-name`. The `/` characters may be URL-escaped."
+          },
+          "reporting-window": {
+            "type": "string",
+            "description": "The time window used to calculate summary metrics. If not provided, defaults to last-90-days"
+          },
+          "project-names": {
+            "type": "object",
+            "description": "List of project names."
+          }
+        },
+        "required": [
+          "org-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/{org-slug}/summary",
+        "headers": {},
+        "query_params": [
+          "reporting-window",
+          "project-names"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getAllInsightsBranches",
+      "description": "Get all branches for a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "workflow-name": {
+            "type": "string",
+            "description": "The name of a workflow. If not passed we will scope the API call to the project."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/{project-slug}/branches",
+        "headers": {},
+        "query_params": [
+          "workflow-name"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getFlakyTests",
+      "description": "Get flaky tests for a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/{project-slug}/flaky-tests",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectWorkflowMetrics",
+      "description": "Get summary metrics for a project's workflows",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "page-token": {
+            "type": "string",
+            "description": "A token to retrieve the next page of results."
+          },
+          "all-branches": {
+            "type": "boolean",
+            "description": "Whether to retrieve data for all branches combined. Use either this parameter OR the branch name parameter."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The name of a vcs branch. If not passed we will scope the API call to the default branch."
+          },
+          "reporting-window": {
+            "type": "string",
+            "description": "The time window used to calculate summary metrics. If not provided, defaults to last-90-days"
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/{project-slug}/workflows",
+        "headers": {},
+        "query_params": [
+          "page-token",
+          "all-branches",
+          "branch",
+          "reporting-window"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectWorkflowRuns",
+      "description": "Get recent runs of a workflow",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "workflow-name": {
+            "type": "string",
+            "description": "The name of the workflow."
+          },
+          "all-branches": {
+            "type": "boolean",
+            "description": "Whether to retrieve data for all branches combined. Use either this parameter OR the branch name parameter."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The name of a vcs branch. If not passed we will scope the API call to the default branch."
+          },
+          "page-token": {
+            "type": "string",
+            "description": "A token to retrieve the next page of results."
+          },
+          "start-date": {
+            "type": "string",
+            "description": "Include only executions that started at or after this date. This must be specified if an end-date is provided."
+          },
+          "end-date": {
+            "type": "string",
+            "description": "Include only executions that started before this date. This date can be at most 90 days after the start-date."
+          }
+        },
+        "required": [
+          "project-slug",
+          "workflow-name"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/{project-slug}/workflows/{workflow-name}",
+        "headers": {},
+        "query_params": [
+          "all-branches",
+          "branch",
+          "page-token",
+          "start-date",
+          "end-date"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectWorkflowJobMetrics",
+      "description": "Get summary metrics for a project workflow's jobs.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "workflow-name": {
+            "type": "string",
+            "description": "The name of the workflow."
+          },
+          "page-token": {
+            "type": "string",
+            "description": "A token to retrieve the next page of results."
+          },
+          "all-branches": {
+            "type": "boolean",
+            "description": "Whether to retrieve data for all branches combined. Use either this parameter OR the branch name parameter."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The name of a vcs branch. If not passed we will scope the API call to the default branch."
+          },
+          "reporting-window": {
+            "type": "string",
+            "description": "The time window used to calculate summary metrics. If not provided, defaults to last-90-days"
+          },
+          "job-name": {
+            "type": "string",
+            "description": "The name of the jobs you would like to filter from your workflow. If not specified, all workflow jobs will be returned. The job name can either be the full job name or just a substring of the job name."
+          }
+        },
+        "required": [
+          "project-slug",
+          "workflow-name"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/{project-slug}/workflows/{workflow-name}/jobs",
+        "headers": {},
+        "query_params": [
+          "page-token",
+          "all-branches",
+          "branch",
+          "reporting-window",
+          "job-name"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWorkflowSummary",
+      "description": "Get metrics and trends for workflows",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "workflow-name": {
+            "type": "string",
+            "description": "The name of the workflow."
+          },
+          "all-branches": {
+            "type": "boolean",
+            "description": "Whether to retrieve data for all branches combined. Use either this parameter OR the branch name parameter."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The name of a vcs branch. If not passed we will scope the API call to the default branch."
+          }
+        },
+        "required": [
+          "project-slug",
+          "workflow-name"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/{project-slug}/workflows/{workflow-name}/summary",
+        "headers": {},
+        "query_params": [
+          "all-branches",
+          "branch"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectWorkflowTestMetrics",
+      "description": "Get test metrics for a project's workflows",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "workflow-name": {
+            "type": "string",
+            "description": "The name of the workflow."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The name of a vcs branch. If not passed we will scope the API call to the default branch."
+          },
+          "all-branches": {
+            "type": "boolean",
+            "description": "Whether to retrieve data for all branches combined. Use either this parameter OR the branch name parameter."
+          }
+        },
+        "required": [
+          "project-slug",
+          "workflow-name"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/insights/{project-slug}/workflows/{workflow-name}/test-metrics",
+        "headers": {},
+        "query_params": [
+          "branch",
+          "all-branches"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "cancelJobByJobID",
+      "description": "Cancel job by job ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job-id": {
+            "type": "string",
+            "description": "The unique ID of the job."
+          }
+        },
+        "required": [
+          "job-id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/jobs/{job-id}/cancel",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getCurrentUser",
+      "description": "User Information",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getCollaborations",
+      "description": "Collaborations",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/collaborations",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createOrganization",
+      "description": "Create a new organization",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the organization."
+          },
+          "vcs_type": {
+            "type": "string",
+            "description": "The version control system type for the organization."
+          }
+        },
+        "required": [
+          "name",
+          "vcs_type"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/organization",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getOrganization",
+      "description": "Get an organization",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org-slug-or-id": {
+            "type": "string",
+            "description": "Org UUID or slug in the form `vcs-slug/org-name`. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug` and replace the `org-name` with the organization ID (found in Organization Settings)."
+          }
+        },
+        "required": [
+          "org-slug-or-id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/organization/{org-slug-or-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteOrganization",
+      "description": "Delete an organization",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org-slug-or-id": {
+            "type": "string",
+            "description": "Org UUID or slug in the form `vcs-slug/org-name`. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug` and replace the `org-name` with the organization ID (found in Organization Settings)."
+          }
+        },
+        "required": [
+          "org-slug-or-id"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/organization/{org-slug-or-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createProject",
+      "description": "Create a new project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org-slug-or-id": {
+            "type": "string",
+            "description": "Org UUID or slug in the form `vcs-slug/org-name`. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug` and replace the `org-name` with the organization ID (found in Organization Settings)."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the project"
+          }
+        },
+        "required": [
+          "org-slug-or-id",
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/organization/{org-slug-or-id}/project",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listURLOrbAllowListEntries",
+      "description": "List the entries in the org's URL Orb allow-list",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org-slug-or-id": {
+            "type": "string",
+            "description": "Org UUID or slug in the form `vcs-slug/org-name`. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug` and replace the `org-name` with the organization ID (found in Organization Settings)."
+          }
+        },
+        "required": [
+          "org-slug-or-id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/organization/{org-slug-or-id}/url-orb-allow-list",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createURLOrbAllowListEntry",
+      "description": "Create a new URL Orb allow-list entry",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org-slug-or-id": {
+            "type": "string",
+            "description": "Org UUID or slug in the form `vcs-slug/org-name`. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug` and replace the `org-name` with the organization ID (found in Organization Settings)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the URL orb allow-list entry."
+          },
+          "prefix": {
+            "type": "string",
+            "description": "URL prefix. URL orb references that start with this prefix will be allowed by this allow-list entry."
+          },
+          "auth": {
+            "type": "string",
+            "description": "An authentication method to use for fetching URL orb references that match this allow-list entry's prefix. Allowed values are \"bitbucket-oauth\", \"github-oauth\", \"github-app\", or \"none\"."
+          }
+        },
+        "required": [
+          "org-slug-or-id",
+          "name",
+          "prefix",
+          "auth"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/organization/{org-slug-or-id}/url-orb-allow-list",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeURLOrbAllowListEntry",
+      "description": "Remove an entry from the org's URL orb allow-list",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org-slug-or-id": {
+            "type": "string",
+            "description": "Org UUID or slug in the form `vcs-slug/org-name`. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug` and replace the `org-name` with the organization ID (found in Organization Settings)."
+          },
+          "allow-list-entry-id": {
+            "type": "string",
+            "description": "URL orb allow-list entry UUID."
+          }
+        },
+        "required": [
+          "org-slug-or-id",
+          "allow-list-entry-id"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/organization/{org-slug-or-id}/url-orb-allow-list/{allow-list-entry-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listPipelines",
+      "description": "Get a list of pipelines",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org-slug": {
+            "type": "string",
+            "description": "Org slug in the form `vcs-slug/org-name`. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug` and replace the `org-name` with the organization ID (found in Organization Settings)."
+          },
+          "page-token": {
+            "type": "string",
+            "description": "A token to retrieve the next page of results."
+          },
+          "mine": {
+            "type": "boolean",
+            "description": "Only include entries created by your user."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/pipeline",
+        "headers": {},
+        "query_params": [
+          "org-slug",
+          "page-token",
+          "mine"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "continuePipeline",
+      "description": "Continue a pipeline",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "continuation-key": {
+            "type": "string",
+            "description": "A pipeline continuation key."
+          },
+          "configuration": {
+            "type": "string",
+            "description": "A configuration string for the pipeline."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "An object containing pipeline parameters and their values. Pipeline parameters have the following size limits: 100 max entries, 128 maximum key length, 512 maximum value length."
+          }
+        },
+        "required": [
+          "continuation-key",
+          "configuration"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/pipeline/continue",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPipelineById",
+      "description": "Get a pipeline by ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "pipeline-id": {
+            "type": "string",
+            "description": "The unique ID of the pipeline."
+          }
+        },
+        "required": [
+          "pipeline-id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/pipeline/{pipeline-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPipelineConfigById",
+      "description": "Get a pipeline's configuration",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "pipeline-id": {
+            "type": "string",
+            "description": "The unique ID of the pipeline."
+          }
+        },
+        "required": [
+          "pipeline-id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/pipeline/{pipeline-id}/config",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listWorkflowsByPipelineId",
+      "description": "Get a pipeline's workflows",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "pipeline-id": {
+            "type": "string",
+            "description": "The unique ID of the pipeline."
+          },
+          "page-token": {
+            "type": "string",
+            "description": "A token to retrieve the next page of results."
+          }
+        },
+        "required": [
+          "pipeline-id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/pipeline/{pipeline-id}/workflow",
+        "headers": {},
+        "query_params": [
+          "page-token"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectBySlug",
+      "description": "Get a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteProjectBySlug",
+      "description": "Delete a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/project/{project-slug}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listCheckoutKeys",
+      "description": "Get all checkout keys",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "digest": {
+            "type": "string",
+            "description": "The fingerprint digest type to return. This may be either `md5` or `sha256`. If not passed, defaults to `md5`."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/checkout-key",
+        "headers": {},
+        "query_params": [
+          "digest"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createCheckoutKey",
+      "description": "Create a new checkout key",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of checkout key to create. This may be either `deploy-key` or `user-key`."
+          }
+        },
+        "required": [
+          "project-slug",
+          "type"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/project/{project-slug}/checkout-key",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getCheckoutKey",
+      "description": "Get a checkout key",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "An SSH key fingerprint."
+          }
+        },
+        "required": [
+          "project-slug",
+          "fingerprint"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/checkout-key/{fingerprint}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteCheckoutKey",
+      "description": "Delete a checkout key",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "An SSH key fingerprint."
+          }
+        },
+        "required": [
+          "project-slug",
+          "fingerprint"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/project/{project-slug}/checkout-key/{fingerprint}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listEnvVars",
+      "description": "List all environment variables",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/envvar",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createEnvVar",
+      "description": "Create an environment variable",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the environment variable."
+          },
+          "value": {
+            "type": "string",
+            "description": "The value of the environment variable."
+          }
+        },
+        "required": [
+          "project-slug",
+          "name",
+          "value"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/project/{project-slug}/envvar",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getEnvVar",
+      "description": "Get a masked environment variable",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the environment variable."
+          }
+        },
+        "required": [
+          "project-slug",
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/envvar/{name}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteEnvVar",
+      "description": "Delete an environment variable",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the environment variable."
+          }
+        },
+        "required": [
+          "project-slug",
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/project/{project-slug}/envvar/{name}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getJobDetails",
+      "description": "Get job details",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job-number": {
+            "type": "string",
+            "description": "The number of the job."
+          },
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          }
+        },
+        "required": [
+          "job-number",
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/job/{job-number}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "cancelJobByJobNumber",
+      "description": "Cancel job by job number",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job-number": {
+            "type": "string",
+            "description": "The number of the job."
+          },
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          }
+        },
+        "required": [
+          "job-number",
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/project/{project-slug}/job/{job-number}/cancel",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listPipelinesForProject",
+      "description": "Get all pipelines",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The name of a vcs branch."
+          },
+          "page-token": {
+            "type": "string",
+            "description": "A token to retrieve the next page of results."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/pipeline",
+        "headers": {},
+        "query_params": [
+          "branch",
+          "page-token"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "triggerPipeline",
+      "description": "Trigger a new pipeline",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The branch where the pipeline ran. The HEAD commit on this branch was used for the pipeline. Note that `branch` and `tag` are mutually exclusive. To trigger a pipeline for a PR by number use `pull/<number>/head` for the PR ref or `pull/<number>/merge` for the merge ref (GitHub only)."
+          },
+          "tag": {
+            "type": "string",
+            "description": "The tag used by the pipeline. The commit that this tag points to was used for the pipeline. Note that `branch` and `tag` are mutually exclusive."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "An object containing pipeline parameters and their values. Pipeline parameters have the following size limits: 100 max entries, 128 maximum key length, 512 maximum value length."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/project/{project-slug}/pipeline",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listMyPipelines",
+      "description": "Get your pipelines",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "page-token": {
+            "type": "string",
+            "description": "A token to retrieve the next page of results."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/pipeline/mine",
+        "headers": {},
+        "query_params": [
+          "page-token"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPipelineByNumber",
+      "description": "Get a pipeline by pipeline number",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "pipeline-number": {
+            "type": "string",
+            "description": "The number of the pipeline."
+          }
+        },
+        "required": [
+          "project-slug",
+          "pipeline-number"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/pipeline/{pipeline-number}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listSchedulesForProject",
+      "description": "List schedule triggers",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "page-token": {
+            "type": "string",
+            "description": "A token to retrieve the next page of results."
+          }
+        },
+        "required": [
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/schedule",
+        "headers": {},
+        "query_params": [
+          "page-token"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createSchedule",
+      "description": "Create a schedule",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the schedule."
+          },
+          "timetable": {
+            "type": "object",
+            "properties": {
+              "per-hour": {
+                "type": "integer",
+                "description": "Number of times a schedule triggers per hour, value must be between 1 and 60"
+              },
+              "hours-of-day": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "Hours in a day in which the schedule triggers."
+              },
+              "days-of-week": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Days in a week in which the schedule triggers."
+              },
+              "days-of-month": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "Days in a month in which the schedule triggers. This is mutually exclusive with days in a week."
+              },
+              "months": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Months in which the schedule triggers."
+              }
+            }
+          },
+          "attribution-actor": {
+            "type": "string",
+            "description": "The attribution-actor of the scheduled pipeline."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Pipeline parameters represented as key-value pairs. Must contain branch or tag."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the schedule."
+          }
+        },
+        "required": [
+          "project-slug",
+          "name",
+          "timetable",
+          "attribution-actor",
+          "parameters"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/project/{project-slug}/schedule",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getJobArtifacts",
+      "description": "Get a job's artifacts",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job-number": {
+            "type": "string",
+            "description": "The number of the job."
+          },
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          }
+        },
+        "required": [
+          "job-number",
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/{job-number}/artifacts",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTests",
+      "description": "Get test metadata",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job-number": {
+            "type": "string",
+            "description": "The number of the job."
+          },
+          "project-slug": {
+            "type": "string",
+            "description": "Project slug in the form `vcs-slug/org-name/repo-name`. The `/` characters may be URL-escaped. For projects that use GitLab or GitHub App, use `circleci` as the `vcs-slug`, replace `org-name` with the organization ID (found in Organization Settings), and replace `repo-name` with the project ID (found in Project Settings)."
+          }
+        },
+        "required": [
+          "job-number",
+          "project-slug"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{project-slug}/{job-number}/tests",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getScheduleById",
+      "description": "Get a schedule by ID. Available only on schedules associated with GitHub OAuth or Bitbucket Cloud pipeline definitions.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "schedule-id": {
+            "type": "string",
+            "description": "The unique ID of the schedule."
+          }
+        },
+        "required": [
+          "schedule-id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/schedule/{schedule-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateSchedule",
+      "description": "Update a schedule",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "schedule-id": {
+            "type": "string",
+            "description": "The unique ID of the schedule."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the schedule."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the schedule."
+          },
+          "timetable": {
+            "type": "object",
+            "properties": {
+              "per-hour": {
+                "type": "integer",
+                "description": "Number of times a schedule triggers per hour, value must be between 1 and 60"
+              },
+              "hours-of-day": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "Hours in a day in which the schedule triggers."
+              },
+              "days-of-week": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Days in a week in which the schedule triggers."
+              },
+              "days-of-month": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "Days in a month in which the schedule triggers. This is mutually exclusive with days in a week."
+              },
+              "months": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Months in which the schedule triggers."
+              }
+            },
+            "description": "Timetable that specifies when a schedule triggers."
+          },
+          "attribution-actor": {
+            "type": "string",
+            "description": "The attribution-actor of the scheduled pipeline."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Pipeline parameters represented as key-value pairs. Must contain branch or tag."
+          }
+        },
+        "required": [
+          "schedule-id"
+        ]
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/schedule/{schedule-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteScheduleById",
+      "description": "Delete a schedule",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "schedule-id": {
+            "type": "string",
+            "description": "The unique ID of the schedule."
+          }
+        },
+        "required": [
+          "schedule-id"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/schedule/{schedule-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getUser",
+      "description": "User Information",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the user."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/user/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWebhooks",
+      "description": "List webhooks",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "scope-id": {
+            "type": "string",
+            "description": "ID of the scope being used (at the moment, only project ID is supported)"
+          },
+          "scope-type": {
+            "type": "string",
+            "description": "Type of the scope being used"
+          }
+        },
+        "required": [
+          "scope-id",
+          "scope-type"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/webhook",
+        "headers": {},
+        "query_params": [
+          "scope-id",
+          "scope-type"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createWebhook",
+      "description": "Create an outbound webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the webhook"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Events that will trigger the webhook"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL to deliver the webhook to. Note: protocol must be included as well (only https is supported)"
+          },
+          "verify-tls": {
+            "type": "boolean",
+            "description": "Whether to enforce TLS certificate verification when delivering the webhook"
+          },
+          "signing-secret": {
+            "type": "string",
+            "description": "Secret used to build an HMAC hash of the payload and passed as a header in the webhook request"
+          },
+          "scope": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "ID of the scope being used (at the moment, only project ID is supported)"
+              },
+              "type": {
+                "type": "string",
+                "description": "Type of the scope being used"
+              }
+            },
+            "description": "The scope in which the relevant events that will trigger webhooks"
+          }
+        },
+        "required": [
+          "name",
+          "events",
+          "url",
+          "verify-tls",
+          "signing-secret",
+          "scope"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/webhook",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWebhookById",
+      "description": "Get a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "webhook-id": {
+            "type": "string",
+            "description": "ID of the webhook (UUID)"
+          }
+        },
+        "required": [
+          "webhook-id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/webhook/{webhook-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateWebhook",
+      "description": "Update an outbound webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "webhook-id": {
+            "type": "string",
+            "description": "ID of the webhook (UUID)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the webhook"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Events that will trigger the webhook"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL to deliver the webhook to. Note: protocol must be included as well (only https is supported)"
+          },
+          "signing-secret": {
+            "type": "string",
+            "description": "Secret used to build an HMAC hash of the payload and passed as a header in the webhook request"
+          },
+          "verify-tls": {
+            "type": "boolean",
+            "description": "Whether to enforce TLS certificate verification when delivering the webhook"
+          }
+        },
+        "required": [
+          "webhook-id"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/webhook/{webhook-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteWebhook",
+      "description": "Delete an outbound webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "webhook-id": {
+            "type": "string",
+            "description": "ID of the webhook (UUID)"
+          }
+        },
+        "required": [
+          "webhook-id"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/webhook/{webhook-id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "approvePendingApprovalJobById",
+      "description": "Approve a job",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "approval_request_id": {
+            "type": "string",
+            "description": "The ID of the job being approved."
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the workflow."
+          }
+        },
+        "required": [
+          "approval_request_id",
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/workflow/{id}/approve/{approval_request_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "cancelWorkflow",
+      "description": "Cancel a workflow",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the workflow."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/workflow/{id}/cancel",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listWorkflowJobs",
+      "description": "Get a workflow's jobs",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the workflow."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workflow/{id}/job",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "rerunWorkflow",
+      "description": "Rerun a workflow",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the workflow."
+          },
+          "enable_ssh": {
+            "type": "boolean",
+            "description": "Whether to enable SSH access for the triggering user on the newly-rerun job. Requires the jobs parameter to be used and so is mutually exclusive with the from_failed parameter."
+          },
+          "from_failed": {
+            "type": "boolean",
+            "description": "Whether to rerun the workflow from the failed job. Mutually exclusive with the jobs parameter."
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A list of job IDs to rerun."
+          },
+          "sparse_tree": {
+            "type": "boolean",
+            "description": "Completes rerun using sparse trees logic, an optimization for workflows that have disconnected subgraphs. Requires jobs parameter and so is mutually exclusive with the from_failed parameter."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/workflow/{id}/rerun",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "GetOrgClaims",
+      "description": "Get org-level claims",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/org/{orgID}/oidc-custom-claims",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "PatchOrgClaims",
+      "description": "Patch org-level claims",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ttl": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/org/{orgID}/oidc-custom-claims",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "DeleteOrgClaims",
+      "description": "Delete org-level claims",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/org/{orgID}/oidc-custom-claims",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "GetProjectClaims",
+      "description": "Get project-level claims",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/org/{orgID}/project/{projectID}/oidc-custom-claims",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "PatchProjectClaims",
+      "description": "Patch project-level claims",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ttl": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/org/{orgID}/project/{projectID}/oidc-custom-claims",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "DeleteProjectClaims",
+      "description": "Delete project-level claims",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/org/{orgID}/project/{projectID}/oidc-custom-claims",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "GetDecisionLogs",
+      "description": "Retrieves the owner's decision audit logs.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "Return decisions matching this decision status."
+          },
+          "after": {
+            "type": "string",
+            "description": "Return decisions made after this date."
+          },
+          "before": {
+            "type": "string",
+            "description": "Return decisions made before this date."
+          },
+          "branch": {
+            "type": "string",
+            "description": "Return decisions made on this branch."
+          },
+          "project_id": {
+            "type": "string",
+            "description": "Return decisions made for this project."
+          },
+          "build_number": {
+            "type": "string",
+            "description": "Return decisions made for this build number."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Sets the offset when retrieving the decisions, for paging."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/owner/{ownerID}/context/{context}/decision",
+        "headers": {},
+        "query_params": [
+          "status",
+          "after",
+          "before",
+          "branch",
+          "project_id",
+          "build_number",
+          "offset"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "MakeDecision",
+      "description": "Makes a decision",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "input"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/owner/{ownerID}/context/{context}/decision",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "GetDecisionSettings",
+      "description": "Get the decision settings",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/owner/{ownerID}/context/{context}/decision/settings",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "SetDecisionSettings",
+      "description": "Set the decision settings",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/owner/{ownerID}/context/{context}/decision/settings",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "GetDecisionLog",
+      "description": "Retrieves the owner's decision audit log by given decisionID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/owner/{ownerID}/context/{context}/decision/{decisionID}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "GetDecisionLogPolicyBundle",
+      "description": "Retrieves Policy Bundle for a given decision log ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/owner/{ownerID}/context/{context}/decision/{decisionID}/policy-bundle",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "GetPolicyBundle",
+      "description": "Retrieves Policy Bundle",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/owner/{ownerID}/context/{context}/policy-bundle",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "CreatePolicyBundle",
+      "description": "Creates policy bundle for the context",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "dry": {
+            "type": "boolean"
+          },
+          "policies": {
+            "type": "object"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/owner/{ownerID}/context/{context}/policy-bundle",
+        "headers": {},
+        "query_params": [
+          "dry"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "GetPolicyDocument",
+      "description": "Retrieves a policy document",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/owner/{ownerID}/context/{context}/policy-bundle/{policyName}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listContexts",
+      "description": "List contexts",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/context",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createContext",
+      "description": "Create a new context",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The user defined name of the context."
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The unique ID of the owner of the context. This is the organization ID. Specify either owner/organization ID or the owner/organization slug. Find the organization ID and slug in the CircleCI web app (Organization Settings > Overview). Owner/organization slug is not supported for CircleCI server."
+              },
+              "type": {
+                "type": "string",
+                "description": "The type of the owner. Defaults to \"organization\". Use \"account\" if you are using CircleCI server."
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "owner"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/context",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getContext",
+      "description": "Get a context",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/context/{context_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteContext",
+      "description": "Delete a context",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/context/{context_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listEnvironmentVariablesFromContext",
+      "description": "List environment variables",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/context/{context_id}/environment-variable",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addEnvironmentVariableToContext",
+      "description": "Add or update an environment variable",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "description": "The value of the environment variable"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/context/{context_id}/environment-variable/{env_var_name}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteEnvironmentVariableFromContext",
+      "description": "Remove an environment variable",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/context/{context_id}/environment-variable/{env_var_name}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getContextRestrictions",
+      "description": "Get context restrictions",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/context/{context_id}/restrictions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createContextRestriction",
+      "description": "Create context restriction",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "restriction_type": {
+            "type": "string",
+            "description": "Type of the restriction."
+          },
+          "restriction_value": {
+            "type": "string",
+            "description": "Value used to evaluate the restriction. If the `restriction_type`\nis `project`, this will be the project UUID. If the `restriction_type`\nis `expression`, this will be the expression rule.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/context/{context_id}/restrictions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteContextRestriction",
+      "description": "Delete context restriction",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/context/{context_id}/restrictions/{restriction_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectSettings",
+      "description": "Get project settings",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project/{provider}/{organization}/{project}/settings",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "patchProjectSettings",
+      "description": "Update project settings",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "advanced": {
+            "type": "object",
+            "properties": {
+              "autocancel_builds": {
+                "type": "boolean",
+                "description": "Except for the default branch, cancel running pipelines on a branch when a new pipeline starts on that branch."
+              },
+              "build_fork_prs": {
+                "type": "boolean",
+                "description": "Run builds for pull requests from forks."
+              },
+              "build_prs_only": {
+                "type": "boolean",
+                "description": "Once enabled, we will only build branches that have associated pull requests open."
+              },
+              "disable_ssh": {
+                "type": "boolean",
+                "description": "When set to true, job re-runs with SSH debugging access will be disabled for the project."
+              },
+              "forks_receive_secret_env_vars": {
+                "type": "boolean",
+                "description": "Run builds for forked pull requests with this project's configuration, environment variables, and secrets."
+              },
+              "oss": {
+                "type": "boolean",
+                "description": "Free and Open Source. Enabling this grants additional credits, and lets others see your builds, both through the web UI and the API."
+              },
+              "set_github_status": {
+                "type": "boolean",
+                "description": "Report the status of every pushed commit to GitHub's status API. Updates reported per job."
+              },
+              "setup_workflows": {
+                "type": "boolean",
+                "description": "Enabling allows you to conditionally trigger configurations outside of the primary `.circleci` parent directory."
+              },
+              "write_settings_requires_admin": {
+                "type": "boolean",
+                "description": "Whether updating these settings requires a user to be an organization administrator. When disabled, updating settings can be done by any member."
+              },
+              "pr_only_branch_overrides": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "This field is used in conjunction with the `build_prs_only`, it allows you to specify a list of branches that will always triger a build. The value passed will overwrite the existing value."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/project/{provider}/{organization}/{project}/settings",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getOrganizationGroups",
+      "description": "Groups in an organization",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/organizations/{org_id}/groups",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createOrganizationGroup",
+      "description": "Create Groups",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the group"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description to describe the group"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/organizations/{org_id}/groups",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getGroup",
+      "description": "A group in an organization",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/organizations/{org_id}/groups/{group_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteGroup",
+      "description": "Delete a group",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/organizations/{org_id}/groups/{group_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createUsageExport",
+      "description": "Create a usage export",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "The start date & time (inclusive) of the range from which data will be pulled. Must be no more than one year ago."
+          },
+          "end": {
+            "type": "string",
+            "description": "The end date & time (inclusive) of the range from which data will be pulled. Must be no more than 31 days after `start`."
+          },
+          "shared_org_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/organizations/{org_id}/usage_export_job",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getUsageExport",
+      "description": "Get a usage export",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/organizations/{org_id}/usage_export_job/{usage_export_job_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "triggerPipelineRun",
+      "description": "[Recommended] Trigger a new pipeline",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "definition_id": {
+            "type": "string",
+            "description": "The unique id for the pipeline definition. This can be found in the page Project Settings > Pipelines."
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "branch": {
+                "type": "string",
+                "description": "The branch that should be used to fetch the config file.\nNote that branch and tag are mutually exclusive.\nTo trigger a pipeline for a PR by number use pull/<number>/head for the PR ref or pull/<number>/merge for the merge ref (GitHub only)\n"
+              },
+              "tag": {
+                "type": "string",
+                "description": "The tag that should be used to fetch the config file.\nThe commit that this tag points to is used for the pipeline.\nNote that branch and tag are mutually exclusive.\n"
+              }
+            }
+          },
+          "checkout": {
+            "type": "object",
+            "properties": {
+              "branch": {
+                "type": "string",
+                "description": "The branch that should be used to check out code on a checkout step.\nNote that branch and tag are mutually exclusive.\nTo trigger a pipeline for a PR by number use pull/<number>/head for the PR ref or pull/<number>/merge for the merge ref (GitHub only)\n"
+              },
+              "tag": {
+                "type": "string",
+                "description": "The tag that should be used to check out code on a checkout step.\nThe commit that this tag points to is used for the pipeline. Note that branch and tag are mutually exclusive.\n"
+              }
+            }
+          },
+          "parameters": {
+            "type": "object",
+            "description": "An object containing pipeline parameters and their values.\nPipeline parameters have the following size limits: 100 max entries, 128 maximum key length, 512 maximum value length.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/project/{provider}/{organization}/{project}/pipeline/run",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listPipelineDefinitions",
+      "description": "List pipeline definitions",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_id}/pipeline-definitions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createPipelineDefinition",
+      "description": "Create pipeline definition",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the pipeline definition."
+          },
+          "description": {
+            "type": "string",
+            "description": "The description of the pipeline definition."
+          },
+          "config_source": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "description": "The integration provider for this resource. Supported external providers are `github_app` and `github_server`."
+              },
+              "repo": {
+                "type": "object",
+                "properties": {
+                  "external_id": {
+                    "type": "string",
+                    "description": "External identifier for the repository, as defined by the respective version control provider."
+                  }
+                }
+              },
+              "file_path": {
+                "type": "string",
+                "description": "Path to CircleCI config YAML file to use for this pipeline definition."
+              }
+            },
+            "description": "Config source for external providers (repo required)"
+          },
+          "checkout_source": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "description": "The integration provider for this resource. Supported values are `github_app` and `github_server`."
+              },
+              "repo": {
+                "type": "object",
+                "properties": {
+                  "external_id": {
+                    "type": "string",
+                    "description": "External identifier for the repository, as defined by the respective version control provider."
+                  }
+                }
+              }
+            },
+            "description": "The resource to be used when running the `checkout` command."
+          }
+        },
+        "required": [
+          "name",
+          "config_source",
+          "checkout_source"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_id}/pipeline-definitions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPipelineDefinition",
+      "description": "Get pipeline definition",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_id}/pipeline-definitions/{pipeline_definition_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updatePipelineDefinition",
+      "description": "Update pipeline definition",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the pipeline definition."
+          },
+          "description": {
+            "type": "string",
+            "description": "The description of the pipeline definition."
+          },
+          "config_source": {
+            "type": "object",
+            "properties": {
+              "file_path": {
+                "type": "string",
+                "description": "Path to CircleCI config YAML file to use for this pipeline definition."
+              }
+            },
+            "description": "The resource that stores the CircleCI config YAML used for this pipeline definition."
+          },
+          "checkout_source": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "description": "The integration provider for this resource. Supported values include `github_app` and `github_server`."
+              },
+              "repo": {
+                "type": "object",
+                "properties": {
+                  "external_id": {
+                    "type": "string",
+                    "description": "External identifier for the repository, as defined by the respective version control provider."
+                  }
+                }
+              }
+            },
+            "description": "The resource to be used when running the `checkout` command."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/projects/{project_id}/pipeline-definitions/{pipeline_definition_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deletePipelineDefinition",
+      "description": "Delete pipeline definition",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/projects/{project_id}/pipeline-definitions/{pipeline_definition_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listPipelineDefinitionTriggers",
+      "description": "List pipeline definition triggers",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_id}/pipeline-definitions/{pipeline_definition_id}/triggers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createTrigger",
+      "description": "Create trigger",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "event_source": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "description": "The integration provider for this resource. Currently `github_app`, `github_server`, `github_oauth`, `webhook`, and `schedule` are the only supported values."
+              },
+              "repo": {
+                "type": "object",
+                "properties": {
+                  "external_id": {
+                    "type": "string",
+                    "description": "External identifier for the repository, as defined by the respective version control provider."
+                  }
+                },
+                "description": "Information pertaining to the repository used as a source of events for this trigger, if applicable."
+              },
+              "webhook": {
+                "type": "object",
+                "properties": {
+                  "sender": {
+                    "type": "string",
+                    "description": "The sender of the webhook."
+                  }
+                },
+                "description": "Information pertaining to the custom webhook being used as a source of events for this trigger, if applicable."
+              },
+              "schedule": {
+                "type": "object",
+                "properties": {
+                  "cron_expression": {
+                    "type": "string",
+                    "description": "A cron expression defining when the trigger fires (e.g. `*/5 * * * *` for every 5 minutes)."
+                  },
+                  "attribution_actor": {
+                    "type": "string",
+                    "description": "The actor to attribute pipeline runs to. Use `current` to attribute runs to the user who created the trigger, or `system` to attribute runs to the CircleCI system actor."
+                  }
+                },
+                "description": "Schedule configuration for this trigger. Only applicable when `provider` is `schedule`."
+              }
+            },
+            "description": "The source of events to use for this trigger. The `repo` object must be specified when `provider` is `github_app`, `github_server`, or `github_oauth`, the `webhook` object may only be specified when `provider` is `webhook`, and the `schedule` object must be specified when `provider` is `schedule`."
+          },
+          "event_preset": {
+            "type": "string",
+            "description": "The name of the event preset to use when filtering events for this trigger. Only applicable when `event_source.provider` is `github_app` or `github_server`."
+          },
+          "checkout_ref": {
+            "type": "string",
+            "description": "The ref to use when checking out code for pipeline runs created from this trigger. Always required when `event_source.provider` is `webhook` or `schedule`. When `event_source.provider` is `github_app` or `github_server`, only expected if the event source repository (identified by `event_source.repo.external_id`) is different to the checkout source repository of the associated Pipeline Definition. Otherwise, must be omitted."
+          },
+          "config_ref": {
+            "type": "string",
+            "description": "The ref to use when fetching config for pipeline runs created from this trigger. Always required when `event_source.provider` is `webhook` or `schedule`. When `event_source.provider` is `github_app` or `github_server`, only expected if the event source repository (identified by `event_source.repo.external_id`) is different to the config source repository of the associated Pipeline Definition. Otherwise, must be omitted."
+          },
+          "event_name": {
+            "type": "string",
+            "description": "The name of the triggering event. Required when `provider` is `webhook` or `schedule`. Should not be set for other providers."
+          },
+          "disabled": {
+            "type": "boolean",
+            "description": "Whether the trigger should be disabled upon creation. Not supported for triggers where `event_source.provider` is `github_oauth`."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Pipeline parameters to pass when running pipelines from this trigger. Currently only supported for triggers where `event_source.provider` is `schedule`."
+          }
+        },
+        "required": [
+          "event_source"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_id}/pipeline-definitions/{pipeline_definition_id}/triggers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTrigger",
+      "description": "Get trigger",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_id}/triggers/{trigger_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateTrigger",
+      "description": "Update trigger",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "event_preset": {
+            "type": "string",
+            "description": "The name of the event preset to use when filtering events for this trigger. Only applicable when `event_source.provider` is `github_app` or `github_server`."
+          },
+          "checkout_ref": {
+            "type": "string",
+            "description": "The ref to use when checking out code for pipeline runs created from this trigger."
+          },
+          "config_ref": {
+            "type": "string",
+            "description": "The ref to use when fetching config for pipeline runs created from this trigger."
+          },
+          "event_name": {
+            "type": "string",
+            "description": "The name of the triggering event. Required when `provider` is `webhook` or `schedule`. Should not be set for other providers."
+          },
+          "disabled": {
+            "type": "boolean",
+            "description": "A flag indicating whether the trigger is disabled or not. Not supported for triggers where `event_source.provider` is `github_oauth`."
+          },
+          "event_source": {
+            "type": "object",
+            "properties": {
+              "webhook": {
+                "type": "object",
+                "properties": {
+                  "sender": {
+                    "type": "string",
+                    "description": "The sender of the webhook. This can only be set for triggers where `provider` is `webhook`."
+                  }
+                }
+              },
+              "schedule": {
+                "type": "object",
+                "properties": {
+                  "cron_expression": {
+                    "type": "string",
+                    "description": "A cron expression defining when the trigger fires (e.g. `*/5 * * * *` for every 5 minutes)."
+                  },
+                  "attribution_actor": {
+                    "type": "string",
+                    "description": "The actor to attribute pipeline runs to. Use `current` to attribute runs to the user who sends this update request, or `system` to attribute runs to the CircleCI system actor."
+                  }
+                },
+                "description": "Schedule configuration to update for this trigger. Only applicable when `provider` is `schedule`."
+              }
+            }
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Pipeline parameters to pass when running pipelines from this trigger. Currently only supported for triggers where `event_source.provider` is `schedule`."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/projects/{project_id}/triggers/{trigger_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteTrigger",
+      "description": "Delete trigger",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/projects/{project_id}/triggers/{trigger_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "rollbackProject",
+      "description": "Rollback a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "component_name": {
+            "type": "string",
+            "description": "The component name"
+          },
+          "current_version": {
+            "type": "string",
+            "description": "The current version"
+          },
+          "environment_name": {
+            "type": "string",
+            "description": "The environment name"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "The namespace"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "The extra parameters for the rollback pipeline"
+          },
+          "reason": {
+            "type": "string",
+            "description": "The reason for the rollback"
+          },
+          "target_version": {
+            "type": "string",
+            "description": "The target version"
+          }
+        },
+        "required": [
+          "environment_name",
+          "component_name",
+          "current_version",
+          "target_version"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_id}/rollback",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listEnvironments",
+      "description": "List Environments",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/deploy/environments",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getEnvironment",
+      "description": "Get Environment",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/deploy/environments/{environment_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listComponents",
+      "description": "List Components",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/deploy/components",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getComponent",
+      "description": "Get Component",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/deploy/components/{component_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listComponentVersions",
+      "description": "List Component Versions",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/deploy/components/{component_id}/versions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "listOtelExporters",
+      "description": "🧪 List OTLP exporters",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/otel/exporters",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createOtelExporter",
+      "description": "🧪 Create an OTLP exporter",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "description": "The organization ID to create the exporter for."
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "The OTLP endpoint to send spans to. Don't include https:// or grpc://. Just the hostname and port are required."
+          },
+          "protocol": {
+            "type": "string",
+            "description": "The OTLP transport to use when exporting data."
+          },
+          "insecure": {
+            "type": "boolean",
+            "description": "Whether to use an insecure connection to the endpoint."
+          },
+          "headers": {
+            "type": "object",
+            "description": "Additional headers to include in export requests."
+          }
+        },
+        "required": [
+          "org_id",
+          "endpoint",
+          "protocol"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/otel/exporters",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteOtelExporter",
+      "description": "🧪 Delete an OTLP exporter",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/otel/exporters/{otel_exporter_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPipelineValuesById",
+      "description": "Get pipeline values for a pipeline",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/pipeline/{pipeline_id}/values",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWorkflowById",
+      "description": "Get a workflow",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workflow/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getJob",
+      "description": "Get a job",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/jobs/{job_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Circle-Token"
+        }
+      },
+      "enabled": true
+    }
+  ]
+}

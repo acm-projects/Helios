@@ -1,0 +1,3654 @@
+{
+  "baseUrl": "https://api.spotify.com/v1",
+  "auth": [
+    {
+      "type": "oauth2",
+      "authorizationUrl": "https://accounts.spotify.com/authorize",
+      "tokenUrl": "https://accounts.spotify.com/api/token",
+      "scopes": {
+        "app-remote-control": "Communicate with the Spotify app on your device.\n",
+        "playlist-read-private": "Access your private playlists.\n",
+        "playlist-read-collaborative": "Access your collaborative playlists.\n",
+        "playlist-modify-public": "Manage your public playlists.\n",
+        "playlist-modify-private": "Manage your private playlists.\n",
+        "user-library-read": "Access your saved content.\n",
+        "user-library-modify": "Manage your saved content.\n",
+        "user-read-private": "Access your subscription details.\n",
+        "user-read-email": "Get your real email address.\n",
+        "user-follow-read": "Access your followers and who you are following.\n",
+        "user-follow-modify": "Manage your saved content.\n",
+        "user-top-read": "Read your top artists and content.\n",
+        "user-read-playback-position": "Read your position in content you have played.\n",
+        "user-read-playback-state": "Read your currently playing content and Spotify Connect devices information.\n",
+        "user-read-recently-played": "Access your recently played items.\n",
+        "user-read-currently-playing": "Read your currently playing content.\n",
+        "user-modify-playback-state": "Control playback on your Spotify clients and Spotify Connect devices.\n",
+        "ugc-image-upload": "Upload images to Spotify on your behalf.\n",
+        "streaming": "Play content and control playback on your other devices.\n"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_an_album",
+      "description": "Get Album\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/albums/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_multiple_albums",
+      "description": "Get Several Albums\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/albums",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_an_albums_tracks",
+      "description": "Get Album Tracks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/albums/{id}/tracks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_an_artist",
+      "description": "Get Artist\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/artists/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_multiple_artists",
+      "description": "Get Several Artists\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "string",
+            "description": "A comma-separated list of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids) for the artists. Maximum: 50 IDs.\n"
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/artists",
+        "headers": {},
+        "query_params": [
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_an_artists_albums",
+      "description": "Get Artist's Albums\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The maximum number of items to return. Default: 5. Minimum: 1. Maximum: 10.\n",
+            "default": 5,
+            "minimum": 0,
+            "maximum": 10
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/artists/{id}/albums",
+        "headers": {},
+        "query_params": [
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_an_artists_top_tracks",
+      "description": "Get Artist's Top Tracks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/artists/{id}/top-tracks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_an_artists_related_artists",
+      "description": "Get Artist's Related Artists\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/artists/{id}/related-artists",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_a_show",
+      "description": "Get Show\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/shows/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_multiple_shows",
+      "description": "Get Several Shows\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/shows",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_a_shows_episodes",
+      "description": "Get Show Episodes\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/shows/{id}/episodes",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_an_episode",
+      "description": "Get Episode\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The [Spotify ID](/documentation/web-api/concepts/spotify-uris-ids) for the episode."
+          },
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/episodes/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_multiple_episodes",
+      "description": "Get Several Episodes\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "string",
+            "description": "A comma-separated list of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids) for the episodes. Maximum: 50 IDs.\n"
+          },
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/episodes",
+        "headers": {},
+        "query_params": [
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_an_audiobook",
+      "description": "Get an Audiobook\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/audiobooks/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_multiple_audiobooks",
+      "description": "Get Several Audiobooks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/audiobooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_audiobook_chapters",
+      "description": "Get Audiobook Chapters\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/audiobooks/{id}/chapters",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_users_saved_audiobooks",
+      "description": "Get User's Saved Audiobooks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/audiobooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "save_audiobooks_user",
+      "description": "Save Audiobooks for Current User\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/audiobooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "remove_audiobooks_user",
+      "description": "Remove User's Saved Audiobooks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/me/audiobooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "check_users_saved_audiobooks",
+      "description": "Check User's Saved Audiobooks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/audiobooks/contains",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_a_chapter",
+      "description": "Get a Chapter\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/chapters/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_several_chapters",
+      "description": "Get Several Chapters\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/chapters",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_track",
+      "description": "Get Track\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The [Spotify ID](/documentation/web-api/concepts/spotify-uris-ids)\nfor the track.\n"
+          },
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tracks/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_several_tracks",
+      "description": "Get Several Tracks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "ids": {
+            "type": "string",
+            "description": "A comma-separated list of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids). For example: `ids=4iV5W9uYEdYUVa79Axb7Rh,1301WleyT98MSxVHPZCA6M`. Maximum: 50 IDs.\n"
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tracks",
+        "headers": {},
+        "query_params": [
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "search",
+      "description": "Search for Item\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Your search query.\n\nYou can narrow down your search using field filters. The available filters are `album`, `artist`, `track`, `year`, `upc`, `tag:hipster`, `tag:new`, `isrc`, and `genre`. Each field filter only applies to certain result types.\n\nThe `artist` and `year` filters can be used while searching albums, artists and tracks. You can filter on a single `year` or a range (e.g. 1955-1960).<br />\nThe `album` filter can be used while searching albums and tracks.<br />\nThe `genre` filter can be used while searching artists and tracks.<br />\nThe `isrc` and `track` filters can be used while searching tracks.<br />\nThe `upc`, `tag:new` and `tag:hipster` filters can only be used while searching albums. The `tag:new` filter will return albums released in the past two weeks and `tag:hipster` can be used to return only albums with the lowest 10% popularity.<br />\n"
+          },
+          "type": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A comma-separated list of item types to search across. Search results include hits\nfrom all the specified item types. For example: `q=abacab&type=album,track` returns\nboth albums and tracks matching \"abacab\".\n"
+          },
+          "undefined": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The maximum number of results to return in each item type.\n",
+            "default": 5,
+            "minimum": 0,
+            "maximum": 10
+          },
+          "offset": {
+            "type": "integer",
+            "description": "The index of the first result to return. Use\nwith limit to get the next page of search results.\n",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "include_external": {
+            "type": "string",
+            "description": "If `include_external=audio` is specified it signals that the client can play externally hosted audio content, and marks\nthe content as playable in the response. By default externally hosted audio content is marked as unplayable in the response.\n"
+          }
+        },
+        "required": [
+          "q",
+          "type"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/search",
+        "headers": {},
+        "query_params": [
+          "q",
+          "type",
+          "limit",
+          "offset",
+          "include_external"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_current_users_profile",
+      "description": "Get Current User's Profile\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_playlist",
+      "description": "Get Playlist\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "string",
+            "description": "Filters for the query: a comma-separated list of the\nfields to return. If omitted, all fields are returned. For example, to get\njust the playlist''s description and URI: `fields=description,uri`. A dot\nseparator can be used to specify non-reoccurring fields, while parentheses\ncan be used to specify reoccurring fields within objects. For example, to\nget just the added date and user ID of the adder: `fields=tracks.items(added_at,added_by.id)`.\nUse multiple parentheses to drill down into nested objects, for example: `fields=tracks.items(track(name,href,album(name,href)))`.\nFields can be excluded by prefixing them with an exclamation mark, for example:\n`fields=tracks.items(track(name,href,album(!name,href)))`\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/playlists/{playlist_id}",
+        "headers": {},
+        "query_params": [
+          "fields"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "change_playlist_details",
+      "description": "Change Playlist Details\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The new name for the playlist, for example `\"My New Playlist Title\"`\n"
+          },
+          "public": {
+            "type": "boolean",
+            "description": "The playlist's public/private status (if it should be added to the user's profile or not): `true` the playlist will be public, `false` the playlist will be private, `null` the playlist status is not relevant. For more about public/private status, see [Working with Playlists](/documentation/web-api/concepts/playlists)\n"
+          },
+          "collaborative": {
+            "type": "boolean",
+            "description": "If `true`, the playlist will become collaborative and other users will be able to modify the playlist in their Spotify client. <br/>\n_**Note**: You can only set `collaborative` to `true` on non-public playlists._\n"
+          },
+          "description": {
+            "type": "string",
+            "description": "Value for playlist description as displayed in Spotify Clients and in the Web API.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/playlists/{playlist_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_playlists_tracks",
+      "description": "Get Playlist Items [DEPRECATED]\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "string",
+            "description": "Filters for the query: a comma-separated list of the\nfields to return. If omitted, all fields are returned. For example, to get\njust the total number of items and the request limit:<br/>`fields=total,limit`<br/>A\ndot separator can be used to specify non-reoccurring fields, while parentheses\ncan be used to specify reoccurring fields within objects. For example, to\nget just the added date and user ID of the adder:<br/>`fields=items(added_at,added_by.id)`<br/>Use\nmultiple parentheses to drill down into nested objects, for example:<br/>`fields=items(track(name,href,album(name,href)))`<br/>Fields\ncan be excluded by prefixing them with an exclamation mark, for example:<br/>`fields=items.track.album(!external_urls,images)`\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/playlists/{playlist_id}/tracks",
+        "headers": {},
+        "query_params": [
+          "fields"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_tracks_to_playlist",
+      "description": "Add Items to Playlist [DEPRECATED]\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "description": "The position to insert the items, a zero-based index. For example, to insert the items in the first position: `position=0` ; to insert the items in the third position: `position=2`. If omitted, the items will be appended to the playlist. Items are added in the order they appear in the uris array. For example: `{\"uris\": [\"spotify:track:4iV5W9uYEdYUVa79Axb7Rh\",\"spotify:track:1301WleyT98MSxVHPZCA6M\"], \"position\": 3}`\n"
+          },
+          "uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the [Spotify URIs](/documentation/web-api/concepts/spotify-uris-ids) to add. For example: `{\"uris\": [\"spotify:track:4iV5W9uYEdYUVa79Axb7Rh\",\"spotify:track:1301WleyT98MSxVHPZCA6M\", \"spotify:episode:512ojhOuo1ktJprKbVcKyQ\"]}`<br/>A maximum of 100 items can be added in one request. _**Note**: if the `uris` parameter is present in the query string, any URIs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/playlists/{playlist_id}/tracks",
+        "headers": {},
+        "query_params": [
+          "position",
+          "uris"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "reorder_or_replace_playlists_tracks",
+      "description": "Update Playlist Items [DEPRECATED]\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "range_start": {
+            "type": "integer",
+            "description": "The position of the first item to be reordered.\n"
+          },
+          "insert_before": {
+            "type": "integer",
+            "description": "The position where the items should be inserted.<br/>To reorder the items to the end of the playlist, simply set _insert_before_ to the position after the last item.<br/>Examples:<br/>To reorder the first item to the last position in a playlist with 10 items, set _range_start_ to 0, and _insert_before_ to 10.<br/>To reorder the last item in a playlist with 10 items to the start of the playlist, set _range_start_ to 9, and _insert_before_ to 0.\n"
+          },
+          "range_length": {
+            "type": "integer",
+            "description": "The amount of items to be reordered. Defaults to 1 if not set.<br/>The range of items to be reordered begins from the _range_start_ position, and includes the _range_length_ subsequent items.<br/>Example:<br/>To move the items at index 9-10 to the start of the playlist, _range_start_ is set to 9, and _range_length_ is set to 2.\n"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "description": "The playlist's snapshot ID against which you want to make the changes.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/playlists/{playlist_id}/tracks",
+        "headers": {},
+        "query_params": [
+          "uris"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "remove_tracks_playlist",
+      "description": "Remove Playlist Items [DEPRECATED]\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "An array of objects containing [Spotify URIs](/documentation/web-api/concepts/spotify-uris-ids) of the tracks or episodes to remove.\nFor example: `{ \"tracks\": [{ \"uri\": \"spotify:track:4iV5W9uYEdYUVa79Axb7Rh\" },{ \"uri\": \"spotify:track:1301WleyT98MSxVHPZCA6M\" }] }`. A maximum of 100 objects can be sent at once.\n"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "description": "The playlist's snapshot ID against which you want to make the changes.\nThe API will validate that the specified items exist and in the specified positions and make the changes,\neven if more recent changes have been made to the playlist.\n"
+          }
+        },
+        "required": [
+          "tracks"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/playlists/{playlist_id}/tracks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_playlists_items",
+      "description": "Get Playlist Items\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "string",
+            "description": "Filters for the query: a comma-separated list of the\nfields to return. If omitted, all fields are returned. For example, to get\njust the total number of items and the request limit:<br/>`fields=total,limit`<br/>A\ndot separator can be used to specify non-reoccurring fields, while parentheses\ncan be used to specify reoccurring fields within objects. For example, to\nget just the added date and user ID of the adder:<br/>`fields=items(added_at,added_by.id)`<br/>Use\nmultiple parentheses to drill down into nested objects, for example:<br/>`fields=items(track(name,href,album(name,href)))`<br/>Fields\ncan be excluded by prefixing them with an exclamation mark, for example:<br/>`fields=items.track.album(!external_urls,images)`\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/playlists/{playlist_id}/items",
+        "headers": {},
+        "query_params": [
+          "fields"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_items_to_playlist",
+      "description": "Add Items to Playlist\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "description": "The position to insert the items, a zero-based index. For example, to insert the items in the first position: `position=0` ; to insert the items in the third position: `position=2`. If omitted, the items will be appended to the playlist. Items are added in the order they appear in the uris array. For example: `{\"uris\": [\"spotify:track:4iV5W9uYEdYUVa79Axb7Rh\",\"spotify:track:1301WleyT98MSxVHPZCA6M\"], \"position\": 3}`\n"
+          },
+          "uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the [Spotify URIs](/documentation/web-api/concepts/spotify-uris-ids) to add. For example: `{\"uris\": [\"spotify:track:4iV5W9uYEdYUVa79Axb7Rh\",\"spotify:track:1301WleyT98MSxVHPZCA6M\", \"spotify:episode:512ojhOuo1ktJprKbVcKyQ\"]}`<br/>A maximum of 100 items can be added in one request. _**Note**: if the `uris` parameter is present in the query string, any URIs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/playlists/{playlist_id}/items",
+        "headers": {},
+        "query_params": [
+          "position",
+          "uris"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "reorder_or_replace_playlists_items",
+      "description": "Update Playlist Items\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "range_start": {
+            "type": "integer",
+            "description": "The position of the first item to be reordered.\n"
+          },
+          "insert_before": {
+            "type": "integer",
+            "description": "The position where the items should be inserted.<br/>To reorder the items to the end of the playlist, simply set _insert_before_ to the position after the last item.<br/>Examples:<br/>To reorder the first item to the last position in a playlist with 10 items, set _range_start_ to 0, and _insert_before_ to 10.<br/>To reorder the last item in a playlist with 10 items to the start of the playlist, set _range_start_ to 9, and _insert_before_ to 0.\n"
+          },
+          "range_length": {
+            "type": "integer",
+            "description": "The amount of items to be reordered. Defaults to 1 if not set.<br/>The range of items to be reordered begins from the _range_start_ position, and includes the _range_length_ subsequent items.<br/>Example:<br/>To move the items at index 9-10 to the start of the playlist, _range_start_ is set to 9, and _range_length_ is set to 2.\n"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "description": "The playlist's snapshot ID against which you want to make the changes.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/playlists/{playlist_id}/items",
+        "headers": {},
+        "query_params": [
+          "uris"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "remove_items_playlist",
+      "description": "Remove Playlist Items\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "An array of objects containing [Spotify URIs](/documentation/web-api/concepts/spotify-uris-ids) of the tracks or episodes to remove.\nFor example: `{ \"items\": [{ \"uri\": \"spotify:track:4iV5W9uYEdYUVa79Axb7Rh\" },{ \"uri\": \"spotify:track:1301WleyT98MSxVHPZCA6M\" }] }`. A maximum of 100 objects can be sent at once.\n"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "description": "The playlist's snapshot ID against which you want to make the changes.\nThe API will validate that the specified items exist and in the specified positions and make the changes,\neven if more recent changes have been made to the playlist.\n"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/playlists/{playlist_id}/items",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_a_list_of_current_users_playlists",
+      "description": "Get Current User's Playlists\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "integer",
+            "description": "'The index of the first playlist to return. Default:\n0 (the first object). Maximum offset: 100.000\\. Use with `limit` to get the\nnext set of playlists.'\n",
+            "default": 0
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/playlists",
+        "headers": {},
+        "query_params": [
+          "offset"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_playlist",
+      "description": "Create Playlist\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name for the new playlist, for example `\"Your Coolest Playlist\"`. This name does not need to be unique; a user may have several playlists with the same name.\n"
+          },
+          "public": {
+            "type": "boolean",
+            "description": "Defaults to `true`. The playlist's public/private status (if it should be added to the user's profile or not): `true` the playlist will be public, `false` the playlist will be private. To be able to create private playlists, the user must have granted the `playlist-modify-private` [scope](/documentation/web-api/concepts/scopes/#list-of-scopes). For more about public/private status, see [Working with Playlists](/documentation/web-api/concepts/playlists)\n"
+          },
+          "collaborative": {
+            "type": "boolean",
+            "description": "Defaults to `false`. If `true` the playlist will be collaborative. _**Note**: to create a collaborative playlist you must also set `public` to `false`. To create collaborative playlists you must have granted `playlist-modify-private` and `playlist-modify-public` [scopes](/documentation/web-api/concepts/scopes/#list-of-scopes)._\n"
+          },
+          "description": {
+            "type": "string",
+            "description": "value for playlist description as displayed in Spotify Clients and in the Web API.\n"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/me/playlists",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "save_library_items",
+      "description": "Save Items to Library\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "uris": {
+            "type": "string",
+            "description": "A comma-separated list of [Spotify URIs](/documentation/web-api/concepts/spotify-uris-ids). Maximum: 40 URIs.\n\nSupported URI types:\n- `spotify:track:{id}`\n- `spotify:album:{id}`\n- `spotify:episode:{id}`\n- `spotify:show:{id}`\n- `spotify:audiobook:{id}`\n- `spotify:user:{id}`\n- `spotify:playlist:{id}`\n"
+          }
+        },
+        "required": [
+          "uris"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/library",
+        "headers": {},
+        "query_params": [
+          "uris"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "remove_library_items",
+      "description": "Remove Items from Library\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "uris": {
+            "type": "string",
+            "description": "A comma-separated list of [Spotify URIs](/documentation/web-api/concepts/spotify-uris-ids). Maximum: 40 URIs.\n\nSupported URI types:\n- `spotify:track:{id}`\n- `spotify:album:{id}`\n- `spotify:episode:{id}`\n- `spotify:show:{id}`\n- `spotify:audiobook:{id}`\n- `spotify:user:{id}`\n- `spotify:playlist:{id}`\n"
+          }
+        },
+        "required": [
+          "uris"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/me/library",
+        "headers": {},
+        "query_params": [
+          "uris"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "check_library_contains",
+      "description": "Check User's Saved Items\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "uris": {
+            "type": "string",
+            "description": "A comma-separated list of [Spotify URIs](/documentation/web-api/concepts/spotify-uris-ids). Maximum: 40 URIs.\n\nSupported URI types:\n- `spotify:track:{id}`\n- `spotify:album:{id}`\n- `spotify:episode:{id}`\n- `spotify:show:{id}`\n- `spotify:audiobook:{id}`\n- `spotify:artist:{id}`\n- `spotify:user:{id}`\n- `spotify:playlist:{id}`\n"
+          }
+        },
+        "required": [
+          "uris"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/library/contains",
+        "headers": {},
+        "query_params": [
+          "uris"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_users_saved_albums",
+      "description": "Get User's Saved Albums\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/albums",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "save_albums_user",
+      "description": "Save Albums for Current User\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids). For example: `[\"4iV5W9uYEdYUVa79Axb7Rh\", \"1301WleyT98MSxVHPZCA6M\"]`<br/>A maximum of 50 items can be specified in one request. _**Note**: if the `ids` parameter is present in the query string, any IDs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/albums",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "remove_albums_user",
+      "description": "Remove Users' Saved Albums\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids). For example: `[\"4iV5W9uYEdYUVa79Axb7Rh\", \"1301WleyT98MSxVHPZCA6M\"]`<br/>A maximum of 50 items can be specified in one request. _**Note**: if the `ids` parameter is present in the query string, any IDs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/me/albums",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "check_users_saved_albums",
+      "description": "Check User's Saved Albums\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/albums/contains",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_users_saved_tracks",
+      "description": "Get User's Saved Tracks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/tracks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "save_tracks_user",
+      "description": "Save Tracks for Current User\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids). For example: `[\"4iV5W9uYEdYUVa79Axb7Rh\", \"1301WleyT98MSxVHPZCA6M\"]`<br/>A maximum of 50 items can be specified in one request. _**Note**: if the `timestamped_ids` is present in the body, any IDs listed in the query parameters (deprecated) or the `ids` field in the body will be ignored._\n"
+          },
+          "timestamped_ids": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "A JSON array of objects containing track IDs with their corresponding timestamps. Each object must include a track ID and an `added_at` timestamp. This allows you to specify when tracks were added to maintain a specific chronological order in the user's library.<br/>A maximum of 50 items can be specified in one request. _**Note**: if the `timestamped_ids` is present in the body, any IDs listed in the query parameters (deprecated) or the `ids` field in the body will be ignored._\n"
+          }
+        },
+        "required": [
+          "uris"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/tracks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "remove_tracks_user",
+      "description": "Remove User's Saved Tracks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids). For example: `[\"4iV5W9uYEdYUVa79Axb7Rh\", \"1301WleyT98MSxVHPZCA6M\"]`<br/>A maximum of 50 items can be specified in one request. _**Note**: if the `ids` parameter is present in the query string, any IDs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/me/tracks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "check_users_saved_tracks",
+      "description": "Check User's Saved Tracks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/tracks/contains",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_users_saved_episodes",
+      "description": "Get User's Saved Episodes\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/episodes",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "save_episodes_user",
+      "description": "Save Episodes for Current User\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids). <br/>A maximum of 50 items can be specified in one request. _**Note**: if the `ids` parameter is present in the query string, any IDs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": [
+          "ids",
+          "uris"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/episodes",
+        "headers": {},
+        "query_params": [
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "remove_episodes_user",
+      "description": "Remove User's Saved Episodes\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids). <br/>A maximum of 50 items can be specified in one request. _**Note**: if the `ids` parameter is present in the query string, any IDs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/me/episodes",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "check_users_saved_episodes",
+      "description": "Check User's Saved Episodes\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "string",
+            "description": "A comma-separated list of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids) for the episodes. Maximum: 50 IDs.\n"
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/episodes/contains",
+        "headers": {},
+        "query_params": [
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_users_saved_shows",
+      "description": "Get User's Saved Shows\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/shows",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "save_shows_user",
+      "description": "Save Shows for Current User\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/shows",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "remove_shows_user",
+      "description": "Remove User's Saved Shows\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/me/shows",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "check_users_saved_shows",
+      "description": "Check User's Saved Shows\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/shows/contains",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_users_top_artists_and_tracks",
+      "description": "Get User's Top Items\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of entity to return. Valid values: `artists` or `tracks`\n"
+          },
+          "time_range": {
+            "type": "string",
+            "description": "Over what time frame the affinities are computed. Valid values: `long_term` (calculated from ~1 year of data and including all new data as it becomes available), `medium_term` (approximately last 6 months), `short_term` (approximately last 4 weeks). Default: `medium_term`\n",
+            "default": "medium_term"
+          },
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/top/{type}",
+        "headers": {},
+        "query_params": [
+          "time_range"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_users_profile",
+      "description": "Get User's Profile\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_list_users_playlists",
+      "description": "Get User's Playlists\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "integer",
+            "description": "The index of the first playlist to return. Default:\n0 (the first object). Maximum offset: 100.000\\. Use with `limit` to get the\nnext set of playlists.\n",
+            "default": 0
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_id}/playlists",
+        "headers": {},
+        "query_params": [
+          "offset"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_playlist_for_user",
+      "description": "Create Playlist for user\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name for the new playlist, for example `\"Your Coolest Playlist\"`. This name does not need to be unique; a user may have several playlists with the same name.\n"
+          },
+          "public": {
+            "type": "boolean",
+            "description": "Defaults to `true`. The playlist's public/private status (if it should be added to the user's profile or not): `true` the playlist will be public, `false` the playlist will be private. To be able to create private playlists, the user must have granted the `playlist-modify-private` [scope](/documentation/web-api/concepts/scopes/#list-of-scopes). For more about public/private status, see [Working with Playlists](/documentation/web-api/concepts/playlists)\n"
+          },
+          "collaborative": {
+            "type": "boolean",
+            "description": "Defaults to `false`. If `true` the playlist will be collaborative. _**Note**: to create a collaborative playlist you must also set `public` to `false`. To create collaborative playlists you must have granted `playlist-modify-private` and `playlist-modify-public` [scopes](/documentation/web-api/concepts/scopes/#list-of-scopes)._\n"
+          },
+          "description": {
+            "type": "string",
+            "description": "value for playlist description as displayed in Spotify Clients and in the Web API.\n"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/users/{user_id}/playlists",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "follow_playlist",
+      "description": "Follow Playlist\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "public": {
+            "type": "boolean",
+            "description": "Defaults to `true`. If `true` the playlist will be included in user's public playlists (added to profile), if `false` it will remain private. For more about public/private status, see [Working with Playlists](/documentation/web-api/concepts/playlists)\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/playlists/{playlist_id}/followers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "unfollow_playlist",
+      "description": "Unfollow Playlist\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/playlists/{playlist_id}/followers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_featured_playlists",
+      "description": "Get Featured Playlists\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "description": "The desired language, consisting of an [ISO 639-1](http://en.wikipedia.org/wiki/ISO_639-1) language code and an [ISO 3166-1 alpha-2 country code](http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2), joined by an underscore. For example: `es_MX`, meaning &quot;Spanish (Mexico)&quot;. Provide this parameter if you want the category strings returned in a particular language.<br/> _**Note**: if `locale` is not supplied, or if the specified language is not available, the category strings returned will be in the Spotify default language (American English)._\n"
+          },
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/browse/featured-playlists",
+        "headers": {},
+        "query_params": [
+          "locale"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_categories",
+      "description": "Get Several Browse Categories\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "description": "The desired language, consisting of an [ISO 639-1](http://en.wikipedia.org/wiki/ISO_639-1) language code and an [ISO 3166-1 alpha-2 country code](http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2), joined by an underscore. For example: `es_MX`, meaning &quot;Spanish (Mexico)&quot;. Provide this parameter if you want the category strings returned in a particular language.<br/> _**Note**: if `locale` is not supplied, or if the specified language is not available, the category strings returned will be in the Spotify default language (American English)._\n"
+          },
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/browse/categories",
+        "headers": {},
+        "query_params": [
+          "locale"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_a_category",
+      "description": "Get Single Browse Category\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "category_id": {
+            "type": "string",
+            "description": "The [Spotify category ID](/documentation/web-api/concepts/spotify-uris-ids) for the category.\n"
+          },
+          "locale": {
+            "type": "string",
+            "description": "The desired language, consisting of an [ISO 639-1](http://en.wikipedia.org/wiki/ISO_639-1) language code and an [ISO 3166-1 alpha-2 country code](http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2), joined by an underscore. For example: `es_MX`, meaning &quot;Spanish (Mexico)&quot;. Provide this parameter if you want the category strings returned in a particular language.<br/> _**Note**: if `locale` is not supplied, or if the specified language is not available, the category strings returned will be in the Spotify default language (American English)._\n"
+          }
+        },
+        "required": [
+          "category_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/browse/categories/{category_id}",
+        "headers": {},
+        "query_params": [
+          "locale"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_a_categories_playlists",
+      "description": "Get Category's Playlists\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "category_id": {
+            "type": "string",
+            "description": "The [Spotify category ID](/documentation/web-api/concepts/spotify-uris-ids) for the category.\n"
+          },
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/browse/categories/{category_id}/playlists",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_playlist_cover",
+      "description": "Get Playlist Cover Image\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/playlists/{playlist_id}/images",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "upload_custom_playlist_cover",
+      "description": "Add Custom Playlist Cover Image\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/playlists/{playlist_id}/images",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_new_releases",
+      "description": "Get New Releases\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/browse/new-releases",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_followed",
+      "description": "Get Followed Artists\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The ID type: currently only `artist` is supported.\n"
+          },
+          "after": {
+            "type": "string",
+            "description": "The last artist ID retrieved from the previous request.\n"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The maximum number of items to return. Default: 20\\. Minimum: 1\\. Maximum: 50\\.\n",
+            "default": 20,
+            "minimum": 0,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/following",
+        "headers": {},
+        "query_params": [
+          "type",
+          "after",
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "follow_artists_users",
+      "description": "Follow Artists or Users\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The ID type.\n"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the artist or user [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids).\nFor example: `{ids:[\"74ASZWbe4lXaubB36ztrGX\", \"08td7MxkoHQkXnWAYD8d6Q\"]}`. A maximum of 50 IDs can be sent in one request. _**Note**: if the `ids` parameter is present in the query string, any IDs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": [
+          "type",
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/following",
+        "headers": {},
+        "query_params": [
+          "type",
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "unfollow_artists_users",
+      "description": "Unfollow Artists or Users\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The ID type: either `artist` or `user`.\n"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array of the artist or user [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids). For example: `{ids:[\"74ASZWbe4lXaubB36ztrGX\", \"08td7MxkoHQkXnWAYD8d6Q\"]}`. A maximum of 50 IDs can be sent in one request. _**Note**: if the `ids` parameter is present in the query string, any IDs listed here in the body will be ignored._\n"
+          }
+        },
+        "required": [
+          "type",
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/me/following",
+        "headers": {},
+        "query_params": [
+          "type",
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "check_current_user_follows",
+      "description": "Check If User Follows Artists or Users\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The ID type: either `artist` or `user`.\n"
+          },
+          "ids": {
+            "type": "string",
+            "description": "A comma-separated list of the artist or the user [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids) to check. For example: `ids=74ASZWbe4lXaubB36ztrGX,08td7MxkoHQkXnWAYD8d6Q`. A maximum of 50 IDs can be sent in one request.\n"
+          }
+        },
+        "required": [
+          "type",
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/following/contains",
+        "headers": {},
+        "query_params": [
+          "type",
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "check_if_user_follows_playlist",
+      "description": "Check if Current User Follows Playlist\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "ids": {
+            "type": "string",
+            "description": "**Deprecated** A single item list containing current user's [Spotify Username](/documentation/web-api/concepts/spotify-uris-ids). Maximum: 1 id.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/playlists/{playlist_id}/followers/contains",
+        "headers": {},
+        "query_params": [
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_several_audio_features",
+      "description": "Get Several Tracks' Audio Features\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "string",
+            "description": "A comma-separated list of the [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids)\nfor the tracks. Maximum: 100 IDs.\n"
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/audio-features",
+        "headers": {},
+        "query_params": [
+          "ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_audio_features",
+      "description": "Get Track's Audio Features\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The [Spotify ID](/documentation/web-api/concepts/spotify-uris-ids) for the track.\n"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/audio-features/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_audio_analysis",
+      "description": "Get Track's Audio Analysis\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The [Spotify ID](/documentation/web-api/concepts/spotify-uris-ids)\nfor the track.\n"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/audio-analysis/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_recommendations",
+      "description": "Get Recommendations\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "The target size of the list of recommended tracks. For seeds with unusually small pools or when highly restrictive filtering is applied, it may be impossible to generate the requested number of recommended tracks. Debugging information for such cases is available in the response. Default: 20\\. Minimum: 1\\. Maximum: 100.\n",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          },
+          "undefined": {
+            "type": "string"
+          },
+          "seed_artists": {
+            "type": "string",
+            "description": "A comma separated list of [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids) for seed artists.  Up to 5 seed values may be provided in any combination of `seed_artists`, `seed_tracks` and `seed_genres`.<br/> _**Note**: only required if `seed_genres` and `seed_tracks` are not set_.\n"
+          },
+          "seed_genres": {
+            "type": "string",
+            "description": "A comma separated list of any genres in the set of [available genre seeds](/documentation/web-api/reference/get-recommendation-genres). Up to 5 seed values may be provided in any combination of `seed_artists`, `seed_tracks` and `seed_genres`.<br/> _**Note**: only required if `seed_artists` and `seed_tracks` are not set_.\n"
+          },
+          "seed_tracks": {
+            "type": "string",
+            "description": "A comma separated list of [Spotify IDs](/documentation/web-api/concepts/spotify-uris-ids) for a seed track.  Up to 5 seed values may be provided in any combination of `seed_artists`, `seed_tracks` and `seed_genres`.<br/> _**Note**: only required if `seed_artists` and `seed_genres` are not set_.\n"
+          },
+          "min_acousticness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_acousticness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "target_acousticness": {
+            "type": "number",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_danceability": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_danceability": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "target_danceability": {
+            "type": "number",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_duration_ms": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n"
+          },
+          "max_duration_ms": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n"
+          },
+          "target_duration_ms": {
+            "type": "integer",
+            "description": "Target duration of the track (ms)"
+          },
+          "min_energy": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_energy": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "target_energy": {
+            "type": "number",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_instrumentalness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_instrumentalness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "target_instrumentalness": {
+            "type": "number",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_key": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 11
+          },
+          "max_key": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 11
+          },
+          "target_key": {
+            "type": "integer",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 11
+          },
+          "min_liveness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_liveness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "target_liveness": {
+            "type": "number",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_loudness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n"
+          },
+          "max_loudness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n"
+          },
+          "target_loudness": {
+            "type": "number",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n"
+          },
+          "min_mode": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_mode": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "target_mode": {
+            "type": "integer",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_popularity": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "max_popularity": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "target_popularity": {
+            "type": "integer",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "min_speechiness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_speechiness": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "target_speechiness": {
+            "type": "number",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_tempo": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n"
+          },
+          "max_tempo": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n"
+          },
+          "target_tempo": {
+            "type": "number",
+            "description": "Target tempo (BPM)"
+          },
+          "min_time_signature": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "maximum": 11
+          },
+          "max_time_signature": {
+            "type": "integer",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n"
+          },
+          "target_time_signature": {
+            "type": "integer",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n"
+          },
+          "min_valence": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard floor on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `min_tempo=140` would restrict results to only those tracks with a tempo of greater than 140 beats per minute.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_valence": {
+            "type": "number",
+            "description": "For each tunable track attribute, a hard ceiling on the selected track attribute’s value can be provided. See tunable track attributes below for the list of available options. For example, `max_instrumentalness=0.35` would filter out most tracks that are likely to be instrumental.\n",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "target_valence": {
+            "type": "number",
+            "description": "For each of the tunable track attributes (below) a target value may be provided. Tracks with the attribute values nearest to the target values will be preferred. For example, you might request `target_energy=0.6` and `target_danceability=0.8`. All target values will be weighed equally in ranking results.\n",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "seed_artists",
+          "seed_genres",
+          "seed_tracks"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/recommendations",
+        "headers": {},
+        "query_params": [
+          "limit",
+          "seed_artists",
+          "seed_genres",
+          "seed_tracks",
+          "min_acousticness",
+          "max_acousticness",
+          "target_acousticness",
+          "min_danceability",
+          "max_danceability",
+          "target_danceability",
+          "min_duration_ms",
+          "max_duration_ms",
+          "target_duration_ms",
+          "min_energy",
+          "max_energy",
+          "target_energy",
+          "min_instrumentalness",
+          "max_instrumentalness",
+          "target_instrumentalness",
+          "min_key",
+          "max_key",
+          "target_key",
+          "min_liveness",
+          "max_liveness",
+          "target_liveness",
+          "min_loudness",
+          "max_loudness",
+          "target_loudness",
+          "min_mode",
+          "max_mode",
+          "target_mode",
+          "min_popularity",
+          "max_popularity",
+          "target_popularity",
+          "min_speechiness",
+          "max_speechiness",
+          "target_speechiness",
+          "min_tempo",
+          "max_tempo",
+          "target_tempo",
+          "min_time_signature",
+          "max_time_signature",
+          "target_time_signature",
+          "min_valence",
+          "max_valence",
+          "target_valence"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_recommendation_genres",
+      "description": "Get Available Genre Seeds\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/recommendations/available-genre-seeds",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_information_about_the_users_current_playback",
+      "description": "Get Playback State\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/player",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "transfer_a_users_playback",
+      "description": "Transfer Playback\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A JSON array containing the ID of the device on which playback should be started/transferred.<br/>For example:`{device_ids:[\"74ASZWbe4lXaubB36ztrGX\"]}`<br/>_**Note**: Although an array is accepted, only a single device_id is currently supported. Supplying more than one will return `400 Bad Request`_\n"
+          },
+          "play": {
+            "type": "boolean",
+            "description": "**true**: ensure playback happens on new device.<br/>**false** or not provided: keep the current playback state.\n"
+          }
+        },
+        "required": [
+          "device_ids"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/player",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_a_users_available_devices",
+      "description": "Get Available Devices\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/player/devices",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_the_users_currently_playing_track",
+      "description": "Get Currently Playing Track\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/player/currently-playing",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "start_a_users_playback",
+      "description": "Start/Resume Playback\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If not supplied, the user's currently active device is the target."
+          },
+          "context_uri": {
+            "type": "string",
+            "description": "Optional. Spotify URI of the context to play.\nValid contexts are albums, artists & playlists.\n`{context_uri:\"spotify:album:1Je1IMUlBXcx1Fz0WE7oPT\"}`\n"
+          },
+          "uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional. A JSON array of the Spotify track URIs to play.\nFor example: `{\"uris\": [\"spotify:track:4iV5W9uYEdYUVa79Axb7Rh\", \"spotify:track:1301WleyT98MSxVHPZCA6M\"]}`\n"
+          },
+          "offset": {
+            "type": "object",
+            "description": "Optional. Indicates from where in the context playback should start. Only available when context_uri corresponds to an album or playlist object\n\"position\" is zero based and can’t be negative. Example: `\"offset\": {\"position\": 5}`\n\"uri\" is a string representing the uri of the item to start at. Example: `\"offset\": {\"uri\": \"spotify:track:1301WleyT98MSxVHPZCA6M\"}`\n"
+          },
+          "position_ms": {
+            "type": "integer",
+            "description": "integer"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/player/play",
+        "headers": {},
+        "query_params": [
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "pause_a_users_playback",
+      "description": "Pause Playback\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If not supplied, the user's currently active device is the target.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/player/pause",
+        "headers": {},
+        "query_params": [
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "skip_users_playback_to_next_track",
+      "description": "Skip To Next\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If not supplied, the user's currently active device is the target."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/me/player/next",
+        "headers": {},
+        "query_params": [
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "skip_users_playback_to_previous_track",
+      "description": "Skip To Previous\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If\nnot supplied, the user's currently active device is the target.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/me/player/previous",
+        "headers": {},
+        "query_params": [
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "seek_to_position_in_currently_playing_track",
+      "description": "Seek To Position\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "position_ms": {
+            "type": "integer",
+            "description": "The position in milliseconds to seek to. Must be a\npositive number. Passing in a position that is greater than the length of\nthe track will cause the player to start playing the next song.\n"
+          },
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If\nnot supplied, the user's currently active device is the target.\n"
+          }
+        },
+        "required": [
+          "position_ms"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/player/seek",
+        "headers": {},
+        "query_params": [
+          "position_ms",
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "set_repeat_mode_on_users_playback",
+      "description": "Set Repeat Mode\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "description": "**track**, **context** or **off**.<br/>\n**track** will repeat the current track.<br/>\n**context** will repeat the current context.<br/>\n**off** will turn repeat off.\n"
+          },
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If\nnot supplied, the user's currently active device is the target.\n"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/player/repeat",
+        "headers": {},
+        "query_params": [
+          "state",
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "set_volume_for_users_playback",
+      "description": "Set Playback Volume\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "volume_percent": {
+            "type": "integer",
+            "description": "The volume to set. Must be a value from 0 to 100 inclusive.\n"
+          },
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If not supplied, the user's currently active device is the target.\n"
+          }
+        },
+        "required": [
+          "volume_percent"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/player/volume",
+        "headers": {},
+        "query_params": [
+          "volume_percent",
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "toggle_shuffle_for_users_playback",
+      "description": "Toggle Playback Shuffle\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "boolean",
+            "description": "**true** : Shuffle user's playback.<br/>\n**false** : Do not shuffle user's playback.\n"
+          },
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If\nnot supplied, the user's currently active device is the target.\n"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/me/player/shuffle",
+        "headers": {},
+        "query_params": [
+          "state",
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_recently_played",
+      "description": "Get Recently Played Tracks\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "The maximum number of items to return. Default: 20. Minimum: 1. Maximum: 50.\n",
+            "default": 20,
+            "minimum": 0,
+            "maximum": 50
+          },
+          "after": {
+            "type": "integer",
+            "description": "A Unix timestamp in milliseconds. Returns all items\nafter (but not including) this cursor position. If `after` is specified, `before`\nmust not be specified.\n"
+          },
+          "before": {
+            "type": "integer",
+            "description": "A Unix timestamp in milliseconds. Returns all items\nbefore (but not including) this cursor position. If `before` is specified,\n`after` must not be specified.\n"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/player/recently-played",
+        "headers": {},
+        "query_params": [
+          "limit",
+          "after",
+          "before"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_queue",
+      "description": "Get the User's Queue\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/me/player/queue",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_to_queue",
+      "description": "Add Item to Playback Queue\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string",
+            "description": "The uri of the item to add to the queue. Must be a track or an episode uri.\n"
+          },
+          "device_id": {
+            "type": "string",
+            "description": "The id of the device this command is targeting. If\nnot supplied, the user's currently active device is the target.\n"
+          }
+        },
+        "required": [
+          "uri"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/me/player/queue",
+        "headers": {},
+        "query_params": [
+          "uri",
+          "device_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_available_markets",
+      "description": "Get Available Markets\n",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/markets",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://accounts.spotify.com/api/token",
+          "authorization_url": "https://accounts.spotify.com/authorize"
+        }
+      },
+      "enabled": true
+    }
+  ]
+}

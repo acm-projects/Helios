@@ -1,0 +1,5550 @@
+{
+  "baseUrl": "https://app.asana.com/api/1.0",
+  "auth": [
+    {
+      "type": "oauth2",
+      "authorizationUrl": "https://app.asana.com/-/oauth_authorize",
+      "tokenUrl": "https://app.asana.com/-/oauth_token",
+      "scopes": {
+        "default": "Provides access to all endpoints documented in our API reference. If no scopes are requested, this scope is assumed by default.",
+        "email": "Provides access to the user’s email through the OpenID Connect user info endpoint.",
+        "openid": "Provides access to OpenID Connect ID tokens and the OpenID Connect user info endpoint.",
+        "profile": "Provides access to the user’s name and profile photo through the OpenID Connect user info endpoint."
+      }
+    },
+    {
+      "type": "bearer_token"
+    }
+  ],
+  "tools": [
+    {
+      "name": "getAttachmentsForObject",
+      "description": "Get attachments from an object",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string",
+            "description": "Globally unique identifier for object to fetch statuses from. Must be a GID for a `project`, `project_brief`, or `task`."
+          }
+        },
+        "required": [
+          "parent"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/attachments",
+        "headers": {},
+        "query_params": [
+          "parent"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createAttachmentForObject",
+      "description": "Upload an attachment",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/attachments",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getAttachment",
+      "description": "Get an attachment",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/attachments/{attachment_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteAttachment",
+      "description": "Delete an attachment",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/attachments/{attachment_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createBatchRequest",
+      "description": "Submit parallel requests",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "actions": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "A request object for use in a batch request."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/batch",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createCustomField",
+      "description": "Create a custom field",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/custom_fields",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getCustomField",
+      "description": "Get a custom field",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/custom_fields/{custom_field_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateCustomField",
+      "description": "Update a custom field",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/custom_fields/{custom_field_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteCustomField",
+      "description": "Delete a custom field",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/custom_fields/{custom_field_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createEnumOptionForCustomField",
+      "description": "Create an enum option",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/custom_fields/{custom_field_gid}/enum_options",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "insertEnumOptionForCustomField",
+      "description": "Reorder a custom field's enum",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "after_enum_option": {
+                "type": "string",
+                "description": "An existing enum option within this custom field after which the new enum option should be inserted. Cannot be provided together with before_enum_option."
+              },
+              "before_enum_option": {
+                "type": "string",
+                "description": "An existing enum option within this custom field before which the new enum option should be inserted. Cannot be provided together with after_enum_option."
+              },
+              "enum_option": {
+                "type": "string",
+                "description": "The gid of the enum option to relocate."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/custom_fields/{custom_field_gid}/enum_options/insert",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateEnumOption",
+      "description": "Update an enum option",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/enum_options/{enum_option_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getEvents",
+      "description": "Get events on a resource",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/events",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getGoalRelationships",
+      "description": "Get goal relationships",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "supported_goal": {
+            "type": "string",
+            "description": "Globally unique identifier for the supported goal in the goal relationship."
+          },
+          "resource_subtype": {
+            "type": "string",
+            "description": "If provided, filter to goal relationships with a given resource_subtype."
+          }
+        },
+        "required": [
+          "supported_goal"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/goal_relationships",
+        "headers": {},
+        "query_params": [
+          "supported_goal",
+          "resource_subtype"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getGoalRelationship",
+      "description": "Get a goal relationship",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/goal_relationships/{goal_relationship_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateGoalRelationship",
+      "description": "Update a goal relationship",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/goal_relationships/{goal_relationship_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getGoals",
+      "description": "Get goals",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "portfolio": {
+            "type": "string",
+            "description": "Globally unique identifier for supporting portfolio."
+          },
+          "project": {
+            "type": "string",
+            "description": "Globally unique identifier for supporting project."
+          },
+          "is_workspace_level": {
+            "type": "boolean",
+            "description": "Filter to goals with is_workspace_level set to query value. Must be used with the workspace parameter."
+          },
+          "team": {
+            "type": "string",
+            "description": "Globally unique identifier for the team."
+          },
+          "workspace": {
+            "type": "string",
+            "description": "Globally unique identifier for the workspace."
+          },
+          "time_periods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Globally unique identifiers for the time periods."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/goals",
+        "headers": {},
+        "query_params": [
+          "portfolio",
+          "project",
+          "is_workspace_level",
+          "team",
+          "workspace",
+          "time_periods"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createGoal",
+      "description": "Create a goal",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/goals",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getGoal",
+      "description": "Get a goal",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/goals/{goal_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateGoal",
+      "description": "Update a goal",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/goals/{goal_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteGoal",
+      "description": "Delete a goal",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/goals/{goal_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addFollowers",
+      "description": "Add a collaborator to a goal",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "followers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/goals/{goal_gid}/addFollowers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addSupportingRelationship",
+      "description": "Add a supporting goal relationship",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "contribution_weight": {
+                "type": "number",
+                "description": "The weight that the supporting resource's progress will contribute to the supported goal's progress. This can only be 0 or 1."
+              },
+              "insert_after": {
+                "type": "string",
+                "description": "An id of a subgoal of this parent goal. The new subgoal will be added after the one specified here. `insert_before` and `insert_after` parameters cannot both be specified. Currently only supported when adding a subgoal."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "An id of a subgoal of this parent goal. The new subgoal will be added before the one specified here. `insert_before` and `insert_after` parameters cannot both be specified. Currently only supported when adding a subgoal."
+              },
+              "supporting_resource": {
+                "type": "string",
+                "description": "The gid of the supporting resource to add to the parent goal. Must be the gid of a goal, project, or portfolio."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/goals/{goal_gid}/addSupportingRelationship",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getParentGoalsForGoal",
+      "description": "Get parent goals from a goal",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/goals/{goal_gid}/parentGoals",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeFollowers",
+      "description": "Remove a collaborator from a goal",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "followers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/goals/{goal_gid}/removeFollowers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeSupportingRelationship",
+      "description": "Removes a supporting goal relationship",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "supporting_resource": {
+                "type": "string",
+                "description": "The gid of the supporting resource to remove from the parent goal. Must be the gid of a goal, project, or portfolio."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/goals/{goal_gid}/removeSupportingRelationship",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createGoalMetric",
+      "description": "Create a goal metric",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/goals/{goal_gid}/setMetric",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateGoalMetric",
+      "description": "Update a goal metric",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/goals/{goal_gid}/setMetricCurrentValue",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getJob",
+      "description": "Get a job by id",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/jobs/{job_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createOrganizationExport",
+      "description": "Create an organization export request",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "organization": {
+                "type": "string",
+                "description": "Globally unique identifier for the workspace or organization."
+              }
+            },
+            "description": "An *organization_export* request starts a job to export the complete data of the given Organization."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/organization_exports",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getOrganizationExport",
+      "description": "Get details on an org export request",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/organization_exports/{organization_export_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPortfolioMemberships",
+      "description": "Get multiple portfolio memberships",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/portfolio_memberships",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPortfolioMembership",
+      "description": "Get a portfolio membership",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/portfolio_memberships/{portfolio_membership_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPortfolios",
+      "description": "Get multiple portfolios",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "The workspace or organization to filter portfolios on."
+          },
+          "owner": {
+            "type": "string",
+            "description": "The user who owns the portfolio. Currently, API users can only get a list of portfolios that they themselves own."
+          }
+        },
+        "required": [
+          "workspace",
+          "owner"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/portfolios",
+        "headers": {},
+        "query_params": [
+          "workspace",
+          "owner"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createPortfolio",
+      "description": "Create a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/portfolios",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPortfolio",
+      "description": "Get a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/portfolios/{portfolio_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updatePortfolio",
+      "description": "Update a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/portfolios/{portfolio_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deletePortfolio",
+      "description": "Delete a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/portfolios/{portfolio_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addCustomFieldSettingForPortfolio",
+      "description": "Add a custom field to a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "custom_field": {
+                "type": "string",
+                "description": "The custom field to associate with this container."
+              },
+              "insert_after": {
+                "type": "string",
+                "description": "A gid of a Custom Field Setting on this container, after which the new Custom Field Setting will be added.  `insert_before` and `insert_after` parameters cannot both be specified."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "A gid of a Custom Field Setting on this container, before which the new Custom Field Setting will be added.  `insert_before` and `insert_after` parameters cannot both be specified."
+              },
+              "is_important": {
+                "type": "boolean",
+                "description": "Whether this field should be considered important to this container (for instance, to display in the list view of items in the container)."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/portfolios/{portfolio_gid}/addCustomFieldSetting",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addItemForPortfolio",
+      "description": "Add a portfolio item",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "insert_after": {
+                "type": "string",
+                "description": "An id of an item in this portfolio. The new item will be added after the one specified here. `insert_before` and `insert_after` parameters cannot both be specified."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "An id of an item in this portfolio. The new item will be added before the one specified here. `insert_before` and `insert_after` parameters cannot both be specified."
+              },
+              "item": {
+                "type": "string",
+                "description": "The item to add to the portfolio."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/portfolios/{portfolio_gid}/addItem",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addMembersForPortfolio",
+      "description": "Add users to a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "members": {
+                "type": "string",
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/portfolios/{portfolio_gid}/addMembers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getCustomFieldSettingsForPortfolio",
+      "description": "Get a portfolio's custom fields",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/portfolios/{portfolio_gid}/custom_field_settings",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getItemsForPortfolio",
+      "description": "Get portfolio items",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/portfolios/{portfolio_gid}/items",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPortfolioMembershipsForPortfolio",
+      "description": "Get memberships from a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/portfolios/{portfolio_gid}/portfolio_memberships",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeCustomFieldSettingForPortfolio",
+      "description": "Remove a custom field from a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "custom_field": {
+                "type": "string",
+                "description": "The custom field to remove from this portfolio."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/portfolios/{portfolio_gid}/removeCustomFieldSetting",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeItemForPortfolio",
+      "description": "Remove a portfolio item",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "item": {
+                "type": "string",
+                "description": "The item to remove from the portfolio."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/portfolios/{portfolio_gid}/removeItem",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeMembersForPortfolio",
+      "description": "Remove users from a portfolio",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "members": {
+                "type": "string",
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/portfolios/{portfolio_gid}/removeMembers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectBrief",
+      "description": "Get a project brief",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project_briefs/{project_brief_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateProjectBrief",
+      "description": "Update a project brief",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/project_briefs/{project_brief_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteProjectBrief",
+      "description": "Delete a project brief",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/project_briefs/{project_brief_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectMembership",
+      "description": "Get a project membership",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project_memberships/{project_membership_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectStatus",
+      "description": "Get a project status",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project_statuses/{project_status_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteProjectStatus",
+      "description": "Delete a project status",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/project_statuses/{project_status_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectTemplates",
+      "description": "Get multiple project templates",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project_templates",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectTemplate",
+      "description": "Get a project template",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/project_templates/{project_template_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "instantiateProject",
+      "description": "Instantiate a project from a project template",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "is_strict": {
+                "type": "boolean",
+                "description": "*Optional*. If set to `true`, the endpoint returns an \"Unprocessable Entity\" error if you fail to provide a calendar date value for any date variable. If set to `false`, a default date is used for each unfulfilled date variable (e.g., the current date is used as the Start Date of a project)."
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the new project."
+              },
+              "public": {
+                "type": "boolean",
+                "description": "Sets the project to public to its team."
+              },
+              "requested_dates": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                },
+                "description": "Array of mappings of date variables to calendar dates."
+              },
+              "team": {
+                "type": "string",
+                "description": "*Conditional*. Sets the team of the new project. If the project template exists in an _organization_, you must specify a value for `team` and not `workspace`."
+              },
+              "workspace": {
+                "type": "string",
+                "description": "*Conditional*. Sets the workspace of the new project. If the project template exists in a _workspace_, you must specify a value for `workspace` and not `team`."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/project_templates/{project_template_gid}/instantiateProject",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjects",
+      "description": "Get multiple projects",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "The workspace or organization to filter projects on."
+          },
+          "team": {
+            "type": "string",
+            "description": "The team to filter projects on."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects",
+        "headers": {},
+        "query_params": [
+          "workspace",
+          "team"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createProject",
+      "description": "Create a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProject",
+      "description": "Get a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateProject",
+      "description": "Update a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/projects/{project_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteProject",
+      "description": "Delete a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/projects/{project_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addCustomFieldSettingForProject",
+      "description": "Add a custom field to a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "custom_field": {
+                "type": "string",
+                "description": "The custom field to associate with this container."
+              },
+              "insert_after": {
+                "type": "string",
+                "description": "A gid of a Custom Field Setting on this container, after which the new Custom Field Setting will be added.  `insert_before` and `insert_after` parameters cannot both be specified."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "A gid of a Custom Field Setting on this container, before which the new Custom Field Setting will be added.  `insert_before` and `insert_after` parameters cannot both be specified."
+              },
+              "is_important": {
+                "type": "boolean",
+                "description": "Whether this field should be considered important to this container (for instance, to display in the list view of items in the container)."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/addCustomFieldSetting",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addFollowersForProject",
+      "description": "Add followers to a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "followers": {
+                "type": "string",
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/addFollowers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addMembersForProject",
+      "description": "Add users to a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "members": {
+                "type": "string",
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/addMembers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getCustomFieldSettingsForProject",
+      "description": "Get a project's custom fields",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_gid}/custom_field_settings",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "duplicateProject",
+      "description": "Duplicate a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "include": {
+                "type": "string",
+                "description": "The elements that will be duplicated to the new project. Tasks are always included."
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the new project."
+              },
+              "schedule_dates": {
+                "type": "object",
+                "properties": {
+                  "due_on": {
+                    "type": "string",
+                    "description": "Sets the last due date in the duplicated project to the given date. The rest of the due dates will be offset by the same amount as the due dates in the original project."
+                  },
+                  "should_skip_weekends": {
+                    "type": "boolean",
+                    "description": "Determines if the auto-shifted dates should skip weekends."
+                  },
+                  "start_on": {
+                    "type": "string",
+                    "description": "Sets the first start date in the duplicated project to the given date. The rest of the start dates will be offset by the same amount as the start dates in the original project."
+                  }
+                },
+                "description": "A dictionary of options to auto-shift dates. `task_dates` must be included to use this option. Requires either `start_on` or `due_on`, but not both."
+              },
+              "team": {
+                "type": "string",
+                "description": "Sets the team of the new project. If team is not defined, the new project will be in the same team as the the original project."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/duplicate",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createProjectBrief",
+      "description": "Create a project brief",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/project_briefs",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectMembershipsForProject",
+      "description": "Get memberships from a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_gid}/project_memberships",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectStatusesForProject",
+      "description": "Get statuses from a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_gid}/project_statuses",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createProjectStatusForProject",
+      "description": "Create a project status",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/project_statuses",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeCustomFieldSettingForProject",
+      "description": "Remove a custom field from a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "custom_field": {
+                "type": "string",
+                "description": "The custom field to remove from this portfolio."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/removeCustomFieldSetting",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeFollowersForProject",
+      "description": "Remove followers from a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "followers": {
+                "type": "string",
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/removeFollowers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeMembersForProject",
+      "description": "Remove users from a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "members": {
+                "type": "string",
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/removeMembers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "projectSaveAsTemplate",
+      "description": "Create a project template from a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the new project template."
+              },
+              "public": {
+                "type": "boolean",
+                "description": "Sets the project template to public to its team."
+              },
+              "team": {
+                "type": "string",
+                "description": "Sets the team of the new project template. If the project exists in an organization, specify team and not workspace."
+              },
+              "workspace": {
+                "type": "string",
+                "description": "Sets the workspace of the new project template. Only specify workspace if the project exists in a workspace."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/saveAsTemplate",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getSectionsForProject",
+      "description": "Get sections in a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_gid}/sections",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createSectionForProject",
+      "description": "Create a section in a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "insert_after": {
+                "type": "string",
+                "description": "An existing section within this project after which the added section should be inserted. Cannot be provided together with insert_before."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "An existing section within this project before which the added section should be inserted. Cannot be provided together with insert_after."
+              },
+              "name": {
+                "type": "string",
+                "description": "The text to be displayed as the section name. This cannot be an empty string."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/sections",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "insertSectionForProject",
+      "description": "Move or Insert sections",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "after_section": {
+                "type": "string",
+                "description": "Insert the given section immediately after the section specified by this parameter."
+              },
+              "before_section": {
+                "type": "string",
+                "description": "Insert the given section immediately before the section specified by this parameter."
+              },
+              "project": {
+                "type": "string",
+                "description": "The project in which to reorder the given section."
+              },
+              "section": {
+                "type": "string",
+                "description": "The section to reorder."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/projects/{project_gid}/sections/insert",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTaskCountsForProject",
+      "description": "Get task count of a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_gid}/task_counts",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTasksForProject",
+      "description": "Get tasks from a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/projects/{project_gid}/tasks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getSection",
+      "description": "Get a section",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/sections/{section_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateSection",
+      "description": "Update a section",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "insert_after": {
+                "type": "string",
+                "description": "An existing section within this project after which the added section should be inserted. Cannot be provided together with insert_before."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "An existing section within this project before which the added section should be inserted. Cannot be provided together with insert_after."
+              },
+              "name": {
+                "type": "string",
+                "description": "The text to be displayed as the section name. This cannot be an empty string."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/sections/{section_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteSection",
+      "description": "Delete a section",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/sections/{section_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addTaskForSection",
+      "description": "Add task to section",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "insert_after": {
+                "type": "string",
+                "description": "An existing task within this section after which the added task should be inserted. Cannot be provided together with insert_before."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "An existing task within this section before which the added task should be inserted. Cannot be provided together with insert_after."
+              },
+              "task": {
+                "type": "string",
+                "description": "The task to add to this section."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/sections/{section_gid}/addTask",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTasksForSection",
+      "description": "Get tasks from a section",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/sections/{section_gid}/tasks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getStatusesForObject",
+      "description": "Get status updates from an object",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "parent": {
+            "type": "string",
+            "description": "Globally unique identifier for object to fetch statuses from. Must be a GID for a project, portfolio, or goal."
+          },
+          "created_since": {
+            "type": "string",
+            "description": "Only return statuses that have been created since the given time."
+          }
+        },
+        "required": [
+          "parent"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/status_updates",
+        "headers": {},
+        "query_params": [
+          "parent",
+          "created_since"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createStatusForObject",
+      "description": "Create a status update",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/status_updates",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getStatus",
+      "description": "Get a status update",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/status_updates/{status_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteStatus",
+      "description": "Delete a status update",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/status_updates/{status_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getStory",
+      "description": "Get a story",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/stories/{story_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateStory",
+      "description": "Update a story",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/stories/{story_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteStory",
+      "description": "Delete a story",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/stories/{story_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTags",
+      "description": "Get multiple tags",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "The workspace to filter tags on."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tags",
+        "headers": {},
+        "query_params": [
+          "workspace"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createTag",
+      "description": "Create a tag",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tags",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTag",
+      "description": "Get a tag",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tags/{tag_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateTag",
+      "description": "Update a tag",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/tags/{tag_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteTag",
+      "description": "Delete a tag",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/tags/{tag_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTasksForTag",
+      "description": "Get tasks from a tag",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tags/{tag_gid}/tasks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTasks",
+      "description": "Get multiple tasks",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "assignee": {
+            "type": "string",
+            "description": "The assignee to filter tasks on. If searching for unassigned tasks, assignee.any = null can be specified.\n*Note: If you specify `assignee`, you must also specify the `workspace` to filter on.*"
+          },
+          "project": {
+            "type": "string",
+            "description": "The project to filter tasks on."
+          },
+          "section": {
+            "type": "string",
+            "description": "The section to filter tasks on.\n*Note: Currently, this is only supported in board views.*"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "The workspace to filter tasks on.\n*Note: If you specify `workspace`, you must also specify the `assignee` to filter on.*"
+          },
+          "completed_since": {
+            "type": "string",
+            "description": "Only return tasks that are either incomplete or that have been completed since this time."
+          },
+          "modified_since": {
+            "type": "string",
+            "description": "Only return tasks that have been modified since the given time.\n\n*Note: A task is considered “modified” if any of its properties\nchange, or associations between it and other objects are modified\n(e.g.  a task being added to a project). A task is not considered\nmodified just because another object it is associated with (e.g. a\nsubtask) is modified. Actions that count as modifying the task\ninclude assigning, renaming, completing, and adding stories.*"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tasks",
+        "headers": {},
+        "query_params": [
+          "assignee",
+          "project",
+          "section",
+          "workspace",
+          "completed_since",
+          "modified_since"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createTask",
+      "description": "Create a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTask",
+      "description": "Get a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tasks/{task_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateTask",
+      "description": "Update a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/tasks/{task_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteTask",
+      "description": "Delete a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/tasks/{task_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addDependenciesForTask",
+      "description": "Set dependencies for a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "dependencies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "An array of task gids that a task depends on."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/addDependencies",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addDependentsForTask",
+      "description": "Set dependents for a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "dependents": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "An array of task gids that are dependents of the given task."
+              }
+            },
+            "description": "A set of dependent tasks."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/addDependents",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addFollowersForTask",
+      "description": "Add followers to a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "followers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/addFollowers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addProjectForTask",
+      "description": "Add a project to a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "insert_after": {
+                "type": "string",
+                "description": "A task in the project to insert the task after, or `null` to insert at the beginning of the list."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "A task in the project to insert the task before, or `null` to insert at the end of the list."
+              },
+              "project": {
+                "type": "string",
+                "description": "The project to add the task to."
+              },
+              "section": {
+                "type": "string",
+                "description": "A section in the project to insert the task into. The task will be inserted at the bottom of the section."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/addProject",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addTagForTask",
+      "description": "Add a tag to a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "tag": {
+                "type": "string",
+                "description": "The tag to add to the task."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/addTag",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getDependenciesForTask",
+      "description": "Get dependencies from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tasks/{task_gid}/dependencies",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getDependentsForTask",
+      "description": "Get dependents from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tasks/{task_gid}/dependents",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "duplicateTask",
+      "description": "Duplicate a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "include": {
+                "type": "string",
+                "description": "The fields that will be duplicated to the new task."
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the new task."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/duplicate",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectsForTask",
+      "description": "Get projects a task is in",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tasks/{task_gid}/projects",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeDependenciesForTask",
+      "description": "Unlink dependencies from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "dependencies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "An array of task gids that a task depends on."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/removeDependencies",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeDependentsForTask",
+      "description": "Unlink dependents from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "dependents": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "An array of task gids that are dependents of the given task."
+              }
+            },
+            "description": "A set of dependent tasks."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/removeDependents",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeFollowerForTask",
+      "description": "Remove followers from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "followers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "An array of strings identifying users. These can either be the string \"me\", an email, or the gid of a user."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/removeFollowers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeProjectForTask",
+      "description": "Remove a project from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "project": {
+                "type": "string",
+                "description": "The project to remove the task from."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/removeProject",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeTagForTask",
+      "description": "Remove a tag from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "tag": {
+                "type": "string",
+                "description": "The tag to remove from the task."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/removeTag",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "setParentForTask",
+      "description": "Set the parent of a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "insert_after": {
+                "type": "string",
+                "description": "A subtask of the parent to insert the task after, or `null` to insert at the beginning of the list."
+              },
+              "insert_before": {
+                "type": "string",
+                "description": "A subtask of the parent to insert the task before, or `null` to insert at the end of the list."
+              },
+              "parent": {
+                "type": "string",
+                "description": "The new parent of the task, or `null` for no parent."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/setParent",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getStoriesForTask",
+      "description": "Get stories from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tasks/{task_gid}/stories",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createStoryForTask",
+      "description": "Create a story on a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/stories",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getSubtasksForTask",
+      "description": "Get subtasks from a task",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tasks/{task_gid}/subtasks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createSubtaskForTask",
+      "description": "Create a subtask",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/tasks/{task_gid}/subtasks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTagsForTask",
+      "description": "Get a task's tags",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/tasks/{task_gid}/tags",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamMemberships",
+      "description": "Get team memberships",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "type": "string",
+            "description": "Globally unique identifier for the team."
+          },
+          "user": {
+            "type": "string",
+            "description": "A string identifying a user. This can either be the string \"me\", an email, or the gid of a user. This parameter must be used with the workspace parameter."
+          },
+          "workspace": {
+            "type": "string",
+            "description": "Globally unique identifier for the workspace. This parameter must be used with the user parameter."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/team_memberships",
+        "headers": {},
+        "query_params": [
+          "team",
+          "user",
+          "workspace"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamMembership",
+      "description": "Get a team membership",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/team_memberships/{team_membership_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createTeam",
+      "description": "Create a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/teams",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateTeam",
+      "description": "Update a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/teams",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeam",
+      "description": "Get a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/teams/{team_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addUserForTeam",
+      "description": "Add a user to a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "string",
+                "description": "A string identifying a user. This can either be the string \"me\", an email, or the gid of a user."
+              }
+            },
+            "description": "A user identification object for specification with the addUser/removeUser endpoints."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/teams/{team_gid}/addUser",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectTemplatesForTeam",
+      "description": "Get a team's project templates",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/teams/{team_gid}/project_templates",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectsForTeam",
+      "description": "Get a team's projects",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/teams/{team_gid}/projects",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createProjectForTeam",
+      "description": "Create a project in a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/teams/{team_gid}/projects",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeUserForTeam",
+      "description": "Remove a user from a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "string",
+                "description": "A string identifying a user. This can either be the string \"me\", an email, or the gid of a user."
+              }
+            },
+            "description": "A user identification object for specification with the addUser/removeUser endpoints."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/teams/{team_gid}/removeUser",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamMembershipsForTeam",
+      "description": "Get memberships from a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/teams/{team_gid}/team_memberships",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getUsersForTeam",
+      "description": "Get users in a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/teams/{team_gid}/users",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTimePeriods",
+      "description": "Get time periods",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "start_on": {
+            "type": "string",
+            "description": "ISO 8601 date string"
+          },
+          "end_on": {
+            "type": "string",
+            "description": "ISO 8601 date string"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "Globally unique identifier for the workspace."
+          }
+        },
+        "required": [
+          "workspace"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/time_periods",
+        "headers": {},
+        "query_params": [
+          "start_on",
+          "end_on",
+          "workspace"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTimePeriod",
+      "description": "Get a time period",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/time_periods/{time_period_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getUserTaskList",
+      "description": "Get a user task list",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/user_task_lists/{user_task_list_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTasksForUserTaskList",
+      "description": "Get tasks from a user task list",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/user_task_lists/{user_task_list_gid}/tasks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getUsers",
+      "description": "Get multiple users",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getUser",
+      "description": "Get a user",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getFavoritesForUser",
+      "description": "Get a user's favorites",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_gid}/favorites",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamMembershipsForUser",
+      "description": "Get memberships from a user",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "description": "Globally unique identifier for the workspace."
+          }
+        },
+        "required": [
+          "workspace"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_gid}/team_memberships",
+        "headers": {},
+        "query_params": [
+          "workspace"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamsForUser",
+      "description": "Get teams for a user",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_gid}/teams",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getUserTaskListForUser",
+      "description": "Get a user's task list",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_gid}/user_task_list",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWorkspaceMembershipsForUser",
+      "description": "Get workspace memberships for a user",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_gid}/workspace_memberships",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWebhooks",
+      "description": "Get multiple webhooks",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "The workspace to query for webhooks in."
+          },
+          "resource": {
+            "type": "string",
+            "description": "Only return webhooks for the given resource."
+          }
+        },
+        "required": [
+          "workspace"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/webhooks",
+        "headers": {},
+        "query_params": [
+          "workspace",
+          "resource"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createWebhook",
+      "description": "Establish a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "filters": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                },
+                "description": "An array of WebhookFilter objects to specify a whitelist of filters to apply to events from this webhook. If a webhook event passes any of the filters the event will be delivered; otherwise no event will be sent to the receiving server."
+              },
+              "resource": {
+                "type": "string",
+                "description": "A resource ID to subscribe to. Many Asana resources are valid to create webhooks on, but higher-level resources require filters."
+              },
+              "target": {
+                "type": "string",
+                "description": "The URL to receive the HTTP POST. The full URL will be used to deliver events from this webhook (including parameters) which allows encoding of application-specific state when the webhook is created."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/webhooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWebhook",
+      "description": "Get a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/webhooks/{webhook_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateWebhook",
+      "description": "Update a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "filters": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                },
+                "description": "An array of WebhookFilter objects to specify a whitelist of filters to apply to events from this webhook. If a webhook event passes any of the filters the event will be delivered; otherwise no event will be sent to the receiving server."
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/webhooks/{webhook_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteWebhook",
+      "description": "Delete a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/webhooks/{webhook_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWorkspaceMembership",
+      "description": "Get a workspace membership",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspace_memberships/{workspace_membership_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWorkspaces",
+      "description": "Get multiple workspaces",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWorkspace",
+      "description": "Get a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateWorkspace",
+      "description": "Update a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/workspaces/{workspace_gid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "addUserForWorkspace",
+      "description": "Add a user to a workspace or organization",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "string",
+                "description": "A string identifying a user. This can either be the string \"me\", an email, or the gid of a user."
+              }
+            },
+            "description": "A user identification object for specification with the addUser/removeUser endpoints."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/workspaces/{workspace_gid}/addUser",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getAuditLogEvents",
+      "description": "Get audit log events",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/audit_log_events",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getCustomFieldsForWorkspace",
+      "description": "Get a workspace's custom fields",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/custom_fields",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectsForWorkspace",
+      "description": "Get all projects in a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/projects",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createProjectForWorkspace",
+      "description": "Create a project in a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/workspaces/{workspace_gid}/projects",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "removeUserForWorkspace",
+      "description": "Remove a user from a workspace or organization",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "string",
+                "description": "A string identifying a user. This can either be the string \"me\", an email, or the gid of a user."
+              }
+            },
+            "description": "A user identification object for specification with the addUser/removeUser endpoints."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/workspaces/{workspace_gid}/removeUser",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTagsForWorkspace",
+      "description": "Get tags in a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "undefined": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/tags",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "createTagForWorkspace",
+      "description": "Create a tag in a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "gid": {
+                "type": "string",
+                "description": "Globally unique identifier of the resource, as a string."
+              },
+              "resource_type": {
+                "type": "string",
+                "description": "The base type of this resource."
+              }
+            },
+            "description": "A generic Asana Resource, containing a globally unique identifier."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/workspaces/{workspace_gid}/tags",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "searchTasksForWorkspace",
+      "description": "Search tasks in a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/tasks/search",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamsForWorkspace",
+      "description": "Get teams in a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/teams",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "typeaheadForWorkspace",
+      "description": "Get objects via typeahead",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/typeahead",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getUsersForWorkspace",
+      "description": "Get users in a workspace or organization",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/users",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWorkspaceMembershipsForWorkspace",
+      "description": "Get the workspace memberships for a workspace",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/workspaces/{workspace_gid}/workspace_memberships",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "oauth2_auth_code",
+          "integration_id": "",
+          "token_url": "https://app.asana.com/-/oauth_token",
+          "authorization_url": "https://app.asana.com/-/oauth_authorize"
+        }
+      },
+      "enabled": true
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cinzel, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
-import BackgroundManager from "./components/BackgroundManager";
+import BackgroundManager from "./components/BackgroundManager"
+import Providers from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,7 +50,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${cormorant.variable} antialiased`}
       >
         <BackgroundManager />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -1,0 +1,7842 @@
+{
+  "baseUrl": "https://discord.com/api/v10",
+  "auth": [
+    {
+      "type": "api_key",
+      "in": "header",
+      "name": "Authorization"
+    },
+    {
+      "type": "oauth2",
+      "authorizationUrl": "https://discord.com/api/oauth2/authorize",
+      "tokenUrl": "https://discord.com/api/oauth2/token",
+      "scopes": {
+        "activities.invites.write": "allows your app to send activity invites - requires Discord approval (NOT REQUIRED FOR GAMESDK ACTIVITY MANAGER)",
+        "activities.read": "allows your app to fetch data from a user's \"Now Playing/Recently Played\" list - requires Discord approval",
+        "activities.write": "allows your app to update a user's activity - requires Discord approval (NOT REQUIRED FOR GAMESDK ACTIVITY MANAGER)",
+        "applications.builds.read": "allows your app to read build data for a user's applications",
+        "applications.builds.upload": "allows your app to upload/update builds for a user's applications - requires Discord approval",
+        "applications.commands": "allows your app to use commands in a guild",
+        "applications.commands.permissions.update": "allows your app to update permissions for its commands in a guild a user has permissions to",
+        "applications.entitlements": "allows your app to read entitlements for a user's applications",
+        "applications.store.update": "allows your app to read and update store data (SKUs, store listings, achievements, etc.) for a user's applications",
+        "bot": "for oauth2 bots, this puts the bot in the user's selected guild by default",
+        "connections": "allows /users/@me/connections to return linked third-party accounts",
+        "dm_channels.read": "allows your app to see information about the user's DMs and group DMs - requires Discord approval",
+        "email": "enables /users/@me to return an email",
+        "gdm.join": "allows your app to join users to a group dm",
+        "guilds": "allows /users/@me/guilds to return basic information about all of a user's guilds",
+        "guilds.join": "allows /guilds/{guild.id}/members/{user.id} to be used for joining users to a guild",
+        "guilds.members.read": "allows /users/@me/guilds/{guild.id}/member to return a user's member information in a guild",
+        "identify": "allows /users/@me without email",
+        "messages.read": "for local rpc server api access, this allows you to read messages from all client channels (otherwise restricted to channels/guilds your app creates)",
+        "openid": "for OpenID Connect, this allows your app to receive user id and basic profile information",
+        "relationships.read": "allows your app to know a user's friends and implicit relationships - requires Discord approval",
+        "role_connections.write": "allows your app to update a user's connection and metadata for the app",
+        "rpc": "for local rpc server access, this allows you to control a user's local Discord client - requires Discord approval",
+        "rpc.activities.write": "for local rpc server access, this allows you to update a user's activity - requires Discord approval",
+        "rpc.notifications.read": "for local rpc server access, this allows you to receive notifications pushed out to the user - requires Discord approval",
+        "rpc.screenshare.read": "for local rpc server access, this allows you to read a user's screenshare status- requires Discord approval",
+        "rpc.screenshare.write": "for local rpc server access, this allows you to update a user's screenshare settings- requires Discord approval",
+        "rpc.video.read": "for local rpc server access, this allows you to read a user's video status - requires Discord approval",
+        "rpc.video.write": "for local rpc server access, this allows you to update a user's video settings - requires Discord approval",
+        "rpc.voice.read": "for local rpc server access, this allows you to read a user's voice settings and listen for voice events - requires Discord approval",
+        "rpc.voice.write": "for local rpc server access, this allows you to update a user's voice settings - requires Discord approval",
+        "voice": "allows your app to connect to voice on user's behalf and see all the voice members - requires Discord approval",
+        "webhook.incoming": "this generates a webhook that is returned in the oauth token response for authorization code grants"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_my_application",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_my_application",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string"
+              },
+              "localizations": {
+                "type": "object"
+              }
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "cover_image": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "integer"
+          },
+          "interactions_endpoint_url": {
+            "type": "string"
+          },
+          "explicit_content_filter": {
+            "type": "string"
+          },
+          "max_participants": {
+            "type": "integer",
+            "minimum": -1
+          },
+          "type": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "custom_install_url": {
+            "type": "string"
+          },
+          "install_params": {
+            "type": "string"
+          },
+          "role_connections_verification_url": {
+            "type": "string"
+          },
+          "integration_types_config": {
+            "type": "object"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/applications/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_application",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_application",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string"
+              },
+              "localizations": {
+                "type": "object"
+              }
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "cover_image": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "integer"
+          },
+          "interactions_endpoint_url": {
+            "type": "string"
+          },
+          "explicit_content_filter": {
+            "type": "string"
+          },
+          "max_participants": {
+            "type": "integer",
+            "minimum": -1
+          },
+          "type": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "custom_install_url": {
+            "type": "string"
+          },
+          "install_params": {
+            "type": "string"
+          },
+          "role_connections_verification_url": {
+            "type": "string"
+          },
+          "integration_types_config": {
+            "type": "object"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/applications/{application_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "applications_get_activity_instance",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/activity-instances/{instance_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "upload_application_attachment",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/applications/{application_id}/attachment",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_application_commands",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_localizations": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/commands",
+        "headers": {},
+        "query_params": [
+          "with_localizations"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_application_command",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_localizations": {
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "description_localizations": {
+            "type": "object"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "default_member_permissions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18014398509481984
+          },
+          "dm_permission": {
+            "type": "boolean"
+          },
+          "contexts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "integration_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "handler": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/applications/{application_id}/commands",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bulk_set_application_commands",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/applications/{application_id}/commands",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_application_command",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/commands/{command_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_application_command",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_localizations": {
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "description_localizations": {
+            "type": "object"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "default_member_permissions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18014398509481984
+          },
+          "dm_permission": {
+            "type": "boolean"
+          },
+          "contexts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "integration_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "handler": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/applications/{application_id}/commands/{command_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_application_command",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/applications/{application_id}/commands/{command_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_application_emojis",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/emojis",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_application_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "image"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/applications/{application_id}/emojis",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_application_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/emojis/{emoji_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_application_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/applications/{application_id}/emojis/{emoji_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_application_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/applications/{application_id}/emojis/{emoji_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_entitlements",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "sku_ids": {
+            "type": "string"
+          },
+          "guild_id": {
+            "type": "string"
+          },
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "exclude_ended": {
+            "type": "boolean"
+          },
+          "exclude_deleted": {
+            "type": "boolean"
+          },
+          "only_active": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/entitlements",
+        "headers": {},
+        "query_params": [
+          "user_id",
+          "sku_ids",
+          "guild_id",
+          "before",
+          "after",
+          "limit",
+          "exclude_ended",
+          "exclude_deleted",
+          "only_active"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_entitlement",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "sku_id": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "owner_type": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sku_id",
+          "owner_id",
+          "owner_type"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/applications/{application_id}/entitlements",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_entitlement",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/entitlements/{entitlement_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_entitlement",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/applications/{application_id}/entitlements/{entitlement_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "consume_entitlement",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/applications/{application_id}/entitlements/{entitlement_id}/consume",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_application_commands",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_localizations": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands",
+        "headers": {},
+        "query_params": [
+          "with_localizations"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_guild_application_command",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_localizations": {
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "description_localizations": {
+            "type": "object"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "default_member_permissions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18014398509481984
+          },
+          "dm_permission": {
+            "type": "boolean"
+          },
+          "contexts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "integration_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "handler": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bulk_set_guild_application_commands",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_application_command_permissions",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands/permissions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_application_command",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands/{command_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_application_command",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_localizations": {
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "description_localizations": {
+            "type": "object"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "default_member_permissions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18014398509481984
+          },
+          "dm_permission": {
+            "type": "boolean"
+          },
+          "contexts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "integration_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "handler": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands/{command_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_application_command",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands/{command_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_application_command_permissions",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "set_guild_application_command_permissions",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_application_role_connections_metadata",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/applications/{application_id}/role-connections/metadata",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_application_role_connections_metadata",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/applications/{application_id}/role-connections/metadata",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_channel",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_channel",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/channels/{channel_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_channel",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "follow_channel",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "webhook_channel_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "webhook_channel_id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/followers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_channel_invites",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/invites",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_channel_invite",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "max_age": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 604800
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/invites",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_messages",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "around": {
+            "type": "string"
+          },
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/messages",
+        "headers": {},
+        "query_params": [
+          "around",
+          "before",
+          "after",
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "embeds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "allowed_mentions": {
+            "type": "string"
+          },
+          "sticker_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "flags": {
+            "type": "integer"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "poll": {
+            "type": "string"
+          },
+          "shared_client_theme": {
+            "type": "string"
+          },
+          "message_reference": {
+            "type": "string"
+          },
+          "nonce": {
+            "type": "integer",
+            "minimum": -9223372036854776000,
+            "maximum": 9223372036854776000
+          },
+          "enforce_nonce": {
+            "type": "boolean"
+          },
+          "tts": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/messages",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bulk_delete_messages",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "messages"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/messages/bulk-delete",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_pins",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "before": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/messages/pins",
+        "headers": {},
+        "query_params": [
+          "before",
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_pin",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/channels/{channel_id}/messages/pins/{message_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_pin",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/messages/pins/{message_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/messages/{message_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "embeds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "flags": {
+            "type": "integer"
+          },
+          "allowed_mentions": {
+            "type": "string"
+          },
+          "sticker_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/channels/{channel_id}/messages/{message_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/messages/{message_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "crosspost_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/messages/{message_id}/crosspost",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_all_message_reactions",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/messages/{message_id}/reactions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_message_reactions_by_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "type": {
+            "type": "string",
+            "description": "Normal reaction type"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/messages/{message_id}/reactions/{emoji_name}",
+        "headers": {},
+        "query_params": [
+          "after",
+          "limit",
+          "type"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_all_message_reactions_by_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/messages/{message_id}/reactions/{emoji_name}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_my_message_reaction",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/channels/{channel_id}/messages/{message_id}/reactions/{emoji_name}/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_my_message_reaction",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/messages/{message_id}/reactions/{emoji_name}/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_user_message_reaction",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/messages/{message_id}/reactions/{emoji_name}/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_thread_from_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "auto_archive_duration": {
+            "type": "string"
+          },
+          "rate_limit_per_user": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 21600
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/messages/{message_id}/threads",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "set_channel_permission_overwrite",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "allow": {
+            "type": "integer"
+          },
+          "deny": {
+            "type": "integer"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/channels/{channel_id}/permissions/{overwrite_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_channel_permission_overwrite",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/permissions/{overwrite_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deprecated_list_pins",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/pins",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deprecated_create_pin",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/channels/{channel_id}/pins/{message_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deprecated_delete_pin",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/pins/{message_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_answer_voters",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/polls/{message_id}/answers/{answer_id}",
+        "headers": {},
+        "query_params": [
+          "after",
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "poll_expire",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/polls/{message_id}/expire",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_group_dm_user",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "nick": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/channels/{channel_id}/recipients/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_group_dm_user",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/recipients/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "send_soundboard_sound",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "sound_id": {
+            "type": "string"
+          },
+          "source_guild_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sound_id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/send-soundboard-sound",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_thread_members",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_member": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "after": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/thread-members",
+        "headers": {},
+        "query_params": [
+          "with_member",
+          "limit",
+          "after"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "join_thread",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/channels/{channel_id}/thread-members/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "leave_thread",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/thread-members/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_thread_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_member": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/thread-members/{user_id}",
+        "headers": {},
+        "query_params": [
+          "with_member"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_thread_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/channels/{channel_id}/thread-members/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_thread_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/channels/{channel_id}/thread-members/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_thread",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "auto_archive_duration": {
+            "type": "string"
+          },
+          "rate_limit_per_user": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 21600
+          },
+          "applied_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "message": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string"
+              },
+              "embeds": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "allowed_mentions": {
+                "type": "string"
+              },
+              "sticker_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "components": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "flags": {
+                "type": "integer"
+              },
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "poll": {
+                "type": "string"
+              },
+              "shared_client_theme": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "message"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/threads",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_private_archived_threads",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "before": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 100
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/threads/archived/private",
+        "headers": {},
+        "query_params": [
+          "before",
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_public_archived_threads",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "before": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 100
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/threads/archived/public",
+        "headers": {},
+        "query_params": [
+          "before",
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "thread_search",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "slop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "min_id": {
+            "type": "string"
+          },
+          "max_id": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "tag_setting": {
+            "type": "string",
+            "description": "The thread tags must contain all tags in the search query"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "sort_by": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9975
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/threads/search",
+        "headers": {},
+        "query_params": [
+          "name",
+          "slop",
+          "min_id",
+          "max_id",
+          "tag",
+          "tag_setting",
+          "archived",
+          "sort_by",
+          "sort_order",
+          "limit",
+          "offset"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "trigger_typing_indicator",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/typing",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_my_private_archived_threads",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "before": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 100
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/users/@me/threads/archived/private",
+        "headers": {},
+        "query_params": [
+          "before",
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_channel_webhooks",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/channels/{channel_id}/webhooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_webhook",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/channels/{channel_id}/webhooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_gateway",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/gateway",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_bot_gateway",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/gateway/bot",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_template",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/templates/{code}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_counts": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}",
+        "headers": {},
+        "query_params": [
+          "with_counts"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "verification_level": {
+            "type": "string"
+          },
+          "default_message_notifications": {
+            "type": "string"
+          },
+          "explicit_content_filter": {
+            "type": "string"
+          },
+          "preferred_locale": {
+            "type": "string"
+          },
+          "afk_timeout": {
+            "type": "string"
+          },
+          "afk_channel_id": {
+            "type": "string"
+          },
+          "system_channel_id": {
+            "type": "string"
+          },
+          "splash": {
+            "type": "string"
+          },
+          "banner": {
+            "type": "string"
+          },
+          "system_channel_flags": {
+            "type": "integer"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "discovery_splash": {
+            "type": "string"
+          },
+          "home_header": {
+            "type": "string"
+          },
+          "rules_channel_id": {
+            "type": "string"
+          },
+          "safety_alerts_channel_id": {
+            "type": "string"
+          },
+          "public_updates_channel_id": {
+            "type": "string"
+          },
+          "premium_progress_bar_enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_audit_log_entries",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "target_id": {
+            "type": "string"
+          },
+          "action_type": {
+            "type": "string"
+          },
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/audit-logs",
+        "headers": {},
+        "query_params": [
+          "user_id",
+          "target_id",
+          "action_type",
+          "before",
+          "after",
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_auto_moderation_rules",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/auto-moderation/rules",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_auto_moderation_rule",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "A user submitted a message to a channel"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "exempt_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exempt_channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "trigger_type": {
+            "type": "string",
+            "description": "Check if content contains words from a list of keywords or matches regex"
+          },
+          "trigger_metadata": {
+            "type": "object",
+            "properties": {
+              "allow_list": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "presets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "event_type",
+          "trigger_type",
+          "trigger_metadata"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/auto-moderation/rules",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_auto_moderation_rule",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/auto-moderation/rules/{rule_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_auto_moderation_rule",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "A user submitted a message to a channel"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "exempt_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exempt_channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "trigger_type": {
+            "type": "string",
+            "description": "Check if content contains words from a list of keywords or matches regex"
+          },
+          "trigger_metadata": {
+            "type": "object",
+            "properties": {
+              "allow_list": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "presets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/auto-moderation/rules/{rule_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_auto_moderation_rule",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/auto-moderation/rules/{rule_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_bans",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/bans",
+        "headers": {},
+        "query_params": [
+          "limit",
+          "before",
+          "after"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_ban",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/bans/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "ban_user_from_guild",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "delete_message_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 604800
+          },
+          "delete_message_days": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/guilds/{guild_id}/bans/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "unban_user_from_guild",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/bans/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bulk_ban_users_from_guild",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "user_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "delete_message_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 604800
+          }
+        },
+        "required": [
+          "user_ids"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/bulk-ban",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_channels",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/channels",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_guild_channel",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "topic": {
+            "type": "string"
+          },
+          "bitrate": {
+            "type": "integer",
+            "minimum": 8000
+          },
+          "user_limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nsfw": {
+            "type": "boolean"
+          },
+          "rate_limit_per_user": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 21600
+          },
+          "parent_id": {
+            "type": "string"
+          },
+          "permission_overwrites": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "rtc_region": {
+            "type": "string"
+          },
+          "video_quality_mode": {
+            "type": "string"
+          },
+          "default_auto_archive_duration": {
+            "type": "string"
+          },
+          "default_reaction_emoji": {
+            "type": "string"
+          },
+          "default_thread_rate_limit_per_user": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 21600
+          },
+          "default_sort_order": {
+            "type": "string"
+          },
+          "default_forum_layout": {
+            "type": "string"
+          },
+          "default_tag_setting": {
+            "type": "string"
+          },
+          "available_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/channels",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bulk_update_guild_channels",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/channels",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_emojis",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/emojis",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_guild_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "image"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/emojis",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/emojis/{emoji_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/emojis/{emoji_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_emoji",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/emojis/{emoji_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_integrations",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/integrations",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_integration",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/integrations/{integration_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_invites",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/invites",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_members",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "after": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/members",
+        "headers": {},
+        "query_params": [
+          "limit",
+          "after"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_my_guild_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "nick": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "banner": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/members/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "search_guild_members",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/members/search",
+        "headers": {},
+        "query_params": [
+          "limit",
+          "query"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/members/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_guild_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "nick": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mute": {
+            "type": "boolean"
+          },
+          "deaf": {
+            "type": "boolean"
+          },
+          "access_token": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "access_token"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/guilds/{guild_id}/members/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "nick": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mute": {
+            "type": "boolean"
+          },
+          "deaf": {
+            "type": "boolean"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "communication_disabled_until": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "integer"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/members/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/members/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_guild_member_role",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/guilds/{guild_id}/members/{user_id}/roles/{role_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_member_role",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/members/{user_id}/roles/{role_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "guild_search",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "sort_by": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "slop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "author_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "author_type": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mentions_role_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "replied_to_user_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "replied_to_message_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mention_everyone": {
+            "type": "boolean"
+          },
+          "min_id": {
+            "type": "string"
+          },
+          "max_id": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9975
+          },
+          "has": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "link_hostname": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "embed_provider": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "embed_type": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attachment_extension": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attachment_filename": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pinned": {
+            "type": "boolean"
+          },
+          "include_nsfw": {
+            "type": "boolean"
+          },
+          "channel_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/messages/search",
+        "headers": {},
+        "query_params": [
+          "sort_by",
+          "sort_order",
+          "content",
+          "slop",
+          "author_id",
+          "author_type",
+          "mentions",
+          "mentions_role_id",
+          "replied_to_user_id",
+          "replied_to_message_id",
+          "mention_everyone",
+          "min_id",
+          "max_id",
+          "limit",
+          "offset",
+          "has",
+          "link_hostname",
+          "embed_provider",
+          "embed_type",
+          "attachment_extension",
+          "attachment_filename",
+          "pinned",
+          "include_nsfw",
+          "channel_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_new_member_welcome",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/new-member-welcome",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guilds_onboarding",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/onboarding",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "put_guilds_onboarding",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prompts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "default_channel_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mode": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/guilds/{guild_id}/onboarding",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_preview",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/preview",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "preview_prune_guild",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          "include_roles": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/prune",
+        "headers": {},
+        "query_params": [
+          "days",
+          "include_roles"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "prune_guild",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          "compute_prune_count": {
+            "type": "boolean"
+          },
+          "include_roles": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/prune",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_voice_regions",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/regions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_roles",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/roles",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_guild_role",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "integer"
+          },
+          "color": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 16777215
+          },
+          "colors": {
+            "type": "string"
+          },
+          "hoist": {
+            "type": "boolean"
+          },
+          "mentionable": {
+            "type": "boolean"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "unicode_emoji": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/roles",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bulk_update_guild_roles",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/roles",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "guild_role_member_counts",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/roles/member-counts",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_role",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/roles/{role_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_role",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "integer"
+          },
+          "color": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 16777215
+          },
+          "colors": {
+            "type": "string"
+          },
+          "hoist": {
+            "type": "boolean"
+          },
+          "mentionable": {
+            "type": "boolean"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "unicode_emoji": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/roles/{role_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_role",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/roles/{role_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_scheduled_events",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_user_count": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/scheduled-events",
+        "headers": {},
+        "query_params": [
+          "with_user_count"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_guild_scheduled_event",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "scheduled_start_time": {
+            "type": "string"
+          },
+          "scheduled_end_time": {
+            "type": "string"
+          },
+          "privacy_level": {
+            "type": "string",
+            "description": "the scheduled event is only accessible to guild members"
+          },
+          "entity_type": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "entity_metadata": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "scheduled_start_time",
+          "privacy_level",
+          "entity_type",
+          "entity_metadata"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/scheduled-events",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_scheduled_event",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_user_count": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/scheduled-events/{guild_scheduled_event_id}",
+        "headers": {},
+        "query_params": [
+          "with_user_count"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_scheduled_event",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "scheduled_start_time": {
+            "type": "string"
+          },
+          "scheduled_end_time": {
+            "type": "string"
+          },
+          "entity_type": {
+            "type": "string"
+          },
+          "privacy_level": {
+            "type": "string",
+            "description": "the scheduled event is only accessible to guild members"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "entity_metadata": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/scheduled-events/{guild_scheduled_event_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_scheduled_event",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/scheduled-events/{guild_scheduled_event_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_scheduled_event_users",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_member": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/scheduled-events/{guild_scheduled_event_id}/users",
+        "headers": {},
+        "query_params": [
+          "with_member",
+          "limit",
+          "before",
+          "after"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_soundboard_sounds",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/soundboard-sounds",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_guild_soundboard_sound",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "volume": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "emoji_id": {
+            "type": "string"
+          },
+          "emoji_name": {
+            "type": "string"
+          },
+          "sound": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "sound"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/soundboard-sounds",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_soundboard_sound",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/soundboard-sounds/{sound_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_soundboard_sound",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "volume": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "emoji_id": {
+            "type": "string"
+          },
+          "emoji_name": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/soundboard-sounds/{sound_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_soundboard_sound",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/soundboard-sounds/{sound_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_stickers",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/stickers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_guild_sticker",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/stickers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_sticker",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/stickers/{sticker_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_sticker",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/stickers/{sticker_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_sticker",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/stickers/{sticker_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_guild_templates",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/templates",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_guild_template",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/guilds/{guild_id}/templates",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "sync_guild_template",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/guilds/{guild_id}/templates/{code}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_template",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/templates/{code}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_guild_template",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/guilds/{guild_id}/templates/{code}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_active_guild_threads",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/threads/active",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_vanity_url",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/vanity-url",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_self_voice_state",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/voice-states/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_self_voice_state",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_to_speak_timestamp": {
+            "type": "string"
+          },
+          "suppress": {
+            "type": "boolean"
+          },
+          "channel_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/voice-states/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_voice_state",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/voice-states/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_voice_state",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "suppress": {
+            "type": "boolean"
+          },
+          "channel_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/voice-states/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_webhooks",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/webhooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_welcome_screen",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/welcome-screen",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_welcome_screen",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "welcome_channels": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/welcome-screen",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_widget_settings",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/widget",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_guild_widget_settings",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/guilds/{guild_id}/widget",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_widget",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/widget.json",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_guild_widget_png",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "style": {
+            "type": "string",
+            "description": "shield style widget with Discord icon and guild members online count"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/guilds/{guild_id}/widget.png",
+        "headers": {},
+        "query_params": [
+          "style"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_interaction_response",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_response": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "type",
+          "data"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/interactions/{interaction_id}/{interaction_token}/callback",
+        "headers": {},
+        "query_params": [
+          "with_response"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "invite_resolve",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "with_counts": {
+            "type": "boolean"
+          },
+          "guild_scheduled_event_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/invites/{code}",
+        "headers": {},
+        "query_params": [
+          "with_counts",
+          "guild_scheduled_event_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "invite_revoke",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/invites/{code}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_invite_target_users",
+      "description": "Get the target users for an invite.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/invites/{code}/target-users",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_invite_target_users",
+      "description": "Update the target users for an existing invite.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/invites/{code}/target-users",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_invite_target_users_job_status",
+      "description": "Get the target users job status for an invite.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/invites/{code}/target-users/job-status",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_lobby",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "idle_timeout_seconds": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 604800
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "flags": {
+            "type": "string"
+          },
+          "override_event_webhooks_url": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/lobbies",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_or_join_lobby",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "idle_timeout_seconds": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 604800
+          },
+          "lobby_metadata": {
+            "type": "object"
+          },
+          "member_metadata": {
+            "type": "object"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/lobbies",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_lobby",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/lobbies/{lobby_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "edit_lobby",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "idle_timeout_seconds": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 604800
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "flags": {
+            "type": "string"
+          },
+          "override_event_webhooks_url": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/lobbies/{lobby_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "edit_lobby_channel_link",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/lobbies/{lobby_id}/channel-linking",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "leave_lobby",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/lobbies/{lobby_id}/members/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_linked_lobby_guild_invite_for_self",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/lobbies/{lobby_id}/members/@me/invites",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bulk_update_lobby_members",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/lobbies/{lobby_id}/members/bulk",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "add_lobby_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object"
+          },
+          "flags": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/lobbies/{lobby_id}/members/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_lobby_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/lobbies/{lobby_id}/members/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_linked_lobby_guild_invite_for_user",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/lobbies/{lobby_id}/members/{user_id}/invites",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_lobby_messages",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/lobbies/{lobby_id}/messages",
+        "headers": {},
+        "query_params": [
+          "limit"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_lobby_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "embeds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "allowed_mentions": {
+            "type": "string"
+          },
+          "sticker_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "flags": {
+            "type": "integer"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "poll": {
+            "type": "string"
+          },
+          "shared_client_theme": {
+            "type": "string"
+          },
+          "message_reference": {
+            "type": "string"
+          },
+          "nonce": {
+            "type": "integer",
+            "minimum": -9223372036854776000,
+            "maximum": 9223372036854776000
+          },
+          "enforce_nonce": {
+            "type": "boolean"
+          },
+          "tts": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/lobbies/{lobby_id}/messages",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_lobby_message_external_moderation_metadata",
+      "description": "Update the external moderation metadata for a lobby message.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/lobbies/{lobby_id}/messages/{message_id}/moderation-metadata",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_my_oauth2_authorization",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/oauth2/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_my_oauth2_application",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/oauth2/applications/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_public_keys",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/oauth2/keys",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_openid_connect_userinfo",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/oauth2/userinfo",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_user_message_external_moderation_metadata",
+      "description": "Update the external moderation metadata for a user message (DM).",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/partner-sdk/dms/{user_id_1}/{user_id_2}/messages/{message_id}/moderation-metadata",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "partner_sdk_unmerge_provisional_account",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_secret": {
+            "type": "string"
+          },
+          "external_auth_token": {
+            "type": "string"
+          },
+          "external_auth_type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "client_id",
+          "external_auth_token",
+          "external_auth_type"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/partner-sdk/provisional-accounts/unmerge",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bot_partner_sdk_unmerge_provisional_account",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "external_user_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_user_id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/partner-sdk/provisional-accounts/unmerge/bot",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "partner_sdk_token",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_secret": {
+            "type": "string"
+          },
+          "external_auth_token": {
+            "type": "string"
+          },
+          "external_auth_type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "client_id",
+          "external_auth_token",
+          "external_auth_type"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/partner-sdk/token",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "bot_partner_sdk_token",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "external_user_id": {
+            "type": "string"
+          },
+          "preferred_global_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_user_id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/partner-sdk/token/bot",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_soundboard_default_sounds",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/soundboard-default-sounds",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_stage_instance",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "privacy_level": {
+            "type": "string"
+          },
+          "guild_scheduled_event_id": {
+            "type": "string"
+          },
+          "send_start_notification": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "topic",
+          "channel_id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/stage-instances",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_stage_instance",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/stage-instances/{channel_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_stage_instance",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "privacy_level": {
+            "type": "string",
+            "description": "The Stage instance is visible publicly. (deprecated)"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/stage-instances/{channel_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_stage_instance",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/stage-instances/{channel_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_sticker_packs",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/sticker-packs",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_sticker_pack",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/sticker-packs/{pack_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_sticker",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/stickers/{sticker_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_my_user",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_my_user",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "banner": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ]
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/users/@me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_current_user_application_entitlements",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "sku_ids": {
+            "type": "string"
+          },
+          "exclude_consumed": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/@me/applications/{application_id}/entitlements",
+        "headers": {},
+        "query_params": [
+          "sku_ids",
+          "exclude_consumed"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_application_user_role_connection",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/@me/applications/{application_id}/role-connection",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_application_user_role_connection",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "platform_name": {
+            "type": "string"
+          },
+          "platform_username": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/users/@me/applications/{application_id}/role-connection",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_application_user_role_connection",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/users/@me/applications/{application_id}/role-connection",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "create_dm",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "recipient_id": {
+            "type": "string"
+          },
+          "access_tokens": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nicks": {
+            "type": "object"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/users/@me/channels",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_my_connections",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/@me/connections",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_my_guilds",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "with_counts": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/@me/guilds",
+        "headers": {},
+        "query_params": [
+          "before",
+          "after",
+          "limit",
+          "with_counts"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "leave_guild",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/users/@me/guilds/{guild_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_my_guild_member",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/@me/guilds/{guild_id}/member",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_user",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/users/{user_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "list_voice_regions",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/voice/regions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_webhook",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/webhooks/{webhook_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_webhook",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/webhooks/{webhook_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_webhook",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/webhooks/{webhook_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_webhook_by_token",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/webhooks/{webhook_id}/{webhook_token}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "execute_webhook",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "wait": {
+            "type": "boolean"
+          },
+          "thread_id": {
+            "type": "string"
+          },
+          "with_components": {
+            "type": "boolean"
+          },
+          "content": {
+            "type": "string"
+          },
+          "embeds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "allowed_mentions": {
+            "type": "string"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "poll": {
+            "type": "string"
+          },
+          "tts": {
+            "type": "boolean"
+          },
+          "flags": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "avatar_url": {
+            "type": "string"
+          },
+          "thread_name": {
+            "type": "string"
+          },
+          "applied_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/webhooks/{webhook_id}/{webhook_token}",
+        "headers": {},
+        "query_params": [
+          "wait",
+          "thread_id",
+          "with_components"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_webhook_by_token",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/webhooks/{webhook_id}/{webhook_token}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_webhook_by_token",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/webhooks/{webhook_id}/{webhook_token}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "execute_github_compatible_webhook",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "wait": {
+            "type": "boolean"
+          },
+          "thread_id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "ref_type": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "pull_request": {
+            "type": "string"
+          },
+          "repository": {
+            "type": "string"
+          },
+          "forkee": {
+            "type": "string"
+          },
+          "sender": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "login": {
+                "type": "string"
+              },
+              "html_url": {
+                "type": "string"
+              },
+              "avatar_url": {
+                "type": "string"
+              }
+            }
+          },
+          "member": {
+            "type": "string"
+          },
+          "release": {
+            "type": "string"
+          },
+          "head_commit": {
+            "type": "string"
+          },
+          "commits": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "forced": {
+            "type": "boolean"
+          },
+          "compare": {
+            "type": "string"
+          },
+          "review": {
+            "type": "string"
+          },
+          "check_run": {
+            "type": "string"
+          },
+          "check_suite": {
+            "type": "string"
+          },
+          "discussion": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sender"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/webhooks/{webhook_id}/{webhook_token}/github",
+        "headers": {},
+        "query_params": [
+          "wait",
+          "thread_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_original_webhook_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/webhooks/{webhook_id}/{webhook_token}/messages/@original",
+        "headers": {},
+        "query_params": [
+          "thread_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_original_webhook_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string"
+          },
+          "with_components": {
+            "type": "boolean"
+          },
+          "content": {
+            "type": "string"
+          },
+          "embeds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "allowed_mentions": {
+            "type": "string"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "poll": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "integer"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/webhooks/{webhook_id}/{webhook_token}/messages/@original",
+        "headers": {},
+        "query_params": [
+          "thread_id",
+          "with_components"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_original_webhook_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/webhooks/{webhook_id}/{webhook_token}/messages/@original",
+        "headers": {},
+        "query_params": [
+          "thread_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "get_webhook_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/webhooks/{webhook_id}/{webhook_token}/messages/{message_id}",
+        "headers": {},
+        "query_params": [
+          "thread_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "update_webhook_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string"
+          },
+          "with_components": {
+            "type": "boolean"
+          },
+          "content": {
+            "type": "string"
+          },
+          "embeds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "allowed_mentions": {
+            "type": "string"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "poll": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "integer"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/webhooks/{webhook_id}/{webhook_token}/messages/{message_id}",
+        "headers": {},
+        "query_params": [
+          "thread_id",
+          "with_components"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "delete_webhook_message",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/webhooks/{webhook_id}/{webhook_token}/messages/{message_id}",
+        "headers": {},
+        "query_params": [
+          "thread_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "execute_slack_compatible_webhook",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "wait": {
+            "type": "boolean"
+          },
+          "thread_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "icon_url": {
+            "type": "string"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/webhooks/{webhook_id}/{webhook_token}/slack",
+        "headers": {},
+        "query_params": [
+          "wait",
+          "thread_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "Authorization"
+        }
+      },
+      "enabled": true
+    }
+  ]
+}

@@ -21,6 +21,8 @@ export interface ToolAuthEnrichment {
   param_name?: string
   /** oauth2 templates: token endpoint (used by generated server for auto-exchange) */
   token_url?: string
+  /** oauth2_auth_code: authorization endpoint for the popup login flow */
+  authorization_url?: string
   /** Generated server only: env var name(s) for this credential */
   env_var?: string
 }
@@ -274,6 +276,7 @@ export function buildEnrichmentFromAuthConfigs(authConfigs: AuthConfig[]): ToolE
           template: auth.oauthFlow === "client_credentials" ? "oauth2_client_creds" : "oauth2_auth_code",
           integration_id: "",
           token_url: auth.tokenUrl,
+          authorization_url: auth.authorizationUrl,
         }
       }
     case "bearer_token":

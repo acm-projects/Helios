@@ -1,0 +1,59 @@
+{
+  "baseUrl": "https://newsapi.org/v2",
+  "auth": [{ "type": "api_key", "in": "header", "name": "X-Api-Key" }],
+  "tools": [
+    {
+      "name": "newsapi_top_headlines",
+      "description": "Get the top headlines for a country, category, or keyword search. Free plan: US/UK headlines only.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "country": { "type": "string", "description": "2-letter country code, e.g. 'us', 'gb', 'de'" },
+          "category": { "type": "string", "description": "'business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology'" },
+          "q": { "type": "string", "description": "Keywords to search in headlines" },
+          "sources": { "type": "string", "description": "Comma-separated source IDs (cannot combine with country/category)" },
+          "pageSize": { "type": "integer", "description": "Number of results (max 100)" },
+          "page": { "type": "integer", "description": "Page number" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/top-headlines", "headers": {}, "query_params": ["country", "category", "q", "sources", "pageSize", "page"], "fixed_query_params": {} }
+    },
+    {
+      "name": "newsapi_search_everything",
+      "description": "Search all articles from 150,000+ sources. Filter by keyword, source, date, language, and more.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "q": { "type": "string", "description": "Keywords or phrases. Supports AND, OR, NOT and quotes: '\"artificial intelligence\" AND ethics'" },
+          "sources": { "type": "string", "description": "Comma-separated source IDs, e.g. 'bbc-news,techcrunch'" },
+          "from": { "type": "string", "description": "Start date in ISO 8601 format, e.g. '2026-04-01'" },
+          "to": { "type": "string", "description": "End date in ISO 8601 format" },
+          "language": { "type": "string", "description": "2-letter language code, e.g. 'en', 'fr', 'de'" },
+          "sortBy": { "type": "string", "description": "'relevancy', 'popularity', or 'publishedAt'" },
+          "pageSize": { "type": "integer", "description": "Results per page (max 100)" },
+          "page": { "type": "integer", "description": "Page number" }
+        },
+        "required": ["q"]
+      },
+      "handler": { "method": "GET", "path": "/everything", "headers": {}, "query_params": ["q", "sources", "from", "to", "language", "sortBy", "pageSize", "page"], "fixed_query_params": {} }
+    },
+    {
+      "name": "newsapi_list_sources",
+      "description": "List available news sources/publishers that can be used in other NewsAPI queries.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "category": { "type": "string", "description": "'business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology'" },
+          "language": { "type": "string", "description": "2-letter language code, e.g. 'en'" },
+          "country": { "type": "string", "description": "2-letter country code, e.g. 'us'" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/top-headlines/sources", "headers": {}, "query_params": ["category", "language", "country"], "fixed_query_params": {} }
+    }
+  ]
+}

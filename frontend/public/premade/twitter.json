@@ -1,0 +1,76 @@
+{
+  "baseUrl": "https://api.twitter.com/2",
+  "auth": [{ "type": "bearer_token" }],
+  "tools": [
+    {
+      "name": "twitter_get_user_by_username",
+      "description": "Look up a Twitter/X user by their username. Returns user ID, name, description, and metrics.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "description": "Twitter username without @, e.g. 'elonmusk'" },
+          "user.fields": { "type": "string", "description": "Extra fields: 'description,public_metrics,created_at,profile_image_url'" }
+        },
+        "required": ["username"]
+      },
+      "handler": { "method": "GET", "path": "/users/by/username/{username}", "headers": {}, "query_params": ["user.fields"], "fixed_query_params": {} }
+    },
+    {
+      "name": "twitter_get_tweet",
+      "description": "Get a specific tweet by its ID, including text, author, and engagement metrics.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Tweet ID (the numeric part of the tweet URL)" },
+          "tweet.fields": { "type": "string", "description": "Extra fields: 'public_metrics,created_at,author_id,context_annotations'" }
+        },
+        "required": ["id"]
+      },
+      "handler": { "method": "GET", "path": "/tweets/{id}", "headers": {}, "query_params": ["tweet.fields"], "fixed_query_params": {} }
+    },
+    {
+      "name": "twitter_get_authenticated_user",
+      "description": "Get the profile of the authenticated Twitter/X user.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "user.fields": { "type": "string", "description": "Extra fields: 'description,public_metrics,created_at'" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/users/me", "headers": {}, "query_params": ["user.fields"], "fixed_query_params": {} }
+    },
+    {
+      "name": "twitter_search_recent",
+      "description": "Search recent tweets (last 7 days) by keyword or hashtag. NOTE: Requires a Basic or higher Twitter API plan ($100/mo). Free tier does not include search.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Search query, e.g. '#AI' or 'from:elonmusk' or 'python lang:en'" },
+          "max_results": { "type": "integer", "description": "Tweets to return (10-100)" },
+          "tweet.fields": { "type": "string", "description": "Extra fields: 'public_metrics,created_at,author_id'" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "GET", "path": "/tweets/search/recent", "headers": {}, "query_params": ["query", "max_results", "tweet.fields"], "fixed_query_params": {} }
+    },
+    {
+      "name": "twitter_create_tweet",
+      "description": "Post a new tweet. Requires OAuth 2.0 user access token (not bearer token). Only works with user-context auth.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string", "description": "Tweet text (max 280 characters)" },
+          "reply": { "type": "object", "description": "Reply to a tweet: { in_reply_to_tweet_id: '1234567890' }" }
+        },
+        "required": ["text"]
+      },
+      "handler": { "method": "POST", "path": "/tweets", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    }
+  ]
+}

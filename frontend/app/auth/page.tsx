@@ -1,7 +1,6 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { setToken } from "@/lib/auth"
 
 type View = "login" | "register"
@@ -30,6 +29,7 @@ export default function AuthPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? "Something went wrong"); return }
       setToken(data.token)
+      router.refresh()
       router.push("/")
     } catch {
       setError("Could not connect to server")
@@ -43,10 +43,13 @@ export default function AuthPage() {
 
       {/* ── Background ──────────────────────────────────────────────────── */}
 
-      {/* ── Nav ─────────────────────────────────────────────────────────── */}
-      <nav className="glass-nav flex items-center px-8 h-[62px]">
-        <Image src="/logoName.svg" alt="Helios" width={120} height={40} className="brightness-0 invert opacity-90" />
-      </nav>
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <div className="relative z-30 flex items-center px-8 h-[62px]">
+        <span className="font-[family-name:--font-cinzel] font-semibold text-[22px] tracking-[0.35em] pr-[0.35em] select-none"
+          style={{ color: "#ffffff", textShadow: "0 0 40px rgba(255,255,255,0.15)" }}>
+          HELIOS
+        </span>
+      </div>
 
       {/* ── Auth card ────────────────────────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center px-4 py-12">

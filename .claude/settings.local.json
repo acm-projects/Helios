@@ -15,7 +15,11 @@
       "Bash(echo \"Dev server PID: $!\")",
       "Bash(curl *)",
       "Bash(tasklist)",
-      "Bash(node take_screenshots.mjs)"
+      "Bash(node take_screenshots.mjs)",
+      "Bash(npx tsc *)",
+      "Bash(npm i *)",
+      "WebFetch(domain:impeccable.style)",
+      "Bash(npx skills *)"
     ]
   }
 }

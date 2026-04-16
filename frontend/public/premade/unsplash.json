@@ -1,0 +1,227 @@
+{
+  "baseUrl": "https://api.unsplash.com",
+  "auth": [{ "type": "api_key", "in": "header", "name": "Authorization" }],
+  "tools": [
+    {
+      "name": "unsplash_search_photos",
+      "description": "Search Unsplash for photos by keyword. Returns download URLs, photographer info, and metadata. Auth: enter 'Client-ID YOUR_ACCESS_KEY' as the API key value.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Search keyword, e.g. 'mountain sunset' or 'office minimal'" },
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Results per page (1-30)" },
+          "order_by": { "type": "string", "description": "'relevant' (default) or 'latest'" },
+          "orientation": { "type": "string", "description": "'landscape', 'portrait', or 'squarish'" },
+          "color": { "type": "string", "description": "Color filter: 'black_and_white', 'black', 'white', 'yellow', 'orange', 'red', 'purple', 'magenta', 'green', 'teal', 'blue'" },
+          "content_filter": { "type": "string", "description": "'low' (default) or 'high' (strict filtering)" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "GET", "path": "/search/photos", "headers": {}, "query_params": ["query", "page", "per_page", "order_by", "orientation", "color", "content_filter"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_list_photos",
+      "description": "List editorial photos from the Unsplash feed.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Photos per page (1-30)" },
+          "order_by": { "type": "string", "description": "'latest', 'oldest', or 'popular'" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/photos", "headers": {}, "query_params": ["page", "per_page", "order_by"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_get_photo",
+      "description": "Get full details and download URLs for a specific photo by ID.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "id": { "type": "string", "description": "Unsplash photo ID" } },
+        "required": ["id"]
+      },
+      "handler": { "method": "GET", "path": "/photos/{id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_get_random_photo",
+      "description": "Get one or more random photos, optionally filtered by query, collection, or orientation.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Keyword to filter random photos" },
+          "orientation": { "type": "string", "description": "'landscape', 'portrait', or 'squarish'" },
+          "count": { "type": "integer", "description": "Number of photos to return (1-30; omit for single photo object response)" },
+          "collections": { "type": "string", "description": "Comma-separated collection IDs" },
+          "topics": { "type": "string", "description": "Comma-separated topic IDs or slugs" },
+          "username": { "type": "string", "description": "Limit to photos by a specific photographer" },
+          "content_filter": { "type": "string", "description": "'low' or 'high'" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/photos/random", "headers": {}, "query_params": ["query", "orientation", "count", "collections", "topics", "username", "content_filter"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_track_download",
+      "description": "Track a photo download per Unsplash guidelines — must be called when triggering a download.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "id": { "type": "string", "description": "Photo ID to track download for" } },
+        "required": ["id"]
+      },
+      "handler": { "method": "GET", "path": "/photos/{id}/download", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_get_photo_statistics",
+      "description": "Get view, download, and like stats for a specific photo.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Photo ID" },
+          "resolution": { "type": "string", "description": "Time resolution: 'days'" },
+          "quantity": { "type": "integer", "description": "Number of days to aggregate (default 30, max 30)" }
+        },
+        "required": ["id"]
+      },
+      "handler": { "method": "GET", "path": "/photos/{id}/statistics", "headers": {}, "query_params": ["resolution", "quantity"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_search_collections",
+      "description": "Search Unsplash curated photo collections by keyword.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Search keyword" },
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Results per page (1-30)" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "GET", "path": "/search/collections", "headers": {}, "query_params": ["query", "page", "per_page"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_list_collections",
+      "description": "List featured collections from Unsplash.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Collections per page (1-30)" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/collections", "headers": {}, "query_params": ["page", "per_page"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_get_collection",
+      "description": "Get details about a specific collection by ID.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "id": { "type": "string", "description": "Collection ID" } },
+        "required": ["id"]
+      },
+      "handler": { "method": "GET", "path": "/collections/{id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_get_collection_photos",
+      "description": "List the photos in a specific collection.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Collection ID" },
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Photos per page (1-30)" },
+          "orientation": { "type": "string", "description": "'landscape', 'portrait', or 'squarish'" }
+        },
+        "required": ["id"]
+      },
+      "handler": { "method": "GET", "path": "/collections/{id}/photos", "headers": {}, "query_params": ["page", "per_page", "orientation"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_search_users",
+      "description": "Search for photographers on Unsplash by name.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Photographer name or username" },
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Results per page" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "GET", "path": "/search/users", "headers": {}, "query_params": ["query", "page", "per_page"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_get_user",
+      "description": "Get a photographer's public profile: bio, location, total photos, stats.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "username": { "type": "string", "description": "Unsplash username" } },
+        "required": ["username"]
+      },
+      "handler": { "method": "GET", "path": "/users/{username}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_get_user_photos",
+      "description": "List photos uploaded by a specific photographer.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "description": "Unsplash username" },
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Photos per page (1-30)" },
+          "order_by": { "type": "string", "description": "'latest', 'oldest', or 'popular'" },
+          "orientation": { "type": "string", "description": "'landscape', 'portrait', or 'squarish'" }
+        },
+        "required": ["username"]
+      },
+      "handler": { "method": "GET", "path": "/users/{username}/photos", "headers": {}, "query_params": ["page", "per_page", "order_by", "orientation"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_list_topics",
+      "description": "List curated editorial topics on Unsplash (e.g. Nature, Architecture, Travel).",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Topics per page (1-30)" },
+          "order_by": { "type": "string", "description": "'featured', 'latest', 'oldest', 'position'" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/topics", "headers": {}, "query_params": ["page", "per_page", "order_by"], "fixed_query_params": {} }
+    },
+    {
+      "name": "unsplash_get_topic_photos",
+      "description": "Get photos from a specific Unsplash topic (e.g. 'nature', 'architecture', 'travel').",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id_or_slug": { "type": "string", "description": "Topic ID or slug, e.g. 'nature', 'architecture', 'travel'" },
+          "page": { "type": "integer", "description": "Page number" },
+          "per_page": { "type": "integer", "description": "Photos per page (1-30)" },
+          "orientation": { "type": "string", "description": "'landscape', 'portrait', or 'squarish'" },
+          "order_by": { "type": "string", "description": "'latest' or 'popular'" }
+        },
+        "required": ["id_or_slug"]
+      },
+      "handler": { "method": "GET", "path": "/topics/{id_or_slug}/photos", "headers": {}, "query_params": ["page", "per_page", "orientation", "order_by"], "fixed_query_params": {} }
+    }
+  ]
+}

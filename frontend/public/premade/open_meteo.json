@@ -1,0 +1,26 @@
+{
+  "baseUrl": "https://api.open-meteo.com/v1",
+  "auth": [{ "type": "none" }],
+  "tools": [
+    {
+      "name": "open_meteo_forecast",
+      "description": "Get weather forecast for any location — completely free, no API key required. Specify hourly or daily variables you want.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "latitude": { "type": "number", "description": "Latitude of the location, e.g. 48.8566 for Paris" },
+          "longitude": { "type": "number", "description": "Longitude of the location, e.g. 2.3522 for Paris" },
+          "hourly": { "type": "string", "description": "Comma-separated hourly variables, e.g. 'temperature_2m,precipitation,wind_speed_10m,weathercode'" },
+          "daily": { "type": "string", "description": "Comma-separated daily variables, e.g. 'temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset'" },
+          "temperature_unit": { "type": "string", "description": "'celsius' (default) or 'fahrenheit'" },
+          "wind_speed_unit": { "type": "string", "description": "'kmh' (default), 'ms', 'mph', or 'kn'" },
+          "forecast_days": { "type": "integer", "description": "Number of forecast days (1-16, default 7)" },
+          "timezone": { "type": "string", "description": "Timezone name, e.g. 'America/New_York'. Use 'auto' to detect from coordinates." }
+        },
+        "required": ["latitude", "longitude"]
+      },
+      "handler": { "method": "GET", "path": "/forecast", "headers": {}, "query_params": ["latitude", "longitude", "hourly", "daily", "temperature_unit", "wind_speed_unit", "forecast_days", "timezone"], "fixed_query_params": {} }
+    }
+  ]
+}

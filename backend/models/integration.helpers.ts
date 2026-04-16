@@ -4,16 +4,33 @@ import { IIntegration, Integration } from "./integration.model.js";
 
 // ─── Credential Helpers ───────────────────────────────────────────────────────
 
+export interface OAuthFields {
+  refreshToken?: string | null;
+  expiresAt?: Date | null;
+  tokenUrl?: string | null;
+  clientId?: string | null;
+  clientSecret?: string | null;
+}
+
 export async function saveCredential(
   userId: Types.ObjectId,
   integrationId: string,
   type: ApiKeyType,
-  key: string
+  key: string,
+  oauth?: OAuthFields
 ): Promise<IApiKey> {
+  const setFields: Record<string, any> = { type, key };
+  if (oauth) {
+    if (oauth.refreshToken !== undefined) setFields.refreshToken = oauth.refreshToken;
+    if (oauth.expiresAt !== undefined) setFields.expiresAt = oauth.expiresAt;
+    if (oauth.tokenUrl !== undefined) setFields.tokenUrl = oauth.tokenUrl;
+    if (oauth.clientId !== undefined) setFields.clientId = oauth.clientId;
+    if (oauth.clientSecret !== undefined) setFields.clientSecret = oauth.clientSecret;
+  }
   const credential = await ApiKey.findOneAndUpdate(
     { userId, integrationId },
     {
-      $set: { type, key },
+      $set: setFields,
       $unset: { hashedKey: "", apiKey: "" },
       $setOnInsert: { createdAt: new Date() },
     },

@@ -1,0 +1,258 @@
+{
+  "baseUrl": "https://api.airtable.com/v0",
+  "auth": [{ "type": "bearer_token" }],
+  "tools": [
+    {
+      "name": "airtable_list_records",
+      "description": "List records from a table. Supports filtering with Airtable formulas, sorting, pagination, and view scoping.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID (starts with 'app')" },
+          "tableIdOrName": { "type": "string", "description": "Table ID or table name" },
+          "filterByFormula": { "type": "string", "description": "Airtable formula to filter records, e.g. \"{Status}='Done'\" or \"IS_AFTER({Due Date}, TODAY())\"" },
+          "maxRecords": { "type": "integer", "description": "Maximum total records to return" },
+          "pageSize": { "type": "integer", "description": "Records per page (1-100, default 100)" },
+          "offset": { "type": "string", "description": "Pagination cursor from previous response's offset field" },
+          "sort[0][field]": { "type": "string", "description": "Field name to sort by" },
+          "sort[0][direction]": { "type": "string", "description": "Sort direction: 'asc' or 'desc'" },
+          "view": { "type": "string", "description": "View name or ID to use — respects the view's filters and sort" },
+          "fields[]": { "type": "string", "description": "Field names to include (omitting returns all fields)" },
+          "cellFormat": { "type": "string", "description": "'json' (default) or 'string'" },
+          "timeZone": { "type": "string", "description": "Time zone for date fields, e.g. 'America/New_York'" },
+          "userLocale": { "type": "string", "description": "Locale for number/date formatting, e.g. 'en-us'" }
+        },
+        "required": ["baseId", "tableIdOrName"]
+      },
+      "handler": { "method": "GET", "path": "/{baseId}/{tableIdOrName}", "headers": {}, "query_params": ["filterByFormula", "maxRecords", "pageSize", "offset", "sort[0][field]", "sort[0][direction]", "view", "fields[]", "cellFormat", "timeZone", "userLocale"], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_get_record",
+      "description": "Retrieve a single record by its record ID.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableIdOrName": { "type": "string", "description": "Table ID or name" },
+          "recordId": { "type": "string", "description": "Record ID (starts with 'rec')" },
+          "cellFormat": { "type": "string", "description": "'json' or 'string'" }
+        },
+        "required": ["baseId", "tableIdOrName", "recordId"]
+      },
+      "handler": { "method": "GET", "path": "/{baseId}/{tableIdOrName}/{recordId}", "headers": {}, "query_params": ["cellFormat"], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_create_record",
+      "description": "Create one or more new records in a table.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableIdOrName": { "type": "string", "description": "Table ID or name" },
+          "fields": { "type": "object", "description": "Field name → value pairs for one record, e.g. {\"Name\": \"Task\", \"Status\": \"Todo\", \"Priority\": \"High\"}" },
+          "records": { "type": "array", "description": "Array of { fields: {...} } objects to create multiple records at once (max 10)" },
+          "typecast": { "type": "boolean", "description": "If true, Airtable casts string values to the correct type" },
+          "returnFieldsByFieldId": { "type": "boolean", "description": "Return field IDs instead of names" }
+        },
+        "required": ["baseId", "tableIdOrName"]
+      },
+      "handler": { "method": "POST", "path": "/{baseId}/{tableIdOrName}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_update_record",
+      "description": "Partially update a record — only the specified fields are changed (PATCH).",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableIdOrName": { "type": "string", "description": "Table ID or name" },
+          "recordId": { "type": "string", "description": "Record ID" },
+          "fields": { "type": "object", "description": "Fields to update, e.g. {\"Status\": \"Done\", \"Assignee\": \"Alice\"}" },
+          "typecast": { "type": "boolean", "description": "Cast string values to correct types" }
+        },
+        "required": ["baseId", "tableIdOrName", "recordId", "fields"]
+      },
+      "handler": { "method": "PATCH", "path": "/{baseId}/{tableIdOrName}/{recordId}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_replace_record",
+      "description": "Replace all fields of a record — unspecified fields are cleared to empty (PUT).",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableIdOrName": { "type": "string", "description": "Table ID or name" },
+          "recordId": { "type": "string", "description": "Record ID" },
+          "fields": { "type": "object", "description": "Complete set of field values for the record" }
+        },
+        "required": ["baseId", "tableIdOrName", "recordId", "fields"]
+      },
+      "handler": { "method": "PUT", "path": "/{baseId}/{tableIdOrName}/{recordId}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_delete_record",
+      "description": "Permanently delete a single record from a table.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableIdOrName": { "type": "string", "description": "Table ID or name" },
+          "recordId": { "type": "string", "description": "Record ID to delete" }
+        },
+        "required": ["baseId", "tableIdOrName", "recordId"]
+      },
+      "handler": { "method": "DELETE", "path": "/{baseId}/{tableIdOrName}/{recordId}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_upsert_records",
+      "description": "Create or update records based on a unique field — inserts if not found, updates if found.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableIdOrName": { "type": "string", "description": "Table ID or name" },
+          "records": { "type": "array", "description": "Array of { fields: {...} } objects to upsert" },
+          "fieldsToMergeOn": { "type": "array", "description": "Field names to use as the unique key for matching, e.g. [\"Email\"]" },
+          "performUpsert": { "type": "object", "description": "Set to { fieldsToMergeOn: [...] } to trigger upsert behavior" }
+        },
+        "required": ["baseId", "tableIdOrName", "records"]
+      },
+      "handler": { "method": "PATCH", "path": "/{baseId}/{tableIdOrName}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_list_bases",
+      "description": "List all bases the authenticated user has access to.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "offset": { "type": "string", "description": "Pagination cursor from previous response" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/meta/bases", "headers": {}, "query_params": ["offset"], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_get_base_schema",
+      "description": "Get the complete schema for a base — all tables, fields (with types and options), and views.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" }
+        },
+        "required": ["baseId"]
+      },
+      "handler": { "method": "GET", "path": "/meta/bases/{baseId}/tables", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_create_table",
+      "description": "Create a new table in a base with specified fields and views.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "name": { "type": "string", "description": "Table name" },
+          "description": { "type": "string", "description": "Optional description" },
+          "fields": {
+            "type": "array",
+            "description": "Field definitions. Each: { name, type, options? }. Types: 'singleLineText', 'multilineText', 'number', 'checkbox', 'date', 'singleSelect', 'multipleSelects', 'email', 'url', 'currency', 'rating', 'formula', 'rollup', 'lookup'"
+          }
+        },
+        "required": ["baseId", "name", "fields"]
+      },
+      "handler": { "method": "POST", "path": "/meta/bases/{baseId}/tables", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_update_table",
+      "description": "Rename a table or update its description.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableId": { "type": "string", "description": "Table ID (must use ID, not name)" },
+          "name": { "type": "string", "description": "New table name" },
+          "description": { "type": "string", "description": "New description" }
+        },
+        "required": ["baseId", "tableId"]
+      },
+      "handler": { "method": "PATCH", "path": "/meta/bases/{baseId}/tables/{tableId}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_create_field",
+      "description": "Add a new field (column) to a table.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableId": { "type": "string", "description": "Table ID" },
+          "name": { "type": "string", "description": "Field name" },
+          "type": { "type": "string", "description": "Field type: 'singleLineText', 'multilineText', 'number', 'checkbox', 'date', 'singleSelect', 'multipleSelects', 'email', 'url', 'currency', 'rating', 'duration', 'percent', 'phoneNumber', 'formula', 'rollup', 'lookup', 'createdTime', 'lastModifiedTime'" },
+          "description": { "type": "string", "description": "Optional field description" },
+          "options": { "type": "object", "description": "Type-specific options, e.g. {choices: [{name: 'Option A'}]} for singleSelect, or {formula: 'CONCATENATE({First},{Last})'} for formula" }
+        },
+        "required": ["baseId", "tableId", "name", "type"]
+      },
+      "handler": { "method": "POST", "path": "/meta/bases/{baseId}/tables/{tableId}/fields", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_update_field",
+      "description": "Update a field's name, description, or type-specific options.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "tableId": { "type": "string", "description": "Table ID" },
+          "fieldId": { "type": "string", "description": "Field ID" },
+          "name": { "type": "string", "description": "New field name" },
+          "description": { "type": "string", "description": "New field description" },
+          "options": { "type": "object", "description": "Updated field options" }
+        },
+        "required": ["baseId", "tableId", "fieldId"]
+      },
+      "handler": { "method": "PATCH", "path": "/meta/bases/{baseId}/tables/{tableId}/fields/{fieldId}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_list_webhooks",
+      "description": "List all webhooks registered for a base.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" }
+        },
+        "required": ["baseId"]
+      },
+      "handler": { "method": "GET", "path": "/bases/{baseId}/webhooks", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "airtable_create_webhook",
+      "description": "Register a webhook to receive notifications when records in a base change.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "baseId": { "type": "string", "description": "Airtable base ID" },
+          "notificationUrl": { "type": "string", "description": "URL to POST webhook payloads to" },
+          "specification": {
+            "type": "object",
+            "description": "Webhook filter spec. Example: { options: { filters: { fromSources: ['client'], dataTypes: ['tableData'] } } }"
+          }
+        },
+        "required": ["baseId", "notificationUrl", "specification"]
+      },
+      "handler": { "method": "POST", "path": "/bases/{baseId}/webhooks", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    }
+  ]
+}

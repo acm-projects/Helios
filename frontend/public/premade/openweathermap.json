@@ -1,0 +1,142 @@
+{
+  "baseUrl": "https://api.openweathermap.org",
+  "auth": [{ "type": "api_key", "in": "query", "name": "appid" }],
+  "tools": [
+    {
+      "name": "owm_current_weather_by_city",
+      "description": "Get current weather for a city by name. Returns temperature, humidity, wind, pressure, and conditions.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "q": { "type": "string", "description": "City name, optionally with country code: 'London', 'Paris,FR', 'New York,US'" },
+          "units": { "type": "string", "description": "'metric' (Celsius), 'imperial' (Fahrenheit), or 'standard' (Kelvin, default)" },
+          "lang": { "type": "string", "description": "Language code for weather descriptions, e.g. 'en', 'es', 'de'" }
+        },
+        "required": ["q"]
+      },
+      "handler": { "method": "GET", "path": "/data/2.5/weather", "headers": {}, "query_params": ["q", "units", "lang"], "fixed_query_params": {} }
+    },
+    {
+      "name": "owm_current_weather_by_coords",
+      "description": "Get current weather by latitude and longitude coordinates.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude, e.g. 51.5074 for London" },
+          "lon": { "type": "number", "description": "Longitude, e.g. -0.1278 for London" },
+          "units": { "type": "string", "description": "'metric', 'imperial', or 'standard'" },
+          "lang": { "type": "string", "description": "Language code for descriptions" }
+        },
+        "required": ["lat", "lon"]
+      },
+      "handler": { "method": "GET", "path": "/data/2.5/weather", "headers": {}, "query_params": ["lat", "lon", "units", "lang"], "fixed_query_params": {} }
+    },
+    {
+      "name": "owm_forecast_5day",
+      "description": "Get 5-day weather forecast in 3-hour intervals for a city. Returns up to 40 data points.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "q": { "type": "string", "description": "City name, e.g. 'Tokyo' or 'Berlin,DE'" },
+          "cnt": { "type": "integer", "description": "Number of 3-hour periods to return (max 40)" },
+          "units": { "type": "string", "description": "'metric', 'imperial', or 'standard'" },
+          "lang": { "type": "string", "description": "Language code" }
+        },
+        "required": ["q"]
+      },
+      "handler": { "method": "GET", "path": "/data/2.5/forecast", "headers": {}, "query_params": ["q", "cnt", "units", "lang"], "fixed_query_params": {} }
+    },
+    {
+      "name": "owm_forecast_5day_by_coords",
+      "description": "Get 5-day weather forecast by latitude/longitude coordinates.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude" },
+          "lon": { "type": "number", "description": "Longitude" },
+          "cnt": { "type": "integer", "description": "Number of 3-hour periods (max 40)" },
+          "units": { "type": "string", "description": "'metric', 'imperial', or 'standard'" }
+        },
+        "required": ["lat", "lon"]
+      },
+      "handler": { "method": "GET", "path": "/data/2.5/forecast", "headers": {}, "query_params": ["lat", "lon", "cnt", "units"], "fixed_query_params": {} }
+    },
+    {
+      "name": "owm_air_pollution_current",
+      "description": "Get current air quality index and pollutant concentrations (CO, NO, NO2, O3, SO2, PM2.5, PM10, NH3) for a location.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude" },
+          "lon": { "type": "number", "description": "Longitude" }
+        },
+        "required": ["lat", "lon"]
+      },
+      "handler": { "method": "GET", "path": "/data/2.5/air_pollution", "headers": {}, "query_params": ["lat", "lon"], "fixed_query_params": {} }
+    },
+    {
+      "name": "owm_air_pollution_forecast",
+      "description": "Get air pollution forecast for the next few days at a location.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude" },
+          "lon": { "type": "number", "description": "Longitude" }
+        },
+        "required": ["lat", "lon"]
+      },
+      "handler": { "method": "GET", "path": "/data/2.5/air_pollution/forecast", "headers": {}, "query_params": ["lat", "lon"], "fixed_query_params": {} }
+    },
+    {
+      "name": "owm_air_pollution_history",
+      "description": "Get historical air pollution data between two Unix timestamps.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude" },
+          "lon": { "type": "number", "description": "Longitude" },
+          "start": { "type": "integer", "description": "Start time as Unix timestamp" },
+          "end": { "type": "integer", "description": "End time as Unix timestamp" }
+        },
+        "required": ["lat", "lon", "start", "end"]
+      },
+      "handler": { "method": "GET", "path": "/data/2.5/air_pollution/history", "headers": {}, "query_params": ["lat", "lon", "start", "end"], "fixed_query_params": {} }
+    },
+    {
+      "name": "owm_geocode_city",
+      "description": "Convert a city name to latitude/longitude coordinates using the Geocoding API.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "q": { "type": "string", "description": "City name with optional country code: 'London,GB' or 'New York,US'" },
+          "limit": { "type": "integer", "description": "Max number of location results (1-5)" }
+        },
+        "required": ["q"]
+      },
+      "handler": { "method": "GET", "path": "/geo/1.0/direct", "headers": {}, "query_params": ["q", "limit"], "fixed_query_params": {} }
+    },
+    {
+      "name": "owm_reverse_geocode",
+      "description": "Convert latitude/longitude coordinates to city name and country using the Geocoding API.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude" },
+          "lon": { "type": "number", "description": "Longitude" },
+          "limit": { "type": "integer", "description": "Max results (1-5)" }
+        },
+        "required": ["lat", "lon"]
+      },
+      "handler": { "method": "GET", "path": "/geo/1.0/reverse", "headers": {}, "query_params": ["lat", "lon", "limit"], "fixed_query_params": {} }
+    }
+  ]
+}

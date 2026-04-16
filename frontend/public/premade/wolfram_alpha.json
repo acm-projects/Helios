@@ -1,0 +1,47 @@
+{
+  "baseUrl": "https://api.wolframalpha.com",
+  "auth": [{ "type": "api_key", "in": "query", "name": "appid" }],
+  "tools": [
+    {
+      "name": "wolfram_short_answer",
+      "description": "Ask Wolfram Alpha a question and get a short plain-text answer. Great for math, science, conversions, and factual queries.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "i": { "type": "string", "description": "Your question or calculation, e.g. 'integrate x^2' or 'population of Japan'" }
+        },
+        "required": ["i"]
+      },
+      "handler": { "method": "GET", "path": "/v1/result", "headers": {}, "query_params": ["i"], "fixed_query_params": {} }
+    },
+    {
+      "name": "wolfram_spoken_answer",
+      "description": "Ask Wolfram Alpha a question and get a spoken-language style answer, ideal for voice interfaces.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "i": { "type": "string", "description": "Your question, e.g. 'What is the speed of light?'" }
+        },
+        "required": ["i"]
+      },
+      "handler": { "method": "GET", "path": "/v1/spoken", "headers": {}, "query_params": ["i"], "fixed_query_params": {} }
+    },
+    {
+      "name": "wolfram_full_results",
+      "description": "Get full structured results from Wolfram Alpha in XML format. Returns multiple pods with detailed computations, plots, and related facts.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "input": { "type": "string", "description": "The query to compute" },
+          "format": { "type": "string", "description": "Output format for pods: 'plaintext', 'image', etc." },
+          "units": { "type": "string", "description": "'metric' or 'imperial'" }
+        },
+        "required": ["input"]
+      },
+      "handler": { "method": "GET", "path": "/v2/query", "headers": {}, "query_params": ["input", "format", "units"], "fixed_query_params": { "output": "json" } }
+    }
+  ]
+}

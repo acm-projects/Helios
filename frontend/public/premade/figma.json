@@ -1,0 +1,2030 @@
+{
+  "baseUrl": "https://api.figma.com",
+  "auth": [
+    {
+      "type": "api_key",
+      "in": "header",
+      "name": "X-Figma-Token"
+    },
+    {
+      "type": "oauth2",
+      "authorizationUrl": "https://www.figma.com/oauth",
+      "tokenUrl": "https://api.figma.com/v1/oauth/token",
+      "scopes": {
+        "current_user:read": "Read your name, email, and profile image.",
+        "file_comments:read": "Read the comments for files.",
+        "file_comments:write": "Post and delete comments and comment reactions in files.",
+        "file_content:read": "Read the contents of files, such as nodes and the editor type.",
+        "file_dev_resources:read": "Read dev resources in files.",
+        "file_dev_resources:write": "Write to dev resources in files.",
+        "file_metadata:read": "Read metadata of files.",
+        "file_variables:read": "Read variables in Figma file. Note: this is only available to members in Enterprise organizations.",
+        "file_variables:write": "Write to variables in Figma file. Note: this is only available to members in Enterprise organizations.",
+        "file_versions:read": "Read the version history for files you can access.",
+        "files:read": "Deprecated. Read files, projects, users, versions, comments, components & styles, and webhooks.",
+        "library_analytics:read": "Read library analytics data.",
+        "library_assets:read": "Read data of individual published components and styles.",
+        "library_content:read": "Read published components and styles of files.",
+        "projects:read": "List projects and files in projects.",
+        "team_library_content:read": "Read published components and styles of teams.",
+        "webhooks:read": "Read metadata of webhooks.",
+        "webhooks:write": "Create and manage webhooks."
+      }
+    },
+    {
+      "type": "oauth2",
+      "authorizationUrl": "https://www.figma.com/oauth",
+      "tokenUrl": "https://api.figma.com/v1/oauth/token",
+      "scopes": {
+        "org:activity_log_read": "Read activity logs in the organization."
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "getFile",
+      "description": "Get file JSON",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to export JSON from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "version": {
+            "type": "string",
+            "description": "A specific version ID to get. Omitting this will get the current version of the file."
+          },
+          "ids": {
+            "type": "string",
+            "description": "Comma separated list of nodes that you care about in the document. If specified, only a subset of the document will be returned corresponding to the nodes listed, their children, and everything between the root node and the listed nodes.\n\nNote: There may be other nodes included in the returned JSON that are outside the ancestor chains of the desired nodes. The response may also include dependencies of anything in the nodes' subtrees. For example, if a node subtree contains an instance of a local component that lives elsewhere in that file, that component and its ancestor chain will also be included.\n\nFor historical reasons, top-level canvas nodes are always returned, regardless of whether they are listed in the `ids` parameter. This quirk may be removed in a future version of the API."
+          },
+          "depth": {
+            "type": "number",
+            "description": "Positive integer representing how deep into the document tree to traverse. For example, setting this to 1 returns only Pages, setting it to 2 returns Pages and all top level objects on each page. Not setting this parameter returns all nodes."
+          },
+          "geometry": {
+            "type": "string",
+            "description": "Set to \"paths\" to export vector data."
+          },
+          "plugin_data": {
+            "type": "string",
+            "description": "A comma separated list of plugin IDs and/or the string \"shared\". Any data present in the document written by those plugins will be included in the result in the `pluginData` and `sharedPluginData` properties."
+          },
+          "branch_data": {
+            "type": "boolean",
+            "default": false,
+            "description": "Returns branch metadata for the requested file. If the file is a branch, the main file's key will be included in the returned response. If the file has branches, their metadata will be included in the returned response. Default: false."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}",
+        "headers": {},
+        "query_params": [
+          "version",
+          "ids",
+          "depth",
+          "geometry",
+          "plugin_data",
+          "branch_data"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getFileNodes",
+      "description": "Get file JSON for specific nodes",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to export JSON from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "ids": {
+            "type": "string",
+            "description": "A comma separated list of node IDs to retrieve and convert."
+          },
+          "version": {
+            "type": "string",
+            "description": "A specific version ID to get. Omitting this will get the current version of the file."
+          },
+          "depth": {
+            "type": "number",
+            "description": "Positive integer representing how deep into the node tree to traverse. For example, setting this to 1 will return only the children directly underneath the desired nodes. Not setting this parameter returns all nodes.\n\nNote: this parameter behaves differently from the same parameter in the `GET /v1/files/:key` endpoint. In this endpoint, the depth will be counted starting from the desired node rather than the document root node."
+          },
+          "geometry": {
+            "type": "string",
+            "description": "Set to \"paths\" to export vector data."
+          },
+          "plugin_data": {
+            "type": "string",
+            "description": "A comma separated list of plugin IDs and/or the string \"shared\". Any data present in the document written by those plugins will be included in the result in the `pluginData` and `sharedPluginData` properties."
+          }
+        },
+        "required": [
+          "file_key",
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/nodes",
+        "headers": {},
+        "query_params": [
+          "ids",
+          "version",
+          "depth",
+          "geometry",
+          "plugin_data"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getImages",
+      "description": "Render images of file nodes",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to export images from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "ids": {
+            "type": "string",
+            "description": "A comma separated list of node IDs to render."
+          },
+          "version": {
+            "type": "string",
+            "description": "A specific version ID to get. Omitting this will get the current version of the file."
+          },
+          "scale": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 4,
+            "description": "A number between 0.01 and 4, the image scaling factor."
+          },
+          "format": {
+            "type": "string",
+            "default": "png",
+            "description": "A string enum for the image output format."
+          },
+          "svg_outline_text": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether text elements are rendered as outlines (vector paths) or as `<text>` elements in SVGs.\n\nRendering text elements as outlines guarantees that the text looks exactly the same in the SVG as it does in the browser/inside Figma.\n\nExporting as `<text>` allows text to be selectable inside SVGs and generally makes the SVG easier to read. However, this relies on the browser's rendering engine which can vary between browsers and/or operating systems. As such, visual accuracy is not guaranteed as the result could look different than in Figma."
+          },
+          "svg_include_id": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to include id attributes for all SVG elements. Adds the layer name to the `id` attribute of an svg element."
+          },
+          "svg_include_node_id": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to include node id attributes for all SVG elements. Adds the node id to a `data-node-id` attribute of an svg element."
+          },
+          "svg_simplify_stroke": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether to simplify inside/outside strokes and use stroke attribute if possible instead of `<mask>`."
+          },
+          "contents_only": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether content that overlaps the node should be excluded from rendering. Passing false (i.e., rendering overlaps) may increase processing time, since more of the document must be included in rendering."
+          },
+          "use_absolute_bounds": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use the full dimensions of the node regardless of whether or not it is cropped or the space around it is empty. Use this to export text nodes without cropping."
+          }
+        },
+        "required": [
+          "file_key",
+          "ids"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/images/{file_key}",
+        "headers": {},
+        "query_params": [
+          "ids",
+          "version",
+          "scale",
+          "format",
+          "svg_outline_text",
+          "svg_include_id",
+          "svg_include_node_id",
+          "svg_simplify_stroke",
+          "contents_only",
+          "use_absolute_bounds"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getImageFills",
+      "description": "Get image fills",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to get image URLs from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/images",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getFileMeta",
+      "description": "Get file metadata",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to get metadata for. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/meta",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamProjects",
+      "description": "Get projects in a team",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "ID of the team to list projects from"
+          }
+        },
+        "required": [
+          "team_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/teams/{team_id}/projects",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getProjectFiles",
+      "description": "Get files in a project",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "description": "ID of the project to list files from"
+          },
+          "branch_data": {
+            "type": "boolean",
+            "default": false,
+            "description": "Returns branch metadata in the response for each main file with a branch inside the project."
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/projects/{project_id}/files",
+        "headers": {},
+        "query_params": [
+          "branch_data"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getFileVersions",
+      "description": "Get versions of a file",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to get version history from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "page_size": {
+            "type": "number",
+            "maximum": 50,
+            "description": "The number of items returned in a page of the response. If not included, `page_size` is `30`."
+          },
+          "before": {
+            "type": "number",
+            "description": "A version ID for one of the versions in the history. Gets versions before this ID. Used for paginating. If the response is not paginated, this link returns the same data in the current response."
+          },
+          "after": {
+            "type": "number",
+            "description": "A version ID for one of the versions in the history. Gets versions after this ID. Used for paginating. If the response is not paginated, this property is not included."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/versions",
+        "headers": {},
+        "query_params": [
+          "page_size",
+          "before",
+          "after"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getComments",
+      "description": "Get comments in a file",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to get comments from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "as_md": {
+            "type": "boolean",
+            "description": "If enabled, will return comments as their markdown equivalents when applicable."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/comments",
+        "headers": {},
+        "query_params": [
+          "as_md"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "postComment",
+      "description": "Add a comment to a file",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to add comments in. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "message": {
+            "type": "string",
+            "description": "The text contents of the comment to post."
+          },
+          "comment_id": {
+            "type": "string",
+            "description": "The ID of the comment to reply to, if any. This must be a root comment. You cannot reply to other replies (a comment that has a parent_id)."
+          },
+          "client_meta": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "X coordinate of the vector."
+              },
+              "y": {
+                "type": "number",
+                "description": "Y coordinate of the vector."
+              }
+            },
+            "description": "A 2d vector."
+          }
+        },
+        "required": [
+          "file_key",
+          "message"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/v1/files/{file_key}/comments",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteComment",
+      "description": "Delete a comment",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to delete comment from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "comment_id": {
+            "type": "string",
+            "description": "Comment id of comment to delete"
+          }
+        },
+        "required": [
+          "file_key",
+          "comment_id"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/v1/files/{file_key}/comments/{comment_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getCommentReactions",
+      "description": "Get reactions for a comment",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to get comment containing reactions from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "comment_id": {
+            "type": "string",
+            "description": "ID of comment to get reactions from."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Cursor for pagination, retrieved from the response of the previous call."
+          }
+        },
+        "required": [
+          "file_key",
+          "comment_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/comments/{comment_id}/reactions",
+        "headers": {},
+        "query_params": [
+          "cursor"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "postCommentReaction",
+      "description": "Add a reaction to a comment",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to post comment reactions to. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "comment_id": {
+            "type": "string",
+            "description": "ID of comment to react to."
+          },
+          "emoji": {
+            "type": "string",
+            "description": "The emoji type of reaction as shortcode (e.g. `:heart:`, `:+1::skin-tone-2:`). The list of accepted emoji shortcodes can be found in [this file](https://raw.githubusercontent.com/missive/emoji-mart/main/packages/emoji-mart-data/sets/14/native.json) under the top-level emojis and aliases fields, with optional skin tone modifiers when applicable."
+          }
+        },
+        "required": [
+          "file_key",
+          "comment_id",
+          "emoji"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/v1/files/{file_key}/comments/{comment_id}/reactions",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteCommentReaction",
+      "description": "Delete a reaction",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to delete comment reaction from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "comment_id": {
+            "type": "string",
+            "description": "ID of comment to delete reaction from."
+          },
+          "emoji": {
+            "type": "string",
+            "description": "The emoji type of reaction as shortcode (e.g. `:heart:`, `:+1::skin-tone-2:`). The list of accepted emoji shortcodes can be found in [this file](https://raw.githubusercontent.com/missive/emoji-mart/main/packages/emoji-mart-data/sets/14/native.json) under the top-level emojis and aliases fields, with optional skin tone modifiers when applicable."
+          }
+        },
+        "required": [
+          "file_key",
+          "comment_id",
+          "emoji"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/v1/files/{file_key}/comments/{comment_id}/reactions",
+        "headers": {},
+        "query_params": [
+          "emoji"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getMe",
+      "description": "Get current user",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/me",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamComponents",
+      "description": "Get team components",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Id of the team to list components from."
+          },
+          "page_size": {
+            "type": "number",
+            "default": 30,
+            "description": "Number of items to return in a paged list of results. Defaults to 30. Maximum of 1000."
+          },
+          "after": {
+            "type": "number",
+            "description": "Cursor indicating which id after which to start retrieving components for. Exclusive with before. The cursor value is an internally tracked integer that doesn't correspond to any Ids."
+          },
+          "before": {
+            "type": "number",
+            "description": "Cursor indicating which id before which to start retrieving components for. Exclusive with after. The cursor value is an internally tracked integer that doesn't correspond to any Ids."
+          }
+        },
+        "required": [
+          "team_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/teams/{team_id}/components",
+        "headers": {},
+        "query_params": [
+          "page_size",
+          "after",
+          "before"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getFileComponents",
+      "description": "Get file components",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to list components from. This must be a main file key, not a branch key, as it is not possible to publish from branches."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/components",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getComponent",
+      "description": "Get component",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The unique identifier of the component."
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/components/{key}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamComponentSets",
+      "description": "Get team component sets",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Id of the team to list component sets from."
+          },
+          "page_size": {
+            "type": "number",
+            "default": 30,
+            "description": "Number of items to return in a paged list of results. Defaults to 30."
+          },
+          "after": {
+            "type": "number",
+            "description": "Cursor indicating which id after which to start retrieving component sets for. Exclusive with before. The cursor value is an internally tracked integer that doesn't correspond to any Ids."
+          },
+          "before": {
+            "type": "number",
+            "description": "Cursor indicating which id before which to start retrieving component sets for. Exclusive with after. The cursor value is an internally tracked integer that doesn't correspond to any Ids."
+          }
+        },
+        "required": [
+          "team_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/teams/{team_id}/component_sets",
+        "headers": {},
+        "query_params": [
+          "page_size",
+          "after",
+          "before"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getFileComponentSets",
+      "description": "Get file component sets",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to list component sets from. This must be a main file key, not a branch key, as it is not possible to publish from branches."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/component_sets",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getComponentSet",
+      "description": "Get component set",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The unique identifier of the component set."
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/component_sets/{key}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamStyles",
+      "description": "Get team styles",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Id of the team to list styles from."
+          },
+          "page_size": {
+            "type": "number",
+            "default": 30,
+            "description": "Number of items to return in a paged list of results. Defaults to 30."
+          },
+          "after": {
+            "type": "number",
+            "description": "Cursor indicating which id after which to start retrieving styles for. Exclusive with before. The cursor value is an internally tracked integer that doesn't correspond to any Ids."
+          },
+          "before": {
+            "type": "number",
+            "description": "Cursor indicating which id before which to start retrieving styles for. Exclusive with after. The cursor value is an internally tracked integer that doesn't correspond to any Ids."
+          }
+        },
+        "required": [
+          "team_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/teams/{team_id}/styles",
+        "headers": {},
+        "query_params": [
+          "page_size",
+          "after",
+          "before"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getFileStyles",
+      "description": "Get file styles",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to list styles from. This must be a main file key, not a branch key, as it is not possible to publish from branches."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/styles",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getStyle",
+      "description": "Get style",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The unique identifier of the style."
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/styles/{key}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWebhooks",
+      "description": "Get webhooks by context or plan",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context": {
+            "type": "string",
+            "description": "Context to create the resource on. Should be \"team\", \"project\", or \"file\"."
+          },
+          "context_id": {
+            "type": "string",
+            "description": "The id of the context that you want to get attached webhooks for. If you're using context_id, you cannot use plan_api_id."
+          },
+          "plan_api_id": {
+            "type": "string",
+            "description": "The id of your plan. Use this to get all webhooks for all contexts you have access to. If you're using plan_api_id, you cannot use context or context_id. When you use plan_api_id, the response is paginated."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "If you're using plan_api_id, this is the cursor to use for pagination. If you're using context or context_id, this parameter is ignored. Provide the next_page or prev_page value from the previous response to get the next or previous page of results."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v2/webhooks",
+        "headers": {},
+        "query_params": [
+          "context",
+          "context_id",
+          "plan_api_id",
+          "cursor"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "postWebhook",
+      "description": "Create a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "description": "An enum representing the possible events that a webhook can subscribe to"
+          },
+          "team_id": {
+            "type": "string",
+            "description": "Team id to receive updates about. This is deprecated, use 'context' and 'context_id' instead."
+          },
+          "context": {
+            "type": "string",
+            "description": "Context to create the webhook for. Must be \"team\", \"project\", or \"file\"."
+          },
+          "context_id": {
+            "type": "string",
+            "description": "The id of the context you want to receive updates about."
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "The HTTP endpoint that will receive a POST request when the event triggers. Max length 2048 characters."
+          },
+          "passcode": {
+            "type": "string",
+            "description": "String that will be passed back to your webhook endpoint to verify that it is being called by Figma. Max length 100 characters."
+          },
+          "status": {
+            "type": "string",
+            "description": "An enum representing the possible statuses you can set a webhook to:\n- `ACTIVE`: The webhook is healthy and receive all events\n- `PAUSED`: The webhook is paused and will not receive any events"
+          },
+          "description": {
+            "type": "string",
+            "description": "User provided description or name for the webhook. Max length 150 characters."
+          }
+        },
+        "required": [
+          "event_type",
+          "endpoint",
+          "passcode",
+          "context",
+          "context_id"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/v2/webhooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWebhook",
+      "description": "Get a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "description": "ID of webhook to get"
+          }
+        },
+        "required": [
+          "webhook_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v2/webhooks/{webhook_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "putWebhook",
+      "description": "Update a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "description": "ID of webhook to update"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "An enum representing the possible events that a webhook can subscribe to"
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "The HTTP endpoint that will receive a POST request when the event triggers. Max length 2048 characters."
+          },
+          "passcode": {
+            "type": "string",
+            "description": "String that will be passed back to your webhook endpoint to verify that it is being called by Figma. Max length 100 characters."
+          },
+          "status": {
+            "type": "string",
+            "description": "An enum representing the possible statuses you can set a webhook to:\n- `ACTIVE`: The webhook is healthy and receive all events\n- `PAUSED`: The webhook is paused and will not receive any events"
+          },
+          "description": {
+            "type": "string",
+            "description": "User provided description or name for the webhook. Max length 150 characters."
+          }
+        },
+        "required": [
+          "webhook_id",
+          "event_type",
+          "team_id",
+          "endpoint",
+          "passcode"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/v2/webhooks/{webhook_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteWebhook",
+      "description": "Delete a webhook",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "description": "ID of webhook to delete"
+          }
+        },
+        "required": [
+          "webhook_id"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/v2/webhooks/{webhook_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getTeamWebhooks",
+      "description": "[Deprecated] Get team webhooks",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "ID of team to get webhooks for"
+          }
+        },
+        "required": [
+          "team_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v2/teams/{team_id}/webhooks",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getWebhookRequests",
+      "description": "Get webhook requests",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "description": "The id of the webhook subscription you want to see events from"
+          }
+        },
+        "required": [
+          "webhook_id"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v2/webhooks/{webhook_id}/requests",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getActivityLogs",
+      "description": "Get activity logs",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "string",
+            "description": "Event type(s) to include in the response. Can have multiple values separated by comma. All events are returned by default."
+          },
+          "start_time": {
+            "type": "number",
+            "description": "Unix timestamp of the least recent event to include. This param defaults to one year ago if unspecified."
+          },
+          "end_time": {
+            "type": "number",
+            "description": "Unix timestamp of the most recent event to include. This param defaults to the current timestamp if unspecified."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of events to return. This param defaults to 1000 if unspecified."
+          },
+          "order": {
+            "type": "string",
+            "default": "asc",
+            "description": "Event order by timestamp. This param can be either \"asc\" (default) or \"desc\"."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/activity_logs",
+        "headers": {},
+        "query_params": [
+          "events",
+          "start_time",
+          "end_time",
+          "limit",
+          "order"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPayments",
+      "description": "Get payments",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "plugin_payment_token": {
+            "type": "string",
+            "description": "Short-lived token returned from \"getPluginPaymentTokenAsync\" in the plugin payments API and used to authenticate to this endpoint. Read more about generating this token through \"Calling the Payments REST API from a plugin or widget\" below."
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The ID of the user to query payment information about. You can get the user ID by having the user OAuth2 to the Figma REST API."
+          },
+          "community_file_id": {
+            "type": "string",
+            "description": "The ID of the Community file to query a user's payment information on. You can get the Community file ID from the file's Community page (look for the number after \"file/\" in the URL). Provide exactly one of \"community_file_id\", \"plugin_id\", or \"widget_id\"."
+          },
+          "plugin_id": {
+            "type": "string",
+            "description": "The ID of the plugin to query a user's payment information on. You can get the plugin ID from the plugin's manifest, or from the plugin's Community page (look for the number after \"plugin/\" in the URL). Provide exactly one of \"community_file_id\", \"plugin_id\", or \"widget_id\"."
+          },
+          "widget_id": {
+            "type": "string",
+            "description": "The ID of the widget to query a user's payment information on. You can get the widget ID from the widget's manifest, or from the widget's Community page (look for the number after \"widget/\" in the URL). Provide exactly one of \"community_file_id\", \"plugin_id\", or \"widget_id\"."
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/payments",
+        "headers": {},
+        "query_params": [
+          "plugin_payment_token",
+          "user_id",
+          "community_file_id",
+          "plugin_id",
+          "widget_id"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getLocalVariables",
+      "description": "Get local variables",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to get variables from. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/variables/local",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getPublishedVariables",
+      "description": "Get published variables",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to get variables from. This must be a main file key, not a branch key, as it is not possible to publish from branches."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/variables/published",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "postVariables",
+      "description": "Create/modify/delete variables",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File to modify variables in. This can be a file key or branch key. Use `GET /v1/files/:key` with the `branch_data` query param to get the branch key."
+          },
+          "variableCollections": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "For creating, updating, and deleting variable collections."
+          },
+          "variableModes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "For creating, updating, and deleting modes within variable collections."
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "For creating, updating, and deleting variables."
+          },
+          "variableModeValues": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "For setting a specific value, given a variable and a mode."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/v1/files/{file_key}/variables",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getDevResources",
+      "description": "Get dev resources",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "The file to get the dev resources from. This must be a main file key, not a branch key."
+          },
+          "node_ids": {
+            "type": "string",
+            "description": "Comma separated list of nodes that you care about in the document. If specified, only dev resources attached to these nodes will be returned. If not specified, all dev resources in the file will be returned."
+          }
+        },
+        "required": [
+          "file_key"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/files/{file_key}/dev_resources",
+        "headers": {},
+        "query_params": [
+          "node_ids"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "postDevResources",
+      "description": "Create dev resources",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "dev_resources": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "An array of dev resources."
+          }
+        },
+        "required": [
+          "dev_resources"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/v1/dev_resources",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "putDevResources",
+      "description": "Update dev resources",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "dev_resources": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "An array of dev resources."
+          }
+        },
+        "required": [
+          "dev_resources"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/v1/dev_resources",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteDevResource",
+      "description": "Delete dev resource",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "The file to delete the dev resource from. This must be a main file key, not a branch key."
+          },
+          "dev_resource_id": {
+            "type": "string",
+            "description": "The id of the dev resource to delete."
+          }
+        },
+        "required": [
+          "file_key",
+          "dev_resource_id"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/v1/files/{file_key}/dev_resources/{dev_resource_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getLibraryAnalyticsComponentActions",
+      "description": "Get library analytics component action data.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File key of the library to fetch analytics data for."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Cursor indicating what page of data to fetch. Obtained from prior API call."
+          },
+          "group_by": {
+            "type": "string",
+            "description": "A dimension to group returned analytics data by."
+          },
+          "start_date": {
+            "type": "string",
+            "description": "ISO 8601 date string (YYYY-MM-DD) of the earliest week to include. Dates are rounded back to the nearest start of a week. Defaults to one year prior."
+          },
+          "end_date": {
+            "type": "string",
+            "description": "ISO 8601 date string (YYYY-MM-DD) of the latest week to include. Dates are rounded forward to the nearest end of a week. Defaults to the latest computed week."
+          }
+        },
+        "required": [
+          "file_key",
+          "group_by"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/analytics/libraries/{file_key}/component/actions",
+        "headers": {},
+        "query_params": [
+          "cursor",
+          "group_by",
+          "start_date",
+          "end_date"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getLibraryAnalyticsComponentUsages",
+      "description": "Get library analytics component usage data.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File key of the library to fetch analytics data for."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Cursor indicating what page of data to fetch. Obtained from prior API call."
+          },
+          "group_by": {
+            "type": "string",
+            "description": "A dimension to group returned analytics data by."
+          }
+        },
+        "required": [
+          "file_key",
+          "group_by"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/analytics/libraries/{file_key}/component/usages",
+        "headers": {},
+        "query_params": [
+          "cursor",
+          "group_by"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getLibraryAnalyticsStyleActions",
+      "description": "Get library analytics style action data.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File key of the library to fetch analytics data for."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Cursor indicating what page of data to fetch. Obtained from prior API call."
+          },
+          "group_by": {
+            "type": "string",
+            "description": "A dimension to group returned analytics data by."
+          },
+          "start_date": {
+            "type": "string",
+            "description": "ISO 8601 date string (YYYY-MM-DD) of the earliest week to include. Dates are rounded back to the nearest start of a week. Defaults to one year prior."
+          },
+          "end_date": {
+            "type": "string",
+            "description": "ISO 8601 date string (YYYY-MM-DD) of the latest week to include. Dates are rounded forward to the nearest end of a week. Defaults to the latest computed week."
+          }
+        },
+        "required": [
+          "file_key",
+          "group_by"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/analytics/libraries/{file_key}/style/actions",
+        "headers": {},
+        "query_params": [
+          "cursor",
+          "group_by",
+          "start_date",
+          "end_date"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getLibraryAnalyticsStyleUsages",
+      "description": "Get library analytics style usage data.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File key of the library to fetch analytics data for."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Cursor indicating what page of data to fetch. Obtained from prior API call."
+          },
+          "group_by": {
+            "type": "string",
+            "description": "A dimension to group returned analytics data by."
+          }
+        },
+        "required": [
+          "file_key",
+          "group_by"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/analytics/libraries/{file_key}/style/usages",
+        "headers": {},
+        "query_params": [
+          "cursor",
+          "group_by"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getLibraryAnalyticsVariableActions",
+      "description": "Get library analytics variable action data.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File key of the library to fetch analytics data for."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Cursor indicating what page of data to fetch. Obtained from prior API call."
+          },
+          "group_by": {
+            "type": "string",
+            "description": "A dimension to group returned analytics data by."
+          },
+          "start_date": {
+            "type": "string",
+            "description": "ISO 8601 date string (YYYY-MM-DD) of the earliest week to include. Dates are rounded back to the nearest start of a week. Defaults to one year prior."
+          },
+          "end_date": {
+            "type": "string",
+            "description": "ISO 8601 date string (YYYY-MM-DD) of the latest week to include. Dates are rounded forward to the nearest end of a week. Defaults to the latest computed week."
+          }
+        },
+        "required": [
+          "file_key",
+          "group_by"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/analytics/libraries/{file_key}/variable/actions",
+        "headers": {},
+        "query_params": [
+          "cursor",
+          "group_by",
+          "start_date",
+          "end_date"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getLibraryAnalyticsVariableUsages",
+      "description": "Get library analytics variable usage data.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_key": {
+            "type": "string",
+            "description": "File key of the library to fetch analytics data for."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Cursor indicating what page of data to fetch. Obtained from prior API call."
+          },
+          "group_by": {
+            "type": "string",
+            "description": "A dimension to group returned analytics data by."
+          }
+        },
+        "required": [
+          "file_key",
+          "group_by"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/analytics/libraries/{file_key}/variable/usages",
+        "headers": {},
+        "query_params": [
+          "cursor",
+          "group_by"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "getOEmbed",
+      "description": "Get oEmbed data",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The URL of the Figma file or published Make site to retrieve oEmbed data for."
+          },
+          "maxwidth": {
+            "type": "integer",
+            "default": 800,
+            "description": "Maximum width of the embed in pixels. Defaults to 800. The response width will be adjusted to maintain a 16:9 aspect ratio with maxheight."
+          },
+          "maxheight": {
+            "type": "integer",
+            "default": 450,
+            "description": "Maximum height of the embed in pixels. Defaults to 450. The response height will be adjusted to maintain a 16:9 aspect ratio with maxwidth."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/oembed",
+        "headers": {},
+        "query_params": [
+          "url",
+          "maxwidth",
+          "maxheight"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": {
+          "template": "api_key_header",
+          "integration_id": "",
+          "header_name": "X-Figma-Token"
+        }
+      },
+      "enabled": true
+    }
+  ]
+}

@@ -1,0 +1,425 @@
+{
+  "baseUrl": "https://api.themoviedb.org/3",
+  "auth": [{ "type": "bearer_token" }],
+  "tools": [
+    {
+      "name": "tmdb_search_movies",
+      "description": "Search for movies by title. Returns matching movies with basic details.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Movie title to search for" },
+          "year": { "type": "integer", "description": "Filter by release year" },
+          "primary_release_year": { "type": "integer", "description": "Filter by primary release year" },
+          "page": { "type": "integer", "description": "Page number (default 1)" },
+          "language": { "type": "string", "description": "Language code, e.g. 'en-US'" },
+          "include_adult": { "type": "boolean", "description": "Include adult titles" },
+          "region": { "type": "string", "description": "Region for release dates (ISO 3166-1 code)" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "GET", "path": "/search/movie", "headers": {}, "query_params": ["query", "year", "primary_release_year", "page", "language", "include_adult", "region"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_search_tv",
+      "description": "Search for TV shows by name.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "TV show name to search for" },
+          "first_air_date_year": { "type": "integer", "description": "Filter by first air date year" },
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" },
+          "include_adult": { "type": "boolean", "description": "Include adult titles" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "GET", "path": "/search/tv", "headers": {}, "query_params": ["query", "first_air_date_year", "page", "language", "include_adult"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_search_people",
+      "description": "Search for actors, directors, and other people in the TMDB database.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Person's name" },
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "GET", "path": "/search/person", "headers": {}, "query_params": ["query", "page", "language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_search_multi",
+      "description": "Search across movies, TV shows, and people in a single query.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Search query" },
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "GET", "path": "/search/multi", "headers": {}, "query_params": ["query", "page", "language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_movie",
+      "description": "Get full details for a specific movie: overview, genres, runtime, budget, revenue, production companies.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "movie_id": { "type": "integer", "description": "TMDB movie ID" },
+          "language": { "type": "string", "description": "Language code, e.g. 'en-US'" },
+          "append_to_response": { "type": "string", "description": "Comma-separated additional data: 'credits,videos,images,reviews,recommendations,similar'" }
+        },
+        "required": ["movie_id"]
+      },
+      "handler": { "method": "GET", "path": "/movie/{movie_id}", "headers": {}, "query_params": ["language", "append_to_response"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_movie_credits",
+      "description": "Get cast and crew for a movie (director, actors with characters, etc.).",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "movie_id": { "type": "integer", "description": "TMDB movie ID" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["movie_id"]
+      },
+      "handler": { "method": "GET", "path": "/movie/{movie_id}/credits", "headers": {}, "query_params": ["language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_movie_videos",
+      "description": "Get trailers, teasers, clips, and featurettes for a movie.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "movie_id": { "type": "integer", "description": "TMDB movie ID" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["movie_id"]
+      },
+      "handler": { "method": "GET", "path": "/movie/{movie_id}/videos", "headers": {}, "query_params": ["language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_movie_reviews",
+      "description": "Get user reviews for a movie.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "movie_id": { "type": "integer", "description": "TMDB movie ID" },
+          "page": { "type": "integer", "description": "Page number" }
+        },
+        "required": ["movie_id"]
+      },
+      "handler": { "method": "GET", "path": "/movie/{movie_id}/reviews", "headers": {}, "query_params": ["page"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_movie_recommendations",
+      "description": "Get recommended movies based on a given movie.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "movie_id": { "type": "integer", "description": "TMDB movie ID" },
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["movie_id"]
+      },
+      "handler": { "method": "GET", "path": "/movie/{movie_id}/recommendations", "headers": {}, "query_params": ["page", "language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_similar_movies",
+      "description": "Get movies that are similar to a given movie.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "movie_id": { "type": "integer", "description": "TMDB movie ID" },
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["movie_id"]
+      },
+      "handler": { "method": "GET", "path": "/movie/{movie_id}/similar", "headers": {}, "query_params": ["page", "language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_trending",
+      "description": "Get trending movies, TV shows, or people today or this week.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "media_type": { "type": "string", "description": "'movie', 'tv', 'person', or 'all'" },
+          "time_window": { "type": "string", "description": "'day' or 'week'" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["media_type", "time_window"]
+      },
+      "handler": { "method": "GET", "path": "/trending/{media_type}/{time_window}", "headers": {}, "query_params": ["language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_now_playing",
+      "description": "Get movies currently showing in theaters.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" },
+          "region": { "type": "string", "description": "Region code for release dates, e.g. 'US'" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/movie/now_playing", "headers": {}, "query_params": ["page", "language", "region"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_popular_movies",
+      "description": "Get the current list of most popular movies on TMDB.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" },
+          "region": { "type": "string", "description": "Region code" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/movie/popular", "headers": {}, "query_params": ["page", "language", "region"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_top_rated_movies",
+      "description": "Get the highest-rated movies on TMDB.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" },
+          "region": { "type": "string", "description": "Region code" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/movie/top_rated", "headers": {}, "query_params": ["page", "language", "region"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_upcoming_movies",
+      "description": "Get movies that are scheduled for upcoming theatrical release.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" },
+          "region": { "type": "string", "description": "Region code" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/movie/upcoming", "headers": {}, "query_params": ["page", "language", "region"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_tv",
+      "description": "Get full details for a TV series: overview, seasons, genres, networks, status.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "series_id": { "type": "integer", "description": "TMDB TV series ID" },
+          "language": { "type": "string", "description": "Language code" },
+          "append_to_response": { "type": "string", "description": "Comma-separated extras: 'credits,videos,recommendations,similar'" }
+        },
+        "required": ["series_id"]
+      },
+      "handler": { "method": "GET", "path": "/tv/{series_id}", "headers": {}, "query_params": ["language", "append_to_response"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_tv_season",
+      "description": "Get details for a specific season of a TV show, including all episodes.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "series_id": { "type": "integer", "description": "TMDB TV series ID" },
+          "season_number": { "type": "integer", "description": "Season number (0 for specials)" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["series_id", "season_number"]
+      },
+      "handler": { "method": "GET", "path": "/tv/{series_id}/season/{season_number}", "headers": {}, "query_params": ["language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_tv_episode",
+      "description": "Get details for a specific episode of a TV show.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "series_id": { "type": "integer", "description": "TMDB TV series ID" },
+          "season_number": { "type": "integer", "description": "Season number" },
+          "episode_number": { "type": "integer", "description": "Episode number" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": ["series_id", "season_number", "episode_number"]
+      },
+      "handler": { "method": "GET", "path": "/tv/{series_id}/season/{season_number}/episode/{episode_number}", "headers": {}, "query_params": ["language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_popular_tv",
+      "description": "Get the most popular TV shows on TMDB.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/tv/popular", "headers": {}, "query_params": ["page", "language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_top_rated_tv",
+      "description": "Get the highest-rated TV shows on TMDB.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/tv/top_rated", "headers": {}, "query_params": ["page", "language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_airing_today",
+      "description": "Get TV shows that have an episode airing today.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Language code" },
+          "timezone": { "type": "string", "description": "Timezone for 'today', e.g. 'America/New_York'" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/tv/airing_today", "headers": {}, "query_params": ["page", "language", "timezone"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_get_person",
+      "description": "Get biography, birthday, and filmography for an actor, director, or other person.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "person_id": { "type": "integer", "description": "TMDB person ID" },
+          "language": { "type": "string", "description": "Language code" },
+          "append_to_response": { "type": "string", "description": "Extras: 'movie_credits,tv_credits,images'" }
+        },
+        "required": ["person_id"]
+      },
+      "handler": { "method": "GET", "path": "/person/{person_id}", "headers": {}, "query_params": ["language", "append_to_response"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_popular_people",
+      "description": "Get the most popular people (actors, directors) on TMDB.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Page number" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/person/popular", "headers": {}, "query_params": ["page"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_discover_movies",
+      "description": "Discover movies using advanced filters: genres, year range, rating, runtime, certification, and sort options.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "sort_by": { "type": "string", "description": "Sort by: 'popularity.desc', 'vote_average.desc', 'release_date.desc', 'revenue.desc'" },
+          "with_genres": { "type": "string", "description": "Genre IDs to include (comma-separated AND, pipe-separated OR), e.g. '28,12' for Action AND Adventure" },
+          "without_genres": { "type": "string", "description": "Genre IDs to exclude" },
+          "primary_release_year": { "type": "integer", "description": "Filter by release year" },
+          "primary_release_date.gte": { "type": "string", "description": "Released on or after YYYY-MM-DD" },
+          "primary_release_date.lte": { "type": "string", "description": "Released on or before YYYY-MM-DD" },
+          "vote_average.gte": { "type": "number", "description": "Minimum TMDB rating (0-10)" },
+          "vote_average.lte": { "type": "number", "description": "Maximum TMDB rating" },
+          "vote_count.gte": { "type": "integer", "description": "Minimum vote count (to filter out obscure titles)" },
+          "with_runtime.gte": { "type": "integer", "description": "Minimum runtime in minutes" },
+          "with_runtime.lte": { "type": "integer", "description": "Maximum runtime in minutes" },
+          "with_cast": { "type": "string", "description": "Person IDs for cast members (comma = AND, pipe = OR)" },
+          "with_crew": { "type": "string", "description": "Person IDs for crew members" },
+          "with_original_language": { "type": "string", "description": "ISO 639-1 language code, e.g. 'en' for English-language films" },
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Response language code" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/discover/movie", "headers": {}, "query_params": ["sort_by", "with_genres", "without_genres", "primary_release_year", "primary_release_date.gte", "primary_release_date.lte", "vote_average.gte", "vote_average.lte", "vote_count.gte", "with_runtime.gte", "with_runtime.lte", "with_cast", "with_crew", "with_original_language", "page", "language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_discover_tv",
+      "description": "Discover TV shows using filters: genre, network, air date, rating, and more.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "sort_by": { "type": "string", "description": "'popularity.desc', 'vote_average.desc', 'first_air_date.desc'" },
+          "with_genres": { "type": "string", "description": "Genre IDs" },
+          "first_air_date_year": { "type": "integer", "description": "Filter by first air date year" },
+          "vote_average.gte": { "type": "number", "description": "Minimum rating" },
+          "with_networks": { "type": "string", "description": "Network ID, e.g. '213' for Netflix" },
+          "with_status": { "type": "string", "description": "Show status: '0' (Returning), '1' (Planned), '2' (In Production), '3' (Ended), '4' (Cancelled), '5' (Pilot)" },
+          "page": { "type": "integer", "description": "Page number" },
+          "language": { "type": "string", "description": "Response language" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/discover/tv", "headers": {}, "query_params": ["sort_by", "with_genres", "first_air_date_year", "vote_average.gte", "with_networks", "with_status", "page", "language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_movie_genres",
+      "description": "Get the official list of movie genre IDs and names.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/genre/movie/list", "headers": {}, "query_params": ["language"], "fixed_query_params": {} }
+    },
+    {
+      "name": "tmdb_tv_genres",
+      "description": "Get the official list of TV genre IDs and names.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "language": { "type": "string", "description": "Language code" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/genre/tv/list", "headers": {}, "query_params": ["language"], "fixed_query_params": {} }
+    }
+  ]
+}

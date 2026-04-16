@@ -1,0 +1,73 @@
+{
+  "url": "http://localhost:3001/auth",
+  "glassAncestorChain": [
+    {
+      "element": "DIV.glass-mid.rounded-3xl.px-10.py-10.w-full.max-w-[420px].animate-fade-up.shadow-[0",
+      "ancestor_chain": [
+        {
+          "tag": "DIV.glass-mid.rounded-3xl.px-10.py-10.w-full.max-w-[420px].animate-fade-up.shadow-[0",
+          "compositing_flags": [],
+          "backdrop_filter_on_self": null,
+          "z_index": "0",
+          "position": "relative"
+        },
+        {
+          "tag": "MAIN.flex-1.flex.items-center.justify-center.px-4.py-12",
+          "compositing_flags": [],
+          "backdrop_filter_on_self": null,
+          "z_index": "auto",
+          "position": "static"
+        },
+        {
+          "tag": "DIV.min-h-screen.relative.flex.flex-col",
+          "compositing_flags": [],
+          "backdrop_filter_on_self": null,
+          "z_index": "auto",
+          "position": "relative"
+        },
+        {
+          "tag": "DIV",
+          "compositing_flags": [],
+          "backdrop_filter_on_self": null,
+          "z_index": "auto",
+          "position": "static"
+        },
+        {
+          "tag": "BODY.geist_a71539c9-module__T19VSG__variable.geist_mono_8d43a2aa-module__8Li5zG__vari",
+          "compositing_flags": [],
+          "backdrop_filter_on_self": null,
+          "z_index": "auto",
+          "position": "static"
+        }
+      ]
+    }
+  ],
+  "transformedDivs": [],
+  "glassElementDetail": {
+    "element": {
+      "position": "relative",
+      "zIndex": "0",
+      "isolation": "auto",
+      "transform": "none",
+      "opacity": "1",
+      "overflow": "visible"
+    },
+    "before": {
+      "backdropFilter": "none",
+      "height": "87px",
+      "position": "absolute",
+      "zIndex": "-1",
+      "maskImage": "linear-gradient(rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0) 50%)",
+      "content": "\"\""
+    }
+  },
+  "backgroundElements": [
+    {
+      "tag": "DIV",
+      "classes": "fixed inset-0 -z-10",
+      "zIndex": "-10",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(\"http://localhost:3001/Background-Midnight(1).svg\")",
+      "filter": "none"
+    }
+  ]
+}

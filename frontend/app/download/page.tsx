@@ -1,7 +1,6 @@
 "use client"
 import { Suspense, useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { Download, Check, Sparkles } from "lucide-react"
 import { getAuthHeaders } from "@/lib/auth"
@@ -38,22 +37,34 @@ function DownloadContent() {
 
       {/* ── Background ────────────────────────────────────────────────── */}
 
-      {/* ── Nav ────────────────────────────────────────────────────────── */}
-      <nav className="glass-nav flex items-center justify-between px-8 h-[62px]">
-        <Link href="/">
-          <Image src="/logoName.svg" alt="Helios" width={120} height={40} className="brightness-0 invert opacity-90 cursor-pointer" />
-        </Link>
-        <div className="flex items-center gap-1">
-          <button className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.15em] px-4 py-2 text-white/55 hover:text-white/90 transition-colors cursor-pointer">Info</button>
-          <button className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.15em] px-4 py-2 text-white/55 hover:text-white/90 transition-colors cursor-pointer">Keys</button>
-          <button className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.15em] px-5 py-2 rounded-full bg-white/[0.07] border border-white/[0.14] text-white/70 hover:bg-white/12 hover:text-white transition-all cursor-pointer">Account</button>
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <div className="relative z-30 flex items-center px-8 h-[93px] flex-shrink-0">
+        <div className="flex-1 flex items-center">
+          <div className="relative">
+            <Link href="/" className="absolute inset-0 cursor-pointer z-10" aria-label="Home" />
+            <span className="font-[family-name:--font-cinzel] font-semibold text-[32px] tracking-[0.35em] pr-[0.35em] select-none pointer-events-none"
+              style={{ color: "#ffffff", textShadow: "0 0 40px rgba(255,255,255,0.15)" }}>
+              HELIOS
+            </span>
+          </div>
         </div>
-      </nav>
+        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[22px] tracking-[0.18em]">
+          <Link href="/create" className="step-inactive cursor-pointer">Create</Link>
+          <span className="step-divider text-[10px]">✦</span>
+          <Link href={specId ? `/sandbox?specId=${specId}` : "/sandbox"} className="step-inactive cursor-pointer">Sandbox</Link>
+          <span className="step-divider text-[10px]">✦</span>
+          <Link href={specId ? `/verify?specId=${specId}` : "/verify"} className="step-inactive cursor-pointer">Verify</Link>
+          <span className="step-divider text-[10px]">✦</span>
+          <span className="step-active pb-1">Download</span>
+        </div>
+        <div className="flex-1" />
+      </div>
 
       {/* ── Main content ──────────────────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center px-4 py-6">
         <div className="glass-mid rounded-3xl px-12 py-8 w-full max-w-[540px] flex flex-col items-center gap-5
-          shadow-[0_40px_100px_rgba(0,0,0,0.4)] animate-fade-up">
+          shadow-[0_40px_100px_rgba(0,0,0,0.4)] animate-fade-up relative overflow-hidden z-[0]">
+          <div aria-hidden="true" className="absolute pointer-events-none" style={{ inset: '-50px', backgroundImage: "var(--page-bg, url('/Background-Sunset(5).svg'))", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', filter: 'blur(8px) saturate(1.2) brightness(0.72)', zIndex: -1 }} />
 
           {/* Checkmark icon */}
           <div className="w-14 h-14 rounded-full flex items-center justify-center"

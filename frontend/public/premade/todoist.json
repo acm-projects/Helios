@@ -1,0 +1,270 @@
+{
+  "baseUrl": "https://api.todoist.com/rest/v2",
+  "auth": [{ "type": "bearer_token" }],
+  "tools": [
+    {
+      "name": "todoist_list_projects",
+      "description": "Get all projects in the authenticated Todoist account.",
+      "enabled": true,
+      "input_schema": { "type": "object", "properties": {}, "required": [] },
+      "handler": { "method": "GET", "path": "/projects", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_get_project",
+      "description": "Get details of a specific project by its ID.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "project_id": { "type": "string", "description": "The project ID" } },
+        "required": ["project_id"]
+      },
+      "handler": { "method": "GET", "path": "/projects/{project_id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_create_project",
+      "description": "Create a new Todoist project.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Project name" },
+          "parent_id": { "type": "string", "description": "Parent project ID (for sub-projects)" },
+          "color": { "type": "string", "description": "Color name, e.g. 'berry_red', 'red', 'orange', 'yellow', 'olive_green', 'lime_green', 'green', 'mint_green', 'teal', 'sky_blue', 'light_blue', 'blue', 'grape', 'violet', 'lavender', 'magenta', 'salmon', 'charcoal', 'grey', 'taupe'" },
+          "is_favorite": { "type": "boolean", "description": "Whether to mark as favorite" },
+          "view_style": { "type": "string", "description": "'list' or 'board'" }
+        },
+        "required": ["name"]
+      },
+      "handler": { "method": "POST", "path": "/projects", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_update_project",
+      "description": "Update a project's name, color, or other properties.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project_id": { "type": "string", "description": "The project ID" },
+          "name": { "type": "string", "description": "New project name" },
+          "color": { "type": "string", "description": "New color name" },
+          "is_favorite": { "type": "boolean", "description": "Favorite status" },
+          "view_style": { "type": "string", "description": "'list' or 'board'" }
+        },
+        "required": ["project_id"]
+      },
+      "handler": { "method": "POST", "path": "/projects/{project_id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_delete_project",
+      "description": "Delete a project and all its tasks permanently.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "project_id": { "type": "string", "description": "The project ID to delete" } },
+        "required": ["project_id"]
+      },
+      "handler": { "method": "DELETE", "path": "/projects/{project_id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_get_project_collaborators",
+      "description": "List all collaborators on a shared project.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "project_id": { "type": "string", "description": "The project ID" } },
+        "required": ["project_id"]
+      },
+      "handler": { "method": "GET", "path": "/projects/{project_id}/collaborators", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_list_sections",
+      "description": "Get all sections, optionally filtered by project.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project_id": { "type": "string", "description": "Filter sections by project ID" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/sections", "headers": {}, "query_params": ["project_id"], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_create_section",
+      "description": "Create a new section within a project.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Section name" },
+          "project_id": { "type": "string", "description": "Project ID to add the section to" },
+          "order": { "type": "integer", "description": "Section position order" }
+        },
+        "required": ["name", "project_id"]
+      },
+      "handler": { "method": "POST", "path": "/sections", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_list_tasks",
+      "description": "Get active (non-completed) tasks. Filter by project, section, label, or Todoist filter query.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project_id": { "type": "string", "description": "Filter by project ID" },
+          "section_id": { "type": "string", "description": "Filter by section ID" },
+          "label": { "type": "string", "description": "Filter by label name" },
+          "filter": { "type": "string", "description": "Todoist filter expression, e.g. 'today', 'overdue', 'p1', '7 days'" },
+          "lang": { "type": "string", "description": "Language for filter (default: 'en')" },
+          "ids": { "type": "string", "description": "Comma-separated task IDs to retrieve" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/tasks", "headers": {}, "query_params": ["project_id", "section_id", "label", "filter", "lang", "ids"], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_get_task",
+      "description": "Get details for a specific task by its ID.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "task_id": { "type": "string", "description": "The task ID" } },
+        "required": ["task_id"]
+      },
+      "handler": { "method": "GET", "path": "/tasks/{task_id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_create_task",
+      "description": "Create a new task in Todoist with optional due date, priority, labels, and more.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "string", "description": "Task title (supports Markdown inline formatting)" },
+          "description": { "type": "string", "description": "Longer description in Markdown" },
+          "project_id": { "type": "string", "description": "Project to add to (defaults to Inbox)" },
+          "section_id": { "type": "string", "description": "Section to add to" },
+          "parent_id": { "type": "string", "description": "Parent task ID (creates a subtask)" },
+          "order": { "type": "integer", "description": "Task position within the project/section" },
+          "labels": { "type": "array", "description": "Array of label names" },
+          "priority": { "type": "integer", "description": "Priority: 1 (normal), 2 (medium), 3 (high), 4 (urgent)" },
+          "due_string": { "type": "string", "description": "Natural-language due date: 'tomorrow at 10am', 'every Monday', 'Jan 5 2027'" },
+          "due_date": { "type": "string", "description": "Due date in YYYY-MM-DD format" },
+          "due_datetime": { "type": "string", "description": "Due datetime in RFC3339 format, e.g. '2027-01-05T10:00:00Z'" },
+          "due_lang": { "type": "string", "description": "Language for due_string parsing (default: 'en')" },
+          "assignee_id": { "type": "string", "description": "User ID to assign the task to (shared projects only)" },
+          "duration": { "type": "integer", "description": "Task duration amount" },
+          "duration_unit": { "type": "string", "description": "'minute' or 'day'" }
+        },
+        "required": ["content"]
+      },
+      "handler": { "method": "POST", "path": "/tasks", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_update_task",
+      "description": "Update an existing task's content, due date, priority, labels, etc.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "task_id": { "type": "string", "description": "The task ID" },
+          "content": { "type": "string", "description": "New task title" },
+          "description": { "type": "string", "description": "New description" },
+          "labels": { "type": "array", "description": "New set of label names" },
+          "priority": { "type": "integer", "description": "1-4" },
+          "due_string": { "type": "string", "description": "New due date as natural language" },
+          "due_date": { "type": "string", "description": "New due date YYYY-MM-DD" },
+          "due_datetime": { "type": "string", "description": "New due datetime RFC3339" },
+          "assignee_id": { "type": "string", "description": "Reassign to this user ID" }
+        },
+        "required": ["task_id"]
+      },
+      "handler": { "method": "POST", "path": "/tasks/{task_id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_close_task",
+      "description": "Mark a task as completed.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "task_id": { "type": "string", "description": "Task ID to complete" } },
+        "required": ["task_id"]
+      },
+      "handler": { "method": "POST", "path": "/tasks/{task_id}/close", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_reopen_task",
+      "description": "Reopen a previously completed task.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "task_id": { "type": "string", "description": "Task ID to reopen" } },
+        "required": ["task_id"]
+      },
+      "handler": { "method": "POST", "path": "/tasks/{task_id}/reopen", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_delete_task",
+      "description": "Permanently delete a task.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "task_id": { "type": "string", "description": "Task ID to delete" } },
+        "required": ["task_id"]
+      },
+      "handler": { "method": "DELETE", "path": "/tasks/{task_id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_list_comments",
+      "description": "Get all comments on a task or project.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "task_id": { "type": "string", "description": "Task ID to get comments for" },
+          "project_id": { "type": "string", "description": "Project ID to get comments for (mutually exclusive with task_id)" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/comments", "headers": {}, "query_params": ["task_id", "project_id"], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_create_comment",
+      "description": "Add a comment to a task or project.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "task_id": { "type": "string", "description": "Task ID to comment on" },
+          "project_id": { "type": "string", "description": "Project ID to comment on" },
+          "content": { "type": "string", "description": "Comment text (supports Markdown)" }
+        },
+        "required": ["content"]
+      },
+      "handler": { "method": "POST", "path": "/comments", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_list_labels",
+      "description": "List all personal labels in the account.",
+      "enabled": true,
+      "input_schema": { "type": "object", "properties": {}, "required": [] },
+      "handler": { "method": "GET", "path": "/labels", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "todoist_create_label",
+      "description": "Create a new personal label.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Label name" },
+          "color": { "type": "string", "description": "Color name, e.g. 'berry_red', 'blue', 'green'" },
+          "order": { "type": "integer", "description": "Label position order" },
+          "is_favorite": { "type": "boolean", "description": "Mark as favorite" }
+        },
+        "required": ["name"]
+      },
+      "handler": { "method": "POST", "path": "/labels", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    }
+  ]
+}

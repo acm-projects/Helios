@@ -1,7 +1,6 @@
 "use client"
 import { Suspense, useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { getAuthHeaders } from "@/lib/auth"
 
@@ -75,8 +74,24 @@ function VerifyContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [serverName, setServerName] = useState(specId ?? "")
   const [nameError, setNameError]   = useState("")
+
+  // Sync name if specId arrives after hydration (e.g. SSR/Suspense timing)
+  useEffect(() => {
+    if (specId && !serverName) setServerName(specId)
+  }, [specId])
   const [error, setError] = useState(!specId && !compositeId ? "No spec ID provided." : "")
   const [editingSet, setEditingSet] = useState<Set<number>>(new Set())
+  const [existingServerIds, setExistingServerIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/servers", { headers: getAuthHeaders() })
+      .then(res => res.json())
+      .then(data => {
+        const ids = new Set<string>((data.servers ?? []).map((s: { id: string }) => s.id))
+        setExistingServerIds(ids)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (compositeId) return
@@ -165,6 +180,12 @@ function VerifyContent() {
     }
   }
 
+  // Warn if the typed name already belongs to a different server
+  const nameTakenWarning =
+    serverName.trim().length > 0 &&
+    existingServerIds.has(serverName.trim()) &&
+    serverName.trim() !== specId  // allow keeping the same name when editing
+
   const totalCount    = catalog.length
   const enabledCount  = catalog.filter(e => e.enabled).length
   const disabledCount = totalCount - enabledCount
@@ -190,12 +211,18 @@ function VerifyContent() {
   return (
     <div className={cn("flex flex-col h-screen w-full relative overflow-hidden", pageReady ? "animate-page-enter" : "opacity-0")}>
 
-      {/* ── Nav ───────────────────────────────────────────────────────── */}
-      <nav className="glass-nav flex items-center justify-between px-8 h-[62px] flex-shrink-0">
-        <Link href="/">
-          <Image src="/logoName.svg" alt="Helios" width={110} height={36} className="brightness-0 invert opacity-90 cursor-pointer" />
-        </Link>
-        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[16px] tracking-[0.18em]">
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <div className="relative z-30 flex items-center px-8 h-[93px] flex-shrink-0">
+        <div className="flex-1 flex items-center">
+          <div className="relative">
+            <Link href="/" className="absolute inset-0 cursor-pointer z-10" aria-label="Home" />
+            <span className="font-[family-name:--font-cinzel] font-semibold text-[32px] tracking-[0.35em] pr-[0.35em] select-none pointer-events-none"
+              style={{ color: "#ffffff", textShadow: "0 0 40px rgba(255,255,255,0.15)" }}>
+              HELIOS
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[22px] tracking-[0.18em]">
           <Link href="/create" className="step-inactive cursor-pointer">Create</Link>
           <span className="step-divider text-[10px]">✦</span>
           <Link href={backHref} className="step-inactive cursor-pointer">Sandbox</Link>
@@ -204,15 +231,16 @@ function VerifyContent() {
           <span className="step-divider text-[10px]">✦</span>
           <span className="step-inactive">Download</span>
         </div>
-        <div className="w-[110px]" />
-      </nav>
+        <div className="flex-1" />
+      </div>
 
       {/* ── Main ──────────────────────────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center px-4 py-4 min-h-0">
         <div
-          className="glass-mid rounded-3xl w-full max-w-[900px] flex flex-col overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.4)] animate-fade-up"
+          className="glass-mid rounded-3xl w-full max-w-[900px] flex flex-col overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.4)] animate-fade-up relative z-[0]"
           style={{ maxHeight: "calc(100vh - 100px)", minHeight: "500px" }}
         >
+          <div aria-hidden="true" className="absolute pointer-events-none" style={{ inset: '-50px', backgroundImage: "var(--page-bg, url('/Background-Midday(4).svg'))", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', filter: 'blur(8px) saturate(1.2) brightness(0.72)', zIndex: -1 }} />
 
           {/* ── Panel header ────────────────────────────────────────── */}
           <div className="px-8 py-5 flex items-center justify-between flex-shrink-0">
@@ -220,7 +248,7 @@ function VerifyContent() {
               Tool Catalog
             </h1>
             {!isLoading && totalCount > 0 && (
-              <span className="font-[family-name:--font-geist-mono] text-[11px] text-white/50 tracking-wide">
+              <span className="font-[family-name:--font-geist-mono] text-[11px] text-white/70 tracking-wide">
                 {totalCount} tools&nbsp;·&nbsp;{enabledCount} enabled&nbsp;·&nbsp;{disabledCount} disabled
                 {methodStatsStr ? <>&nbsp;·&nbsp;{methodStatsStr}</> : null}
               </span>
@@ -230,7 +258,7 @@ function VerifyContent() {
           {/* Server name input — always shown when specId is known or for new composite */}
           {(compositeId || isExistingServer) && (
             <div className="px-8 pb-4 flex-shrink-0 flex flex-col gap-1.5">
-              <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/35 uppercase">
+              <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/60 uppercase">
                 {isExistingServer ? "Server Name — editing existing" : "Server Name"}
               </label>
               <input
@@ -240,9 +268,13 @@ function VerifyContent() {
                 placeholder="my-server-name"
                 className="glass-input rounded-xl px-4 py-2.5 text-[13px] font-[family-name:--font-cinzel] tracking-wider"
               />
-              {nameError && (
-                <span className="font-[family-name:--font-cinzel] text-red-400 text-[11px] tracking-wider">{nameError}</span>
-              )}
+              <span className="h-[14px] font-[family-name:--font-cinzel] text-[11px] tracking-wider">
+                {nameError
+                  ? <span className="text-red-400">{nameError}</span>
+                  : nameTakenWarning
+                  ? <span className="text-amber-400/80">A server named &ldquo;{serverName.trim()}&rdquo; already exists.</span>
+                  : null}
+              </span>
             </div>
           )}
 
@@ -253,7 +285,7 @@ function VerifyContent() {
           <div className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center h-40">
-                <span className="font-[family-name:--font-cinzel] text-white/30 text-[13px] tracking-widest">Loading catalog...</span>
+                <span className="font-[family-name:--font-cinzel] text-white/55 text-[13px] tracking-widest">Loading catalog...</span>
               </div>
             ) : error && catalog.length === 0 ? (
               <div className="flex items-center justify-center h-40">
@@ -261,7 +293,7 @@ function VerifyContent() {
               </div>
             ) : catalog.length === 0 ? (
               <div className="flex items-center justify-center h-40">
-                <span className="font-[family-name:--font-cinzel] text-white/30 text-[13px] tracking-widest">No tools found.</span>
+                <span className="font-[family-name:--font-cinzel] text-white/55 text-[13px] tracking-widest">No tools found.</span>
               </div>
             ) : (
               catalog.map((entry, i) => {
@@ -276,7 +308,7 @@ function VerifyContent() {
                     )}
                   >
                     {/* Tool row */}
-                    <div className="flex items-center gap-3 pl-8 pr-6 py-4">
+                    <div className="flex items-center gap-3 pl-8 pr-6 py-5">
 
                       {/* Toggle checkbox */}
                       <div
@@ -310,13 +342,13 @@ function VerifyContent() {
                       {/* Name + description */}
                       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                         <span className={cn(
-                          "font-[family-name:--font-cinzel] text-[12px] tracking-wider truncate",
+                          "font-[family-name:--font-cinzel] text-[14px] tracking-wider truncate",
                           entry.enabled ? "text-white/85" : "text-white/30"
                         )}>
                           {entry.name}
                         </span>
                         {entry.description && (
-                          <span className="font-[family-name:--font-cormorant] text-[13px] text-white/40 leading-snug truncate">
+                          <span className="font-[family-name:--font-cormorant] text-[14px] text-white/60 leading-snug truncate">
                             {entry.description}
                           </span>
                         )}
@@ -329,7 +361,7 @@ function VerifyContent() {
                           "flex-shrink-0 font-[family-name:--font-cinzel] text-[9px] tracking-[0.18em] uppercase px-3 py-1.5 rounded-lg border cursor-pointer",
                           isEditing
                             ? "border-[#C9A84C]/50 bg-[#C9A84C]/15 text-[#C9A84C]"
-                            : "border-white/[0.12] text-white/35 hover:border-white/25 hover:text-white/65"
+                            : "border-white/[0.12] text-white/55 hover:border-white/25 hover:text-white/65"
                         )}
                       >
                         {isEditing ? "Done" : "Edit"}
@@ -340,7 +372,7 @@ function VerifyContent() {
                     {isEditing && (
                       <div className="px-6 pb-5 pt-1 flex flex-col gap-3 bg-white/[0.025]">
                         <div className="flex flex-col gap-1">
-                          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/30 uppercase">Tool Name</label>
+                          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/55 uppercase">Tool Name</label>
                           <input
                             type="text"
                             value={entry.name}
@@ -349,7 +381,7 @@ function VerifyContent() {
                           />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/30 uppercase">Description</label>
+                          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.2em] text-white/55 uppercase">Description</label>
                           <textarea
                             value={entry.description}
                             onChange={e => {
@@ -362,7 +394,7 @@ function VerifyContent() {
                           />
                         </div>
                         {entry.handler?.path && (
-                          <span className="font-[family-name:--font-geist-mono] text-[10px] text-white/20">{entry.handler.path}</span>
+                          <span className="font-[family-name:--font-geist-mono] text-[10px] text-white/45">{entry.handler.path}</span>
                         )}
                       </div>
                     )}
@@ -380,17 +412,17 @@ function VerifyContent() {
             <div className="flex gap-3">
               <Link href={backHref} className="flex-1">
                 <button className="font-[family-name:--font-cinzel] w-full cursor-pointer py-3.5 text-[13px] tracking-[0.15em]
-                  glass rounded-xl text-white/45 hover:text-white/75 hover:bg-white/[0.10]">
+                  glass rounded-xl text-white/65 hover:text-white/75 hover:bg-white/[0.10]">
                   ← Back
                 </button>
               </Link>
               <button
                 onClick={handleSave}
-                disabled={isSaving || isLoading}
+                disabled={isSaving || isLoading || nameTakenWarning || (!serverName.trim() && !!compositeId)}
                 className={cn(
                   "flex-1 font-[family-name:--font-cinzel] py-3.5 text-[13px] tracking-[0.15em] rounded-xl",
-                  isSaving || isLoading
-                    ? "cursor-not-allowed opacity-40 bg-[#C9A84C]/30 text-[#C9A84C]/60"
+                  isSaving || isLoading || nameTakenWarning || (!serverName.trim() && !!compositeId)
+                    ? "cursor-not-allowed bg-white/[0.06] border border-white/[0.12] text-white/25"
                     : "btn-gold cursor-pointer"
                 )}
               >

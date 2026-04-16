@@ -1,0 +1,406 @@
+{
+  "baseUrl": "https://api.notion.com",
+  "auth": [
+    {
+      "type": "none"
+    }
+  ],
+  "tools": [
+    {
+      "name": "retrieveABlock",
+      "description": "Retrieve a block",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/blocks/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateABlock",
+      "description": "Update a block",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          },
+          "paragraph": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/v1/blocks/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteABlock",
+      "description": "Delete a block",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/v1/blocks/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "retrieveBlockChildren",
+      "description": "Retrieve block children",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page_size": {
+            "type": "string"
+          },
+          "Notion-Version": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/blocks/{id}/children",
+        "headers": {},
+        "query_params": [
+          "page_size"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "appendBlockChildren",
+      "description": "Append block children",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/v1/blocks/{id}/children",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "retrieveComments",
+      "description": "Retrieve comments",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "block_id": {
+            "type": "string"
+          },
+          "page_size": {
+            "type": "string"
+          },
+          "Notion-Version": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/comments",
+        "headers": {},
+        "query_params": [
+          "block_id",
+          "page_size"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "retrieveADatabase",
+      "description": "Retrieve a database",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/databases/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "updateADatabase",
+      "description": "Update a database",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "Wine Pairing": {
+                "type": "object",
+                "properties": {
+                  "rich_text": {
+                    "type": "object",
+                    "properties": {}
+                  }
+                }
+              }
+            }
+          },
+          "title": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/v1/databases/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "queryADatabase",
+      "description": "Query a database",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          },
+          "filter": {
+            "type": "object",
+            "properties": {
+              "property": {
+                "type": "string"
+              },
+              "select": {
+                "type": "object",
+                "properties": {
+                  "equals": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/v1/databases/{id}/query",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "retrieveAPage",
+      "description": "Retrieve a Page",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          },
+          "": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/pages/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "updatePageProperties",
+      "description": "Update Page properties ",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "Status": {
+                "type": "object",
+                "properties": {
+                  "select": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "PATCH",
+        "path": "/v1/pages/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "retrieveAPagePropertyItem",
+      "description": "Retrieve a Page Property Item",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/pages/{page_id}/properties/{property_id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "retrieveAUser",
+      "description": "Retrieve a user",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Notion-Version": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/v1/users/{id}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    }
+  ]
+}

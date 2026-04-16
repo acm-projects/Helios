@@ -1,0 +1,281 @@
+{
+  "baseUrl": "https://api.sendgrid.com/v3",
+  "auth": [{ "type": "bearer_token" }],
+  "tools": [
+    {
+      "name": "sendgrid_send_email",
+      "description": "Send a transactional email. Supports HTML, plain text, dynamic templates, attachments, and CC/BCC.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "to_email": { "type": "string", "description": "Recipient email address" },
+          "to_name": { "type": "string", "description": "Recipient display name" },
+          "from_email": { "type": "string", "description": "Sender email (must be verified in SendGrid)" },
+          "from_name": { "type": "string", "description": "Sender display name" },
+          "reply_to": { "type": "string", "description": "Reply-to email address" },
+          "subject": { "type": "string", "description": "Email subject line" },
+          "text": { "type": "string", "description": "Plain text email body" },
+          "html": { "type": "string", "description": "HTML email body" },
+          "template_id": { "type": "string", "description": "Dynamic template ID (starts with 'd-')" },
+          "dynamic_template_data": { "type": "object", "description": "Template variables, e.g. {first_name: 'John', link: 'https://...'}" },
+          "cc": { "type": "array", "description": "CC recipients: [{email: '...', name: '...'}]" },
+          "bcc": { "type": "array", "description": "BCC recipients: [{email: '...'}]" },
+          "attachments": { "type": "array", "description": "Attachments: [{content: '<base64>', type: 'application/pdf', filename: 'doc.pdf'}]" },
+          "categories": { "type": "array", "description": "Category tags for organizing sends, e.g. ['welcome-email', 'onboarding']" },
+          "send_at": { "type": "integer", "description": "Unix timestamp to schedule delivery" },
+          "tracking_settings": { "type": "object", "description": "Track opens/clicks: {open_tracking: {enable: true}, click_tracking: {enable: true}}" }
+        },
+        "required": ["to_email", "from_email", "subject"]
+      },
+      "handler": { "method": "POST", "path": "/mail/send", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_get_global_stats",
+      "description": "Get account-wide email delivery statistics (requests, opens, clicks, bounces, spam reports) for a date range.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "start_date": { "type": "string", "description": "Start date YYYY-MM-DD" },
+          "end_date": { "type": "string", "description": "End date YYYY-MM-DD (defaults to today)" },
+          "aggregated_by": { "type": "string", "description": "Aggregate by: 'day', 'week', or 'month'" }
+        },
+        "required": ["start_date"]
+      },
+      "handler": { "method": "GET", "path": "/stats", "headers": {}, "query_params": ["start_date", "end_date", "aggregated_by"], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_get_category_stats",
+      "description": "Get email stats broken down by category tag.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "start_date": { "type": "string", "description": "Start date YYYY-MM-DD" },
+          "end_date": { "type": "string", "description": "End date YYYY-MM-DD" },
+          "categories": { "type": "string", "description": "Category name to filter by" },
+          "aggregated_by": { "type": "string", "description": "'day', 'week', or 'month'" }
+        },
+        "required": ["start_date", "categories"]
+      },
+      "handler": { "method": "GET", "path": "/categories/stats", "headers": {}, "query_params": ["start_date", "end_date", "categories", "aggregated_by"], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_list_templates",
+      "description": "List dynamic transactional email templates in your account.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "generations": { "type": "string", "description": "'legacy', 'dynamic', or 'legacy,dynamic'" },
+          "page_size": { "type": "integer", "description": "Results per page (1-200)" },
+          "page_token": { "type": "string", "description": "Pagination token" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/templates", "headers": {}, "query_params": ["generations", "page_size", "page_token"], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_get_template",
+      "description": "Get a dynamic template and its versions by template ID.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": { "template_id": { "type": "string", "description": "Template ID (starts with 'd-')" } },
+        "required": ["template_id"]
+      },
+      "handler": { "method": "GET", "path": "/templates/{template_id}", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_create_template",
+      "description": "Create a new dynamic transactional email template.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Template name" },
+          "generation": { "type": "string", "description": "'legacy' or 'dynamic' (use 'dynamic' for new templates)" }
+        },
+        "required": ["name", "generation"]
+      },
+      "handler": { "method": "POST", "path": "/templates", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_list_contacts",
+      "description": "List all marketing contacts in your account (Marketing Campaigns API).",
+      "enabled": true,
+      "input_schema": { "type": "object", "properties": {}, "required": [] },
+      "handler": { "method": "GET", "path": "/marketing/contacts", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_add_contacts",
+      "description": "Add or update marketing contacts in bulk (up to 30,000 per request).",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "contacts": {
+            "type": "array",
+            "description": "Array of contact objects: [{email, first_name, last_name, custom_fields: {}}]"
+          },
+          "list_ids": { "type": "array", "description": "List IDs to add these contacts to" }
+        },
+        "required": ["contacts"]
+      },
+      "handler": { "method": "PUT", "path": "/marketing/contacts", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_search_contacts",
+      "description": "Search marketing contacts using a SGQL query.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "SGQL search query, e.g. \"email LIKE '%@example.com'\" or \"first_name = 'John'\"" }
+        },
+        "required": ["query"]
+      },
+      "handler": { "method": "POST", "path": "/marketing/contacts/search", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_delete_contacts",
+      "description": "Delete one or more contacts by their IDs.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ids": { "type": "string", "description": "Comma-separated contact IDs to delete" },
+          "delete_all_contacts": { "type": "string", "description": "Set to 'true' to delete all contacts" }
+        },
+        "required": []
+      },
+      "handler": { "method": "DELETE", "path": "/marketing/contacts", "headers": {}, "query_params": ["ids", "delete_all_contacts"], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_list_lists",
+      "description": "List all contact lists in Marketing Campaigns.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page_size": { "type": "integer", "description": "Results per page (1-1000)" },
+          "page_token": { "type": "string", "description": "Pagination token" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/marketing/lists", "headers": {}, "query_params": ["page_size", "page_token"], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_create_list",
+      "description": "Create a new marketing contact list.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "List name" }
+        },
+        "required": ["name"]
+      },
+      "handler": { "method": "POST", "path": "/marketing/lists", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_list_bounces",
+      "description": "List email addresses that have bounced. Filter by time range.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "start_time": { "type": "integer", "description": "Start Unix timestamp" },
+          "end_time": { "type": "integer", "description": "End Unix timestamp" },
+          "limit": { "type": "integer", "description": "Results per page (max 500)" },
+          "offset": { "type": "integer", "description": "Pagination offset" },
+          "email": { "type": "string", "description": "Filter to a specific email address" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/suppression/bounces", "headers": {}, "query_params": ["start_time", "end_time", "limit", "offset", "email"], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_delete_bounce",
+      "description": "Remove an email address from the bounce list so future sends are attempted again.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "description": "Email address to remove from bounces" },
+          "delete_all": { "type": "boolean", "description": "Set true to delete all bounces" }
+        },
+        "required": []
+      },
+      "handler": { "method": "DELETE", "path": "/suppression/bounces", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_list_unsubscribes",
+      "description": "List email addresses that have globally unsubscribed.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "start_time": { "type": "integer", "description": "Start Unix timestamp" },
+          "end_time": { "type": "integer", "description": "End Unix timestamp" },
+          "limit": { "type": "integer", "description": "Results per page" },
+          "offset": { "type": "integer", "description": "Pagination offset" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/suppression/unsubscribes", "headers": {}, "query_params": ["start_time", "end_time", "limit", "offset"], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_list_spam_reports",
+      "description": "List email addresses that have marked your emails as spam.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "start_time": { "type": "integer", "description": "Start Unix timestamp" },
+          "end_time": { "type": "integer", "description": "End Unix timestamp" },
+          "limit": { "type": "integer", "description": "Results per page" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/suppression/spam_reports", "headers": {}, "query_params": ["start_time", "end_time", "limit"], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_validate_email",
+      "description": "Validate whether an email address is real and deliverable (requires Email Validation add-on).",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "description": "Email address to validate" },
+          "source": { "type": "string", "description": "Source identifier for tracking" }
+        },
+        "required": ["email"]
+      },
+      "handler": { "method": "POST", "path": "/validations/email", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_list_senders",
+      "description": "List verified sender identities in your account.",
+      "enabled": true,
+      "input_schema": { "type": "object", "properties": {}, "required": [] },
+      "handler": { "method": "GET", "path": "/senders", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    },
+    {
+      "name": "sendgrid_list_blocks",
+      "description": "List email addresses that have been blocked (suppressed due to unsubscribes, bounces, etc.).",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "start_time": { "type": "integer", "description": "Start Unix timestamp" },
+          "end_time": { "type": "integer", "description": "End Unix timestamp" },
+          "limit": { "type": "integer", "description": "Results per page" }
+        },
+        "required": []
+      },
+      "handler": { "method": "GET", "path": "/suppression/blocks", "headers": {}, "query_params": ["start_time", "end_time", "limit"], "fixed_query_params": {} }
+    }
+  ]
+}

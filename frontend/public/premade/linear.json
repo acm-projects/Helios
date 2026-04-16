@@ -1,0 +1,106 @@
+{
+  "baseUrl": "https://api.linear.app",
+  "auth": [{ "type": "bearer_token" }],
+  "tools": [
+    {
+      "name": "linear_query",
+      "description": "Run a custom GraphQL query against Linear.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "GraphQL query string" },
+          "variables": { "type": "object", "description": "GraphQL variables object" }
+        },
+        "required": ["query"]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/graphql",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      }
+    },
+    {
+      "name": "linear_list_teams",
+      "description": "List teams in the Linear workspace.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "first": { "type": "integer", "description": "Number of teams to fetch" }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/graphql",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      }
+    },
+    {
+      "name": "linear_list_issues",
+      "description": "List issues with optional team filter.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "first": { "type": "integer", "description": "Number of issues to fetch" },
+          "teamId": { "type": "string", "description": "Optional Linear team ID" }
+        },
+        "required": []
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/graphql",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      }
+    },
+    {
+      "name": "linear_get_issue",
+      "description": "Fetch a single Linear issue by issue ID.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Issue ID" }
+        },
+        "required": ["id"]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/graphql",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      }
+    },
+    {
+      "name": "linear_create_issue",
+      "description": "Create a new issue in Linear.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "teamId": { "type": "string", "description": "Team ID" },
+          "title": { "type": "string", "description": "Issue title" },
+          "description": { "type": "string", "description": "Issue description" },
+          "priority": { "type": "integer", "description": "Priority 0-4" }
+        },
+        "required": ["teamId", "title"]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/graphql",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      }
+    }
+  ]
+}

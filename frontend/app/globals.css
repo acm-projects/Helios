@@ -40,20 +40,62 @@ div {
 
 /* ── Glass utilities ─────────────────────────────────────── */
 
+/* ── Frosted glass — Josh Comeau height+mask technique ───────────── */
+/* backdrop-filter lives on ::before with height:200% + mask-image    */
+/* for clean blur edges (avoids Chrome's overflow-clips-before-blur). */
+/*                                                                     */
+/* CRITICAL stacking rules that make this work:                        */
+/* - NO isolation:isolate → it traps ::before in a compositing group  */
+/*   where backdrop-filter only sees the transparent card bg, not SVG */
+/* - z-index:0 on .glass → CSS stacking context WITHOUT GPU promotion */
+/* - No transform/filter/opacity on .glass itself                      */
+/* - template.tsx clears transform after enter animation completes,    */
+/*   dissolving the GPU compositor layer that blocked cross-layer blur */
+
 .glass {
-  background: rgba(255, 255, 255, 0.13);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.20);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  position: relative;
+  z-index: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(22px) saturate(1.8);
+  -webkit-backdrop-filter: blur(22px) saturate(1.8);
+  mask-image: linear-gradient(to bottom, black 50%, transparent 50%);
+  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Glass-mid: frosted panel base styles.
+   Each page adds a blur layer div inside the panel as the first child —
+   see create/page.tsx for the pattern. */
 .glass-mid {
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.30);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* Strip inner glass effects so the panel background is the only layer */
+.glass-flat .glass::before { display: none; }
+.glass-flat .glass {
+  background: transparent;
+  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.10);
+}
+.glass-flat .glass-input {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .glass-nav {
@@ -66,8 +108,8 @@ div {
 .glass-input {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.403);
-  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.527);
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -80,6 +122,15 @@ div {
 
 .glass-input::placeholder {
   color: rgba(255, 255, 255, 0.42);
+}
+
+/* Stronger blur for inline panels (not popups) */
+.glass-blur {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* ── Method badges — dark-theme adapted ───────────────────── */
@@ -139,16 +190,21 @@ div {
 
 /* ── Animations ───────────────────────────────────────────── */
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
+@keyframes constellation-draw {
+  from { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
+  15%  { opacity: 1; }
+  to   { stroke-dasharray: 1; stroke-dashoffset: 0; opacity: 1; }
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes constellation-erase {
+  from { stroke-dasharray: 1; stroke-dashoffset: 0; opacity: 1; }
+  85%  { opacity: 0.3; }
+  to   { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes fadeIn {
@@ -211,6 +267,7 @@ div {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -264,14 +321,78 @@ div {
 
 /* Spin via CSS rotate property — does not conflict with scale/opacity */
 @keyframes starSpin {
-  from { rotate: 0deg; }
-  to   { rotate: 360deg; }
+  from {
+    rotate: 0deg;
+  }
+
+  to {
+    rotate: 360deg;
+  }
 }
 
 /* Twinkle via CSS scale + opacity — does not conflict with rotate */
 @keyframes starTwinkle {
-  0%, 100% { scale: 1;    opacity: 0.78; }
-  50%       { scale: 1.22; opacity: 1;    }
+
+  0%,
+  100% {
+    scale: 1;
+    opacity: 0.78;
+  }
+
+  50% {
+    scale: 1.22;
+    opacity: 1;
+  }
+}
+
+/* Star deletion — brief pulse then shrink + fade */
+@keyframes starDelete {
+  0% {
+    scale: 1;
+    opacity: 1;
+  }
+
+  20% {
+    scale: 1.4;
+    opacity: 0.9;
+  }
+
+  100% {
+    scale: 0;
+    opacity: 0;
+  }
+}
+
+.star-wrapper.is-deleting {
+  animation: starDelete 0.7s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  pointer-events: none !important;
+}
+
+.star-wrapper.is-deleting .star-dot {
+  animation: starDelete 0.7s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+}
+
+/* Trail streak — fades from star toward upper-right (direction of origin) */
+@keyframes trailFade {
+  0% {
+    opacity: 1;
+    width: 180px;
+  }
+
+  45% {
+    opacity: 0.55;
+    width: 100px;
+  }
+
+  78% {
+    opacity: 0.15;
+    width: 40px;
+  }
+
+  100% {
+    opacity: 0;
+    width: 0px;
+  }
 }
 
 /* Shooting entry — on the wrapper, uses translate + opacity + filter for comet trail */
@@ -280,22 +401,23 @@ div {
     translate: 200px -130px;
     opacity: 0;
     filter:
-      drop-shadow(35px -23px 5px rgba(255,255,255,0.95))
-      drop-shadow(72px -47px 12px rgba(255,255,255,0.68))
-      drop-shadow(118px -77px 22px rgba(201,168,76,0.40))
-      drop-shadow(185px -120px 35px rgba(201,168,76,0.14));
+      drop-shadow(35px -23px 5px rgba(255, 255, 255, 0.95)) drop-shadow(72px -47px 12px rgba(255, 255, 255, 0.68)) drop-shadow(118px -77px 22px rgba(201, 168, 76, 0.40)) drop-shadow(185px -120px 35px rgba(201, 168, 76, 0.14));
   }
-  10% { opacity: 1; }
+
+  10% {
+    opacity: 1;
+  }
+
   40% {
     filter:
-      drop-shadow(22px -14px 4px rgba(255,255,255,0.62))
-      drop-shadow(46px -30px 10px rgba(255,255,255,0.38))
-      drop-shadow(78px -51px 18px rgba(201,168,76,0.20));
+      drop-shadow(22px -14px 4px rgba(255, 255, 255, 0.62)) drop-shadow(46px -30px 10px rgba(255, 255, 255, 0.38)) drop-shadow(78px -51px 18px rgba(201, 168, 76, 0.20));
   }
+
   78% {
     translate: 10px -7px;
-    filter: drop-shadow(4px -3px 2px rgba(255,255,255,0.18));
+    filter: drop-shadow(4px -3px 2px rgba(255, 255, 255, 0.18));
   }
+
   100% {
     translate: 0px 0px;
     opacity: 1;
@@ -332,14 +454,28 @@ div {
   scale: 2.5 !important;
   background: linear-gradient(135deg, #ffffff 0%, #C9A84C 45%, #ffffff 100%) !important;
   filter:
-    drop-shadow(0 0 6px rgba(201,168,76,0.85))
-    drop-shadow(0 0 20px rgba(201,168,76,0.38)) !important;
+    drop-shadow(0 0 6px rgba(201, 168, 76, 0.85)) drop-shadow(0 0 20px rgba(201, 168, 76, 0.38)) !important;
   animation: none !important;
 }
 
 /* Shooting entry animation on wrapper for new stars */
 .star-wrapper.is-new {
   animation: shootingEntry 2.5s cubic-bezier(0.22, 1, 0.36, 1) both 1.5s;
+}
+
+/* Trail streak: extends upper-right from the star (direction of travel origin) */
+.star-wrapper.is-new::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 2px;
+  transform-origin: left center;
+  transform: translateY(-50%) rotate(-33deg);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.92), rgba(232, 196, 106, 0.50), transparent);
+  border-radius: 2px;
+  pointer-events: none;
+  animation: trailFade 2.2s cubic-bezier(0.22, 1, 0.36, 1) both 1.5s;
 }
 
 /* Tooltip label — centered below the wrapper */
@@ -351,9 +487,9 @@ div {
   font-family: var(--font-cinzel, serif);
   font-size: 10px;
   letter-spacing: 0.18em;
-  color: rgba(255,255,255,0.90);
-  background: rgba(7,12,24,0.84);
-  border: 1px solid rgba(201,168,76,0.35);
+  color: rgba(255, 255, 255, 0.90);
+  background: rgba(7, 12, 24, 0.84);
+  border: 1px solid rgba(201, 168, 76, 0.35);
   border-radius: 6px;
   padding: 3px 9px;
   pointer-events: none;
@@ -411,3 +547,31 @@ div {
 .step-divider {
   color: rgba(255, 255, 255, 0.18);
 }
+
+/* ── Ambient shooting stars ───────────────────────────────────────────────
+   Outer wrapper rotated to travel angle; inner translates along local X.
+   Gradient: head (right, bright) → tail (left, transparent).            */
+@keyframes shooting-star-fly {
+  0%   { transform: translateX(-220px); opacity: 0;   }
+  6%   { opacity: 1;                                  }
+  82%  { opacity: 0.75;                               }
+  100% { transform: translateX(130vw);  opacity: 0;   }
+}
+
+/* ── Parallax star field ──────────────────────────────────────────────── */
+
+/* Circular orbit: parent rotates, child counter-rotates so the dot stays
+   upright. --r (set per-element) controls the orbit radius.
+   animation-direction:reverse gives CCW orbits on alternating stars.    */
+@keyframes star-orbit {
+  from { transform: rotate(0deg)   translateX(var(--r, 20px)) rotate(0deg);   }
+  to   { transform: rotate(360deg) translateX(var(--r, 20px)) rotate(-360deg); }
+}
+
+/* Subtle size pulse on the dot itself — doesn't conflict with orbit
+   because pulse lives on the inner element, orbit on the outer.          */
+@keyframes star-pulse {
+  0%, 100% { transform: scale(1);   opacity: 1;    }
+  50%       { transform: scale(0.5); opacity: 0.25; }
+}
+

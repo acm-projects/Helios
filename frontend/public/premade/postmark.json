@@ -1,0 +1,878 @@
+{
+  "baseUrl": "https://api.postmarkapp.com/",
+  "auth": [
+    {
+      "type": "none"
+    }
+  ],
+  "tools": [
+    {
+      "name": "listDomains",
+      "description": "List Domains",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of records to return per request. Max 500."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Number of records to skip"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "count",
+          "offset"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/domains",
+        "headers": {},
+        "query_params": [
+          "count",
+          "offset"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "createDomain",
+      "description": "Create a Domain",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "Name": {
+            "type": "string"
+          },
+          "ReturnPathDomain": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/domains",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "getDomain",
+      "description": "Get a Domain",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "domainid": {
+            "type": "integer",
+            "description": "The ID for the Domain that should be retrieved."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "domainid"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/domains/{domainid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "editDomain",
+      "description": "Update a Domain",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "domainid": {
+            "type": "integer",
+            "description": "The ID for the Domain that should be modified by the request."
+          },
+          "ReturnPathDomain": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "domainid"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/domains/{domainid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteDomain",
+      "description": "Delete a Domain",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "domainid": {
+            "type": "integer",
+            "description": "The ID for the Domain that should be deleted by the request."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "domainid"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/domains/{domainid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "rotateDKIMKeyForDomain",
+      "description": "Rotate DKIM Key",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "domainid": {
+            "type": "integer",
+            "description": "The ID for the Sender Signature for which a new DKIM Key should be generated."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "domainid"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/domains/{domainid}/rotatedkim",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "requestDkimVerificationForDomain",
+      "description": "Request DNS Verification for DKIM",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "domainid": {
+            "type": "integer",
+            "description": "The ID for the Domain for which DKIM DNS records should be verified."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "domainid"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/domains/{domainid}/verifydkim",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "requestReturnPathVerificationForDomain",
+      "description": "Request DNS Verification for Return-Path",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "domainid": {
+            "type": "integer",
+            "description": "The ID for the Domain for which Return-Path DNS records should be verified."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "domainid"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/domains/{domainid}/verifyreturnpath",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "requestSPFVerificationForDomain",
+      "description": "Request DNS Verification for SPF",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "domainid": {
+            "type": "integer",
+            "description": "The ID for the Domain for which SPF DNS records should be verified."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "domainid"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/domains/{domainid}/verifyspf",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "listSenderSignatures",
+      "description": "List Sender Signatures",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of records to return per request. Max 500."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Number of records to skip"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "count",
+          "offset"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/senders",
+        "headers": {},
+        "query_params": [
+          "count",
+          "offset"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "createSenderSignature",
+      "description": "Create a Sender Signature",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "FromEmail": {
+            "type": "string"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "ReplyToEmail": {
+            "type": "string"
+          },
+          "ReturnPathDomain": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/senders",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "getSenderSignature",
+      "description": "Get a Sender Signature",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "signatureid": {
+            "type": "integer",
+            "description": "The ID for the Sender Signature that should be retrieved."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "signatureid"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/senders/{signatureid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "editSenderSignature",
+      "description": "Update a Sender Signature",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "signatureid": {
+            "type": "integer",
+            "description": "The ID for the Sender Signature that should be modified by the request."
+          },
+          "Name": {
+            "type": "string"
+          },
+          "ReplyToEmail": {
+            "type": "string"
+          },
+          "ReturnPathDomain": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "signatureid"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/senders/{signatureid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteSenderSignature",
+      "description": "Delete a Sender Signature",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "signatureid": {
+            "type": "integer",
+            "description": "The ID for the Sender Signature that should be deleted by the request."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "signatureid"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/senders/{signatureid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "requestNewDKIMKeyForSenderSignature",
+      "description": "Request a new DKIM Key",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "signatureid": {
+            "type": "integer",
+            "description": "The ID for the Sender Signature for which a new DKIM Key should be generated."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "signatureid"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/senders/{signatureid}/requestnewdkim",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "resendSenderSignatureConfirmationEmail",
+      "description": "Resend Signature Confirmation Email",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "signatureid": {
+            "type": "integer",
+            "description": "The ID for the Sender Signature that should have its confirmation email resent."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "signatureid"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/senders/{signatureid}/resend",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "requestSPFVerificationForSenderSignature",
+      "description": "Request DNS Verification for SPF",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "signatureid": {
+            "type": "integer",
+            "description": "The ID for the Sender Signature for which SPF DNS records should be verified."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "signatureid"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/senders/{signatureid}/verifyspf",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "listServers",
+      "description": "List servers",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of servers to return per request."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Number of servers to skip."
+          },
+          "name": {
+            "type": "string",
+            "description": "Filter by a specific server name"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "count",
+          "offset"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/servers",
+        "headers": {},
+        "query_params": [
+          "count",
+          "offset",
+          "name"
+        ],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "createServer",
+      "description": "Create a Server",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "BounceHookUrl": {
+            "type": "string"
+          },
+          "ClickHookUrl": {
+            "type": "string"
+          },
+          "Color": {
+            "type": "string"
+          },
+          "DeliveryHookUrl": {
+            "type": "string"
+          },
+          "InboundDomain": {
+            "type": "string"
+          },
+          "InboundHookUrl": {
+            "type": "string"
+          },
+          "InboundSpamThreshold": {
+            "type": "integer"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "OpenHookUrl": {
+            "type": "string"
+          },
+          "PostFirstOpenOnly": {
+            "type": "boolean"
+          },
+          "RawEmailEnabled": {
+            "type": "boolean"
+          },
+          "SmtpApiActivated": {
+            "type": "boolean"
+          },
+          "TrackLinks": {
+            "type": "string"
+          },
+          "TrackOpens": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token"
+        ]
+      },
+      "handler": {
+        "method": "POST",
+        "path": "/servers",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "getServerInformation",
+      "description": "Get a Server",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "serverid": {
+            "type": "integer",
+            "description": "The ID of the Server to get."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "serverid"
+        ]
+      },
+      "handler": {
+        "method": "GET",
+        "path": "/servers/{serverid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "editServerInformation",
+      "description": "Edit a Server",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "serverid": {
+            "type": "integer",
+            "description": "The ID of the Server to update."
+          },
+          "BounceHookUrl": {
+            "type": "string"
+          },
+          "ClickHookUrl": {
+            "type": "string"
+          },
+          "Color": {
+            "type": "string"
+          },
+          "DeliveryHookUrl": {
+            "type": "string"
+          },
+          "InboundDomain": {
+            "type": "string"
+          },
+          "InboundHookUrl": {
+            "type": "string"
+          },
+          "InboundSpamThreshold": {
+            "type": "integer"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "OpenHookUrl": {
+            "type": "string"
+          },
+          "PostFirstOpenOnly": {
+            "type": "boolean"
+          },
+          "RawEmailEnabled": {
+            "type": "boolean"
+          },
+          "SmtpApiActivated": {
+            "type": "boolean"
+          },
+          "TrackLinks": {
+            "type": "string"
+          },
+          "TrackOpens": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "serverid"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/servers/{serverid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "deleteServer",
+      "description": "Delete a Server",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "serverid": {
+            "type": "integer",
+            "description": "The ID of the Server that should be deleted."
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token",
+          "serverid"
+        ]
+      },
+      "handler": {
+        "method": "DELETE",
+        "path": "/servers/{serverid}",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    },
+    {
+      "name": "pushTemplates",
+      "description": "Push templates from one server to another",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "X-Postmark-Account-Token": {
+            "type": "string",
+            "description": "The token associated with the Account on which this request will operate."
+          },
+          "DestinationServerId": {
+            "type": "integer"
+          },
+          "PerformChanges": {
+            "type": "boolean"
+          },
+          "SourceServerId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "X-Postmark-Account-Token"
+        ]
+      },
+      "handler": {
+        "method": "PUT",
+        "path": "/templates/push",
+        "headers": {},
+        "query_params": [],
+        "fixed_query_params": {}
+      },
+      "enrichment": {
+        "auth": null
+      },
+      "enabled": true
+    }
+  ]
+}

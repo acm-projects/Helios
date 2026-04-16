@@ -5,6 +5,9 @@ import { Send, User, Bot, ChevronDown, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import rehypeRaw from "rehype-raw"
 
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
 
@@ -53,11 +56,6 @@ export default function Sandbox() {
   const compositeId = searchParams.get("compositeId")
   const router = useRouter()
 
-  const [pageReady, setPageReady] = useState(false)
-  useEffect(() => {
-    document.fonts.ready.then(() => requestAnimationFrame(() => setPageReady(true)))
-  }, [])
-
   const [sessionId, setSessionId] = useState("")
   const [allTools, setAllTools] = useState<Tool[]>([])
   const [toolToggles, setToolToggles] = useState<Record<string, boolean>>({})
@@ -68,6 +66,8 @@ export default function Sandbox() {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const chatScrollRef = useRef<HTMLDivElement>(null)
+
 
   useEffect(() => {
     if (!isLoggedIn()) { router.replace("/auth"); return }
@@ -75,31 +75,8 @@ export default function Sandbox() {
     if (compositeId) {
       const raw = sessionStorage.getItem(`helios_session_${compositeId}`)
       if (!raw) return
-      const { tools, sessionId: storedSessionId } = JSON.parse(raw)
+      const { tools } = JSON.parse(raw)
       const toolList: Tool[] = tools ?? []
-
-      let localGroupMap: Record<string, string> = {}
-      let localAuthMap: Record<string, AuthConfig[]> = {}
-      const groupsRaw = sessionStorage.getItem(`helios_groups_${compositeId}`)
-      if (groupsRaw) {
-        try {
-          const parsed = JSON.parse(groupsRaw)
-          localGroupMap = parsed.toolMap ?? parsed
-          localAuthMap = parsed.authMap ?? {}
-          setToolGroupMap(localGroupMap)
-        } catch { }
-      }
-
-      // Reuse the session already established by the create page — skip the round-trip
-      if (storedSessionId && toolList.length > 0) {
-        setSessionId(storedSessionId)
-        setAllTools(toolList)
-        setActiveTools(toolList.filter((t: Tool) => t.enabled !== false))
-        const initialToggles: Record<string, boolean> = {}
-        toolList.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
-        setToolToggles(initialToggles)
-        return
-      }
 
       const registryTools = toolList.map((t: Tool) => ({
         name: t.function.name,
@@ -113,6 +90,18 @@ export default function Sandbox() {
           fixed_query_params: (t.handler as any)?.fixed_query_params
         }
       }))
+
+      let localGroupMap: Record<string, string> = {}
+      let localAuthMap: Record<string, AuthConfig[]> = {}
+      const groupsRaw = sessionStorage.getItem(`helios_groups_${compositeId}`)
+      if (groupsRaw) {
+        try {
+          const parsed = JSON.parse(groupsRaw)
+          localGroupMap = parsed.toolMap ?? parsed
+          localAuthMap = parsed.authMap ?? {}
+          setToolGroupMap(localGroupMap)
+        } catch { }
+      }
 
       fetch("http://localhost:8000/api/sandbox/start", {
         method: "POST",
@@ -135,33 +124,6 @@ export default function Sandbox() {
 
     const draft = specId ? sessionStorage.getItem(`helios_draft_${specId}`) : null
     const draftData = draft ? JSON.parse(draft) : null
-
-    // Use prefetched data if available (populated by home page on card click)
-    const prefetchKey = specId ? `helios_prefetch_${specId}` : null
-    const prefetched = prefetchKey ? sessionStorage.getItem(prefetchKey) : null
-    if (prefetched && prefetchKey) {
-      sessionStorage.removeItem(prefetchKey)
-      try {
-        const data = JSON.parse(prefetched)
-        const tools: Tool[] = data.tools ?? []
-        setSessionId(data.sessionId)
-        setAllTools(tools)
-        setActiveTools(tools.filter((t: Tool) => t.enabled !== false))
-        if (data.authContext) setAuthContext(data.authContext)
-        const initialToggles: Record<string, boolean> = {}
-        tools.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
-        setToolToggles(initialToggles)
-        // Cache baseUrl so handleEdit can find it without a round-trip
-        if (specId && data.baseUrl !== undefined) {
-          try {
-            const existing = sessionStorage.getItem(`helios_draft_${specId}`)
-            const draft = existing ? JSON.parse(existing) : {}
-            sessionStorage.setItem(`helios_draft_${specId}`, JSON.stringify({ ...draft, baseUrl: data.baseUrl }))
-          } catch {}
-        }
-        return
-      } catch {}
-    }
 
     fetch("http://localhost:8000/api/sandbox/start", {
       method: "POST",
@@ -201,58 +163,41 @@ export default function Sandbox() {
 
   const toggleTool = (name: string) => setToolToggles(prev => ({ ...prev, [name]: !prev[name] }))
 
+  const switchPanelTab = (tab: "tools" | "keys") => {
+    if (tab === panelTab) return
+    if (panelTabTimer.current) clearTimeout(panelTabTimer.current)
+    // Phase 1: fade out current content
+    setPanelContentVisible(false)
+    panelTabTimer.current = setTimeout(() => {
+      // Phase 2: swap tab — grid rows start animating to new height
+      setPanelTab(tab)
+      // Phase 3: fade in new content (starts while height is mid-transition)
+      panelTabTimer.current = setTimeout(() => setPanelContentVisible(true), 120)
+    }, 150)
+  }
+
   const handleApply = () => {
     const filtered = allTools.filter(t => toolToggles[t.function.name])
     setActiveTools(filtered)
     setMessages([])
   }
 
-  const handleEdit = async () => {
-    let baseUrl = ""
-    if (specId) {
-      // 1. Try sessionStorage draft (written by create page or prefetch)
-      try {
-        const draftRaw = sessionStorage.getItem(`helios_draft_${specId}`)
-        if (draftRaw) baseUrl = JSON.parse(draftRaw).baseUrl ?? ""
-      } catch {}
-      // 2. Fall back to catalog endpoint — always has baseUrl
-      if (!baseUrl) {
-        try {
-          const res = await fetch(`http://localhost:8000/api/servers/${specId}/catalog`, { headers: getAuthHeaders() })
-          const data = await res.json()
-          baseUrl = data.baseUrl ?? ""
-        } catch {}
-      }
-    }
-    const toolItems = allTools.map(t => ({
-      id: `${specId ?? "server"}-${t.function.name}`,
-      name: t.function.name,
-      description: t.function.description ?? "",
-      method: t.handler?.method,
-      // For composite servers baseUrl="" and path is already an absolute URL — keep as-is
-      path: t.handler?.path,
-      baseUrl,
-      source: "past" as const,
-      apiName: specId ?? "server",
-      input_schema: t.function.parameters as object,
-      handler: {
-        method: t.handler?.method ?? "GET",
-        path: t.handler?.path ?? "",
-        query_params: t.handler?.query_params ?? [],
-      },
-    }))
-    sessionStorage.setItem("helios_create_tools", JSON.stringify(toolItems))
-    if (specId) sessionStorage.setItem("helios_edit_source", specId)
-    router.push("/create")
-  }
-
   const handleNavigateToVerify = () => {
     if (compositeId) {
-      // In edit mode (both params set), carry specId so verify can pre-fill the name
-      const verifyUrl = specId
+      // Persist current toggle state so verify reflects sandbox deselections
+      const raw = sessionStorage.getItem(`helios_session_${compositeId}`)
+      if (raw) {
+        const session = JSON.parse(raw)
+        const updatedTools = (session.tools ?? []).map((t: Tool) => ({
+          ...t,
+          enabled: toolToggles[t.function.name] ?? t.enabled ?? true,
+        }))
+        sessionStorage.setItem(`helios_session_${compositeId}`, JSON.stringify({ ...session, tools: updatedTools }))
+      }
+      const url = specId
         ? `/verify?compositeId=${compositeId}&specId=${encodeURIComponent(specId)}`
         : `/verify?compositeId=${compositeId}`
-      router.push(verifyUrl)
+      router.push(url)
       return
     }
     if (specId) {
@@ -260,37 +205,34 @@ export default function Sandbox() {
       if (draft) {
         const draftData = JSON.parse(draft)
         if (Array.isArray(draftData.catalog)) {
-          // Sync toggle state back into the existing catalog
           const updatedCatalog = draftData.catalog.map((item: { name: string; enabled?: boolean }) => ({
             ...item, enabled: toolToggles[item.name] ?? item.enabled ?? true
           }))
           sessionStorage.setItem(`helios_draft_${specId}`, JSON.stringify({ ...draftData, catalog: updatedCatalog }))
-        } else if (allTools.length > 0) {
-          // Draft exists but has no catalog — build one from allTools so verify page skips the fetch
-          const catalog = allTools.map(t => ({
-            name: t.function.name,
-            description: t.function.description ?? "",
-            enabled: toolToggles[t.function.name] ?? true,
-            input_schema: t.function.parameters ?? { type: "object", properties: {} },
-            handler: { method: t.handler?.method ?? "GET", path: t.handler?.path ?? "", headers: {}, query_params: t.handler?.query_params ?? [] }
-          }))
-          sessionStorage.setItem(`helios_draft_${specId}`, JSON.stringify({ ...draftData, catalog }))
         }
-      } else if (allTools.length > 0) {
-        // No draft at all — build catalog from allTools so verify page renders instantly
-        const catalog = allTools.map(t => ({
-          name: t.function.name,
-          description: t.function.description ?? "",
-          enabled: toolToggles[t.function.name] ?? true,
-          input_schema: t.function.parameters ?? { type: "object", properties: {} },
-          handler: { method: t.handler?.method ?? "GET", path: t.handler?.path ?? "", headers: {}, query_params: t.handler?.query_params ?? [] }
-        }))
-        sessionStorage.setItem(`helios_draft_${specId}`, JSON.stringify({ catalog }))
       } else {
         sessionStorage.setItem(`helios_toggles_${specId}`, JSON.stringify(toolToggles))
       }
       router.push(`/verify?specId=${specId}`)
     }
+  }
+
+  const handleEdit = () => {
+    const toolItems = allTools.map(t => ({
+      id: t.function.name,
+      name: t.function.name,
+      description: t.function.description ?? "",
+      method: t.handler?.method,
+      path: t.handler?.path,
+      baseUrl: "",
+      source: "past" as const,
+      apiName: specId ?? "Server",
+      input_schema: t.function.parameters as object,
+      handler: t.handler,
+    }))
+    sessionStorage.setItem("helios_create_tools", JSON.stringify(toolItems))
+    sessionStorage.setItem("helios_edit_source", specId!)
+    router.push("/create")
   }
 
   const handleSend = async () => {
@@ -304,21 +246,38 @@ export default function Sandbox() {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 60000)
 
+    // Only send user/assistant turns — "tool_call" is a frontend-only display role
+    // with no Anthropic equivalent, and sending it causes validation errors on the backend.
+    const cleanHistory = messages
+      .filter(m => m.role === "user" || m.role === "assistant")
+      .map(m => ({ role: m.role as "user" | "assistant", content: m.content }))
+
     fetch("http://localhost:8000/api/sandbox/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({
         sessionId,
         tools: activeTools,
-        history: messages.filter(m => m.role !== "tool_call").map(m => ({ role: m.role, content: m.content })),
+        history: cleanHistory,
         message: messageText,
         authContext
       }),
       signal: controller.signal
     })
-      .then(res => res.json())
-      .then(data => {
+      .then(async res => {
         clearTimeout(timeout)
+        const data = await res.json()
+
+        if (!res.ok) {
+          const is429 = res.status === 429
+          const errText = is429
+            ? "Rate limit reached — too many requests this minute. Wait a moment and try again."
+            : (data?.error ?? "Something went wrong. Please try again.")
+          setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: errText, timestamp: new Date() }])
+          setIsLoading(false)
+          return
+        }
+
         const allToolCalls: { name: string; input: Record<string, any> }[] = (data.history ?? [])
           .filter((m: any) => m.role === "assistant" && Array.isArray(m.content))
           .flatMap((m: any) => (m.content as any[]).filter(b => b.type === "tool_use").map(b => ({ name: b.name, input: b.input ?? {} })))
@@ -333,13 +292,18 @@ export default function Sandbox() {
             timestamp: new Date()
           })
         }
-        newMessages.push({ id: Date.now().toString(), role: "assistant", content: data.reply, timestamp: new Date() })
+        const reply = typeof data.reply === "string" && data.reply.trim()
+          ? data.reply
+          : "No response received. Please try again."
+        newMessages.push({ id: Date.now().toString(), role: "assistant", content: reply, timestamp: new Date() })
         setMessages(prev => [...prev, ...newMessages])
         setIsLoading(false)
       })
       .catch(err => {
         clearTimeout(timeout)
-        const reason = err.name === "AbortError" ? "Request timed out — the AI took too long to respond." : "Failed to reach the server."
+        const reason = err.name === "AbortError"
+          ? "Request timed out — the AI took too long to respond."
+          : "Failed to reach the server."
         setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: reason, timestamp: new Date() }])
         setIsLoading(false)
       })
@@ -354,6 +318,8 @@ export default function Sandbox() {
   const [expandedToolCalls, setExpandedToolCalls] = useState<Set<string>>(new Set())
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelTab, setPanelTab] = useState<"tools" | "keys">("tools")
+  const [panelContentVisible, setPanelContentVisible] = useState(true)
+  const panelTabTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({})
   const [hasSecurityScheme, setHasSecurityScheme] = useState<boolean | null>(null)
   const [toolGroupMap, setToolGroupMap] = useState<Record<string, string>>({})
@@ -458,22 +424,23 @@ export default function Sandbox() {
   })()
 
   return (
-    <div className={cn("flex flex-col h-screen w-full relative overflow-hidden", pageReady ? "animate-page-enter" : "opacity-0")}>
+    <div className="flex flex-col h-screen w-full relative overflow-hidden">
 
       {/* ── Background ─────────────────────────────────────────────────── */}
 
-      {/* ── Nav ────────────────────────────────────────────────────────── */}
-      <nav className="glass-nav flex items-center justify-between px-8 h-[62px] flex-shrink-0">
-        <Link href="/">
-          <Image src="/logoName.svg" alt="Helios" width={110} height={36} className="brightness-0 invert opacity-90 cursor-pointer" />
-        </Link>
-        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[16px] tracking-[0.18em]">
-          <span
-            onClick={handleEdit}
-            className="step-inactive cursor-pointer hover:text-white/60 transition-colors"
-          >
-            Create
-          </span>
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <div className="relative z-30 flex items-center px-8 h-[93px] flex-shrink-0">
+        <div className="flex-1 flex items-center">
+          <div className="relative">
+            <Link href="/" className="absolute inset-0 cursor-pointer z-10" aria-label="Home" />
+            <span className="font-[family-name:--font-cinzel] font-semibold text-[32px] tracking-[0.35em] pr-[0.35em] select-none pointer-events-none"
+              style={{ color: "#ffffff", textShadow: "0 0 40px rgba(255,255,255,0.15)" }}>
+              HELIOS
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[22px] tracking-[0.18em]">
+          <Link href="/create" className="step-inactive cursor-pointer">Create</Link>
           <span className="step-divider text-[10px]">✦</span>
           <span className="step-active pb-1">Sandbox</span>
           <span className="step-divider text-[10px]">✦</span>
@@ -481,47 +448,47 @@ export default function Sandbox() {
           <span className="step-divider text-[10px]">✦</span>
           <span className="step-inactive">Download</span>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex-1 flex items-center justify-end gap-2.5">
           {specId ? (
             <>
               <button
                 onClick={handleEdit}
-                className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.14em] px-4 py-2 glass rounded-xl
-                  text-white/45 hover:text-white/75 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer"
+                disabled={allTools.length === 0}
+                className="font-[family-name:--font-cinzel] text-[16px] tracking-[0.14em] px-7 py-3 glass rounded-xl
+                  text-white/45 hover:text-white/75 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer
+                  disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Edit
               </button>
-              <button
-                onClick={() => router.push("/")}
-                className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.14em] px-4 py-2 glass rounded-xl
-                  text-white/45 hover:text-white/75 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer"
-              >
-                Cancel
-              </button>
+              <Link href="/">
+                <button className="font-[family-name:--font-cinzel] text-[16px] tracking-[0.14em] px-7 py-3 glass rounded-xl
+                  text-white/45 hover:text-white/75 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer">
+                  Cancel
+                </button>
+              </Link>
             </>
           ) : (
-            <button
-              onClick={() => router.push("/create")}
-              className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.14em] px-4 py-2 glass rounded-xl
-                text-white/45 hover:text-white/75 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer"
-            >
-              ← Back
-            </button>
+            <Link href="/create">
+              <button className="font-[family-name:--font-cinzel] text-[16px] tracking-[0.14em] px-7 py-3 glass rounded-xl
+                text-white/45 hover:text-white/75 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer">
+                ← Back
+              </button>
+            </Link>
           )}
           <button onClick={handleNavigateToVerify}
-            className="btn-gold font-[family-name:--font-cinzel] text-[12px] tracking-[0.14em] px-5 py-2 rounded-xl cursor-pointer">
+            className="btn-gold font-[family-name:--font-cinzel] text-[16px] tracking-[0.14em] px-7 py-3 rounded-xl cursor-pointer">
             Next →
           </button>
         </div>
-      </nav>
+      </div>
 
       {/* ── Body ───────────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-hidden">
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            <div className="max-w-2xl mx-auto space-y-5">
+          <div ref={chatScrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 pt-10 pb-6">
+            <div className="max-w-[820px] mx-auto space-y-5">
 
               {messages.map((message) => {
                 if (message.role === "tool_call") {
@@ -543,10 +510,10 @@ export default function Sandbox() {
                           {isExpanded
                             ? <ChevronDown size={12} className="text-white/30 flex-shrink-0" />
                             : <ChevronRight size={12} className="text-white/30 flex-shrink-0" />}
-                          <span className="font-[family-name:--font-cinzel] text-[10px] tracking-[0.16em] text-white/30 group-hover:text-white/55 transition-colors whitespace-nowrap">
+                          <span className="font-[family-name:--font-cinzel] text-[10px] tracking-[0.16em] text-white/55 group-hover:text-white/75 transition-colors whitespace-nowrap">
                             {message.toolDetails?.length ?? 1} tool{(message.toolDetails?.length ?? 1) !== 1 ? "s" : ""} called
                           </span>
-                          <span className="font-[family-name:--font-geist-mono] text-[10px] text-white/20 whitespace-nowrap hidden sm:inline">
+                          <span className="font-[family-name:--font-geist-mono] text-[10px] text-white/45 whitespace-nowrap hidden sm:inline">
                             {message.content}
                           </span>
                         </div>
@@ -559,11 +526,11 @@ export default function Sandbox() {
                             <div key={i} className="glass rounded-xl px-4 py-3">
                               <div className="font-[family-name:--font-cinzel] text-[11px] tracking-wider text-[#C9A84C]/80 mb-2">{tc.name}</div>
                               {Object.keys(tc.input).length > 0 ? (
-                                <pre className="font-[family-name:--font-geist-mono] text-[10px] text-white/40 whitespace-pre-wrap break-all leading-relaxed">
+                                <pre className="font-[family-name:--font-geist-mono] text-[10px] text-white/60 whitespace-pre-wrap break-all leading-relaxed">
                                   {JSON.stringify(tc.input, null, 2)}
                                 </pre>
                               ) : (
-                                <span className="font-[family-name:--font-geist-mono] text-[10px] text-white/20">no arguments</span>
+                                <span className="font-[family-name:--font-geist-mono] text-[10px] text-white/45">no arguments</span>
                               )}
                             </div>
                           ))}
@@ -581,18 +548,60 @@ export default function Sandbox() {
                         <Image src="/logo.svg" alt="Helios" width={30} height={30} className="brightness-0" />
                       </div>
                     )}
+                    {/* Bubble — backdrop-filter samples the fixed background at GPU level, zero JS needed */}
                     <div className={cn(
-                      "max-w-[72%] px-4 py-3 rounded-2xl",
+                      "max-w-[72%] overflow-hidden",
+                      message.role === "user" ? "rounded-2xl rounded-tr-sm" : "rounded-2xl rounded-tl-sm"
+                    )} style={{ backdropFilter: "blur(12px) saturate(1.4) brightness(0.68)", WebkitBackdropFilter: "blur(12px) saturate(1.4) brightness(0.68)", backgroundColor: "rgba(255,255,255,0.06)" }}>
+                    {/* Inner card — visual styling lives here */}
+                    <div className={cn(
+                      "px-4 py-3",
                       message.role === "user"
-                        ? "bg-white/[0.12] border border-white/[0.15] text-white/90 rounded-br-sm"
-                        : "glass text-white/85 rounded-bl-sm"
+                        ? "border border-white/[0.15] text-white/90"
+                        : "text-white/85"
                     )}>
-                      <p className="leading-relaxed whitespace-pre-wrap break-words font-[family-name:--font-cormorant] text-[17px]">
-                        {message.content}
-                      </p>
-                    </div>
+                      {message.role === "assistant" ? (
+                        <div className="font-[family-name:--font-cormorant] text-[17px] leading-relaxed prose-sandbox">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw]}
+                            components={{
+                              p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                              h1: ({ children }) => <h1 className="font-[family-name:--font-cinzel] text-[18px] tracking-wider text-white/95 mb-3 mt-1">{children}</h1>,
+                              h2: ({ children }) => <h2 className="font-[family-name:--font-cinzel] text-[16px] tracking-wider text-white/90 mb-2 mt-1">{children}</h2>,
+                              h3: ({ children }) => <h3 className="font-[family-name:--font-cinzel] text-[14px] tracking-wider text-white/85 mb-1 mt-1">{children}</h3>,
+                              strong: ({ children }) => <strong className="text-white/95 font-semibold">{children}</strong>,
+                              em: ({ children }) => <em className="text-white/75 italic">{children}</em>,
+                              ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2 text-white/80">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-2 text-white/80">{children}</ol>,
+                              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                              code: ({ children, className }) => {
+                                const isBlock = className?.includes("language-")
+                                return isBlock
+                                  ? <code className="block font-[family-name:--font-geist-mono] text-[13px] bg-black/30 border border-white/[0.10] rounded-lg px-3 py-2 my-2 text-white/70 whitespace-pre-wrap overflow-x-auto">{children}</code>
+                                  : <code className="font-[family-name:--font-geist-mono] text-[13px] bg-black/25 border border-white/[0.10] rounded px-1.5 py-0.5 text-[#C9A84C]/80">{children}</code>
+                              },
+                              pre: ({ children }) => <pre className="my-2">{children}</pre>,
+                              blockquote: ({ children }) => <blockquote className="border-l-2 border-[#C9A84C]/40 pl-3 my-2 text-white/60 italic">{children}</blockquote>,
+                              a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#C9A84C]/80 hover:text-[#C9A84C] underline underline-offset-2 transition-colors">{children}</a>,
+                              hr: () => <hr className="border-white/[0.12] my-3" />,
+                              table: ({ children }) => <table className="w-full text-[14px] border-collapse my-2">{children}</table>,
+                              th: ({ children }) => <th className="font-[family-name:--font-cinzel] text-[11px] tracking-wider text-white/60 border border-white/[0.12] px-3 py-1.5 bg-white/[0.04]">{children}</th>,
+                              td: ({ children }) => <td className="border border-white/[0.10] px-3 py-1.5 text-white/75">{children}</td>,
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="leading-relaxed whitespace-pre-wrap break-words font-[family-name:--font-cormorant] text-[17px]">
+                          {message.content}
+                        </p>
+                      )}
+                    </div>{/* end inner card */}
+                    </div>{/* end bubble */}
                     {message.role === "user" && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full glass flex items-center justify-center">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden flex items-center justify-center" style={{ backdropFilter: "blur(12px) saturate(1.4) brightness(0.68)", WebkitBackdropFilter: "blur(12px) saturate(1.4) brightness(0.68)", backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
                         <User className="w-4 h-4 text-white/60" />
                       </div>
                     )}
@@ -612,7 +621,7 @@ export default function Sandbox() {
                       <div className="w-2 h-2 rounded-full bg-white/50 dot-2" />
                       <div className="w-2 h-2 rounded-full bg-white/50 dot-3" />
                     </div>
-                    <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-white/35">Thinking...</span>
+                    <span className="font-[family-name:--font-cinzel] text-[11px] tracking-widest text-white/60">Thinking...</span>
                   </div>
                 </div>
               )}
@@ -622,8 +631,22 @@ export default function Sandbox() {
           </div>
 
           {/* Input area */}
-          <div className="bg-black/[0.12] border-t border-white/[0.09] backdrop-blur-sm">
-            <div className="max-w-2xl mx-auto px-4 pt-3 pb-4">
+          <div className="flex-shrink-0 relative z-[0] overflow-hidden border-t border-white/[0.09]">
+            {/* Blur layer — background-attachment:fixed works here (no scroll parent) */}
+            <div
+              aria-hidden="true"
+              className="absolute pointer-events-none"
+              style={{
+                inset: "-50px",
+                backgroundImage: "var(--page-bg, url('/Background-Dusk(2).svg'))",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundAttachment: "fixed",
+                filter: "blur(8px) saturate(1.1) brightness(0.72)",
+                zIndex: -1,
+              }}
+            />
+            <div className="max-w-[820px] mx-auto px-4 pt-3 pb-4">
 
               {/* Toolbar */}
               <div className="flex items-center justify-between mb-3">
@@ -634,7 +657,7 @@ export default function Sandbox() {
                       "font-[family-name:--font-cinzel] text-[11px] tracking-[0.14em] px-4 py-2 rounded-xl border transition-all duration-200 cursor-pointer",
                       panelOpen
                         ? "bg-[#C9A84C]/20 border-[#C9A84C]/40 text-[#C9A84C]"
-                        : "glass text-white/45 hover:text-white/75 hover:bg-white/[0.10]"
+                        : "glass text-white/65 hover:text-white/85 hover:bg-white/[0.10]"
                     )}
                   >
                     {allTools.length === 0
@@ -652,12 +675,12 @@ export default function Sandbox() {
                           {(["tools", "keys"] as const).map(tab => (
                             <button
                               key={tab}
-                              onClick={() => setPanelTab(tab)}
+                              onClick={() => switchPanelTab(tab)}
                               className={cn(
                                 "font-[family-name:--font-cinzel] text-[13px] tracking-[0.14em] px-6 py-3 uppercase transition-colors duration-150 cursor-pointer",
                                 panelTab === tab
                                   ? "text-[#C9A84C] border-b-2 border-[#C9A84C] -mb-px"
-                                  : "text-white/55 hover:text-white/80"
+                                  : "text-white/70 hover:text-white/85"
                               )}
                             >
                               {tab === "tools" ? "Tool List" : "API Keys"}
@@ -665,9 +688,18 @@ export default function Sandbox() {
                           ))}
                         </div>
 
-                        {/* Tool List tab */}
-                        {panelTab === "tools" && (
-                        <div className="max-h-[300px] overflow-y-auto animate-fade-up">
+                        {/* Tool List tab — grid-template-rows animates height smoothly */}
+                        <div style={{
+                          display: "grid",
+                          gridTemplateRows: panelTab === "tools" ? "1fr" : "0fr",
+                          transition: "grid-template-rows 220ms ease-in-out",
+                        }}>
+                        <div className="overflow-hidden">
+                        <div className={cn(
+                          "max-h-[300px] overflow-y-auto transition-opacity duration-150",
+                          panelTab === "tools" && panelContentVisible ? "opacity-100" : "opacity-0"
+                        )}>
+                          <div>
                             {toolGroups.map(group => {
                               const isExpanded = expandedGroups.has(group.name)
                               const groupEnabled = group.tools.filter(t => toolToggles[t.function.name] ?? true).length
@@ -685,7 +717,7 @@ export default function Sandbox() {
                                     <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white/90">{group.name}</span>
                                     <div className="flex items-center gap-3">
                                       <span className="font-[family-name:--font-geist-mono] text-[11px] text-white/55">{groupEnabled}/{group.tools.length}</span>
-                                      <span className="font-[family-name:--font-geist-mono] text-[11px] text-white/45">{isExpanded ? "▴" : "▾"}</span>
+                                      <span className="font-[family-name:--font-geist-mono] text-[11px] text-white/60">{isExpanded ? "▴" : "▾"}</span>
                                     </div>
                                   </button>
                                   <div
@@ -736,12 +768,23 @@ export default function Sandbox() {
                                 </div>
                               )
                             })}
+                          </div>
                         </div>
-                        )}
+                        </div>
+                        </div>
 
                         {/* API Keys tab */}
-                        {panelTab === "keys" && (
-                        <div className="max-h-[300px] overflow-y-auto px-4 py-4 animate-fade-up">
+                        <div style={{
+                          display: "grid",
+                          gridTemplateRows: panelTab === "keys" ? "1fr" : "0fr",
+                          transition: "grid-template-rows 220ms ease-in-out",
+                        }}>
+                        <div className="overflow-hidden">
+                        <div className={cn(
+                          "max-h-[300px] overflow-y-auto px-4 py-4 transition-opacity duration-150",
+                          panelTab === "keys" && panelContentVisible ? "opacity-100" : "opacity-0"
+                        )}>
+                          <div>
                             {hasSecurityScheme === false ? (
                               <div className="py-4 flex items-center justify-center">
                                 <span className="font-[family-name:--font-cinzel] text-[12px] tracking-widest text-white/30 text-center">
@@ -877,8 +920,10 @@ export default function Sandbox() {
                                 })}
                               </div>
                             )}
+                          </div>
                         </div>
-                        )}
+                        </div>
+                        </div>
 
                         {/* Footer */}
                         <div className="border-t border-white/[0.18] p-3">
@@ -897,7 +942,7 @@ export default function Sandbox() {
                 <button
                   onClick={() => setMessages([])}
                   className="font-[family-name:--font-cinzel] text-[11px] tracking-[0.14em] glass px-4 py-2 rounded-xl
-                    text-white/35 hover:text-white/65 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer"
+                    text-white/60 hover:text-white/80 hover:bg-white/[0.10] transition-all duration-200 cursor-pointer"
                 >
                   Reset Chat
                 </button>
@@ -905,7 +950,7 @@ export default function Sandbox() {
 
               {/* Input box */}
               <div className={cn(
-                "relative flex items-end gap-2 glass rounded-2xl p-2 transition-all duration-200",
+                "relative flex items-end gap-2 glass rounded-2xl p-2 overflow-hidden transition-all duration-200",
                 "focus-within:border-[#C9A84C]/40 focus-within:shadow-[0_0_0_2px_rgba(201,168,76,0.10)]"
               )}>
                 <textarea
@@ -936,7 +981,7 @@ export default function Sandbox() {
               </div>
 
             </div>
-          </div>
+          </div>{/* end input area */}
         </div>
       </div>
     </div>

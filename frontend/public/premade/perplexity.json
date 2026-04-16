@@ -1,0 +1,23 @@
+{
+  "baseUrl": "https://api.perplexity.ai",
+  "auth": [{ "type": "bearer_token" }],
+  "tools": [
+    {
+      "name": "perplexity_chat",
+      "description": "Send a prompt to Perplexity AI and get an answer grounded in real-time web search. The 'sonar' models are best for web-search answers; 'sonar-reasoning' shows step-by-step reasoning.",
+      "enabled": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "model": { "type": "string", "description": "Model to use: 'sonar' (default), 'sonar-pro', 'sonar-reasoning', 'sonar-reasoning-pro'" },
+          "messages": { "type": "array", "description": "Array of message objects: [{ role: 'user', content: 'What happened in the news today?' }]" },
+          "max_tokens": { "type": "integer", "description": "Max tokens in the response" },
+          "temperature": { "type": "number", "description": "Sampling temperature 0–2" },
+          "search_recency_filter": { "type": "string", "description": "Limit search results by time: 'day', 'week', 'month', or 'year'" }
+        },
+        "required": ["model", "messages"]
+      },
+      "handler": { "method": "POST", "path": "/chat/completions", "headers": {}, "query_params": [], "fixed_query_params": {} }
+    }
+  ]
+}
