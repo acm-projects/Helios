@@ -18,6 +18,91 @@ import { Request, Response } from "express"
 import type { ToolsFile, EndpointDefinition, ToolEnrichment } from "./generate_tool_registry.ts"
 import { getStoredApiKey } from "./auth/apiKeyManager.ts"
 
+// Allowlist of recognized auto_path_params source sentinels. Any value outside
+// this set is rejected at call time — prevents a malicious catalog from smuggling
+// an arbitrary sentinel (e.g. "env_var:SECRET") that the dispatcher would act on.
+const VALID_AUTO_PATH_SOURCES = new Set(["auth_username"])
+
+/**
+ * SSRF guard — rejects baseUrls that point at internal infrastructure.
+ * Link-local (169.254.x.x) and loopback (127.x, ::1) are blocked in ALL
+ * environments. RFC1918 private ranges (10.x, 172.16-31.x, 192.168.x) are
+ * only blocked in production so local dev against localhost/LAN still works.
+ */
+function assertSafeBaseUrl(baseUrl: string): void {
+  if (!baseUrl) return // composite registries use "" — nothing to validate
+  let parsed: URL
+  try {
+    parsed = new URL(baseUrl)
+  } catch {
+    throw new Error(`baseUrl "${baseUrl}" is not a valid URL`)
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error(`baseUrl must use http or https (got "${parsed.protocol}")`)
+  }
+
+  const host = parsed.hostname.toLowerCase()
+
+  // Always block: loopback and link-local (includes AWS IMDS 169.254.169.254)
+  if (host === "localhost") {
+    // Allow localhost only outside production
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("baseUrl must not target localhost in production")
+    }
+    return
+  }
+  if (host === "::1" || host === "[::1]" || host === "0.0.0.0") {
+    throw new Error(`baseUrl must not target loopback address "${host}"`)
+  }
+
+  // IPv6 link-local (fe80::/10) — covers fe80:: through febf::
+  if (/^fe[89ab]/i.test(host.replace(/^\[|\]$/g, ""))) {
+    throw new Error(`baseUrl must not target IPv6 link-local address "${host}"`)
+  }
+
+  // IPv6 unique local (fc00::/7) — covers fc:: and fd::
+  if (/^f[cd]/i.test(host.replace(/^\[|\]$/g, ""))) {
+    throw new Error(`baseUrl must not target IPv6 unique-local address "${host}"`)
+  }
+
+  // IPv4-mapped IPv6 (::ffff:x.x.x.x) — strips brackets then checks
+  const strippedHost = host.replace(/^\[|\]$/g, "")
+  const ipv4mapped = strippedHost.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i)
+  if (ipv4mapped) {
+    // Re-validate the embedded IPv4 portion by recursing via assertSafeBaseUrl on a synthetic URL
+    try {
+      assertSafeBaseUrl(`${parsed.protocol}//` + ipv4mapped[1])
+    } catch (err: unknown) {
+      throw new Error(`baseUrl contains a blocked IPv4-mapped IPv6 address: ${(err as Error).message}`)
+    }
+    return
+  }
+
+  // Decimal and hex numeric IP encodings (e.g. http://2130706433/ → 127.0.0.1)
+  const bareHost = host.replace(/^\[|\]$/g, "")
+  if (/^\d+$/.test(bareHost) || /^0x[0-9a-f]+$/i.test(bareHost)) {
+    throw new Error(`baseUrl uses a numeric/hex IP encoding "${bareHost}" — use a standard dotted-quad IP or hostname instead`)
+  }
+
+  // IPv4 checks
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (ipv4) {
+    const [, a, b, c] = ipv4.map(Number)
+    // 127.x.x.x — loopback (all environments)
+    if (a === 127) throw new Error("baseUrl must not target loopback (127.x.x.x)")
+    // 169.254.x.x — link-local / IMDS (all environments)
+    if (a === 169 && b === 254) throw new Error("baseUrl must not target link-local address (169.254.x.x)")
+
+    if (process.env.NODE_ENV === "production") {
+      // RFC1918 private ranges — block only in production
+      if (a === 10) throw new Error("baseUrl must not target private network (10.x.x.x) in production")
+      if (a === 172 && b >= 16 && b <= 31) throw new Error("baseUrl must not target private network (172.16-31.x.x) in production")
+      if (a === 192 && b === 168) throw new Error("baseUrl must not target private network (192.168.x.x) in production")
+    }
+  }
+}
+
 /**
  * Registers one EndpointDefinition as a live MCP tool.
  *
@@ -25,13 +110,15 @@ import { getStoredApiKey } from "./auth/apiKeyManager.ts"
  *  - fixed_query_params → always appended to URL, AI never asked about them
  *  - auth.template      → looked up from DB on EVERY call (never baked in)
  *
- * Sandbox safety: non-GET calls are ALWAYS simulated, never executed.
+ * Sandbox mode (unrestricted=false): non-GET calls are ALWAYS simulated.
+ * Production/Try mode (unrestricted=true): every method executes live.
  */
 function registerDynamicTool(
   server: McpServer,
   endpoint: EndpointDefinition,
   baseUrl: string,
-  userId: string          // required for live auth DB lookup
+  userId: string,          // required for live auth DB lookup
+  unrestricted: boolean    // true = execute all methods, false = simulate non-GET
 ) {
   // Build Zod schema from input_schema — fixed_query_params are already excluded
   // from properties by generate_tool_registry.ts, so the AI never sees them.
@@ -68,7 +155,7 @@ function registerDynamicTool(
   }
 
   const enrichment: ToolEnrichment = (endpoint as any).enrichment ?? { auth: null }
-  console.log(`[register] ${endpoint.name} | fixed: [${Object.keys(endpoint.handler.fixed_query_params || {}).join(", ")}] | auth: ${enrichment.auth?.template ?? "none"}`)
+  console.log(`[register] ${endpoint.name} | query: [${(endpoint.handler.query_params || []).join(", ")}] | fixed: [${Object.keys(endpoint.handler.fixed_query_params || {}).join(", ")}] | auth: ${enrichment.auth?.template ?? "none"}`)
 
   const hasInputParams = Object.keys(schema).length > 0
   server.registerTool(
@@ -78,12 +165,93 @@ function registerDynamicTool(
       inputSchema: hasInputParams ? schema : undefined
     },
     async (args) => {
-      // ── 1. Substitute path params ──────────────────────────────────────────
-      let url = baseUrl + endpoint.handler.path
-      for (const paramName in endpoint.input_schema.properties) {
-        if (endpoint.handler.path.includes(`{${paramName}}`) && args[paramName] !== undefined) {
-          url = url.replace(`{${paramName}}`, String(args[paramName]))
+      // ── 0. Decode HTML-encoded angle brackets in markup-format params ──────
+      // Claude defensively HTML-encodes `<` and `>` (`&lt;`/`&gt;`) in string
+      // values even when the description explicitly says "use raw characters" —
+      // Twilio's TwiML field is the canonical bite, returning error 12100
+      // ("Document parse failure"). Targeted decode of `&lt;`/`&gt;` only;
+      // `&amp;`, `&quot;`, `&#39;` are left alone because those entities are
+      // legitimate (and required) inside markup body text. Driven by the spec
+      // `format` field — generic, not provider-specific.
+      const props = endpoint.input_schema.properties
+      for (const k in args) {
+        const v = args[k]
+        if (typeof v !== "string") continue
+        const fmt = String(props[k]?.format || "").toLowerCase()
+        if (fmt !== "twiml" && fmt !== "xml" && fmt !== "html") continue
+        if (v.includes("&lt;") || v.includes("&gt;")) {
+          args[k] = v.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
         }
+      }
+
+      // ── 0. Restore original param names ────────────────────────────────────
+      // Anthropic rejects schema keys that violate ^[a-zA-Z0-9_.-]{1,64}$, so
+      // generate_tool_registry.ts may have renamed some properties. The AI
+      // calls us with sanitized names; the target API expects the originals.
+      const paramNameMap = endpoint.handler.param_name_map
+      if (paramNameMap) {
+        const restored: Record<string, any> = {}
+        for (const k in args) restored[paramNameMap[k] ?? k] = args[k]
+        args = restored
+      }
+
+      // ── 1a. Fetch saved credential once — needed for both auto_path_params
+      //         (step 1b) and the auth header (step 5). Avoids a double DB hit.
+      const auth = enrichment.auth
+      console.log(`[auth:${endpoint.name}] template=${auth?.template ?? "none"} integration_id="${auth?.integration_id ?? ""}" userId="${userId}"`)
+      let storedKey: string | null = null
+      if (auth && auth.integration_id) {
+        storedKey = await getStoredApiKey(userId, auth.integration_id)
+        console.log(`[auth:${endpoint.name}] key_found=${!!storedKey}`)
+      }
+
+      // ── 1b. Auto-fill path params from saved credential (e.g. a basic-auth
+      //         username embedded in the URL path). The LLM never sees these
+      //         params; without this, models invent placeholder strings and 404.
+      let url = baseUrl + endpoint.handler.path
+      const autoPathParams = endpoint.handler.auto_path_params
+      if (autoPathParams && Object.keys(autoPathParams).length > 0) {
+        // Reject auto_path_params with unknown source sentinels. A malicious or
+        // malformed catalog could smuggle arbitrary sentinel values here — only
+        // "auth_username" is a supported source.
+        for (const [paramName, source] of Object.entries(autoPathParams)) {
+          if (!VALID_AUTO_PATH_SOURCES.has(source)) {
+            console.warn(`[security] Tool "${endpoint.name}" has unknown auto_path_params source "${source}" for param "${paramName}" — skipping tool call`)
+            return { content: [{ type: "text", text: `Configuration error: unsupported auto_path_params source "${source}". Regenerate the tool catalog.` }] }
+          }
+        }
+        // A credential is required to fill these params. Surface a clear message
+        // rather than silently substituting an empty string and sending a broken URL.
+        if (!storedKey) {
+          const groupId = auth?.integration_id || endpoint.name
+          return { content: [{ type: "text", text: `Credential for "${groupId}" not configured — set it via the API Keys panel.` }] }
+        }
+        // Passwords may contain ":" — only split on the first colon so the password
+        // half is preserved intact.
+        const colonIdx = storedKey.indexOf(":")
+        const authUser = colonIdx >= 0 ? storedKey.slice(0, colonIdx) : storedKey
+        for (const [paramName, source] of Object.entries(autoPathParams)) {
+          if (source === "auth_username" && authUser) {
+            url = url.replace(`{${paramName}}`, encodeURIComponent(authUser))
+          }
+        }
+      }
+
+      // ── 1c. Substitute remaining path params from AI-supplied args ─────────
+      // Iterate args (already in original-name space) rather than the schema
+      // properties (which may be in sanitized space) so path placeholders match.
+      for (const paramName in args) {
+        if (url.includes(`{${paramName}}`) && args[paramName] !== undefined) {
+          url = url.replace(`{${paramName}}`, encodeURIComponent(String(args[paramName])))
+        }
+      }
+
+      // ── 1d. Guard: reject if any {placeholder} remains unsubstituted ───────
+      // A live request with literal braces in the URL path will 404 or 422 with
+      // no useful error. Catching it here produces an actionable message.
+      const unresolved = url.match(/\{[^}]+\}/)
+      if (unresolved) {
+        return { content: [{ type: "text", text: `Missing required path parameter: ${unresolved[0]}. Provide the value and try again.` }] }
       }
 
       // ── 2. Build query params from AI-supplied args ────────────────────────
@@ -103,33 +271,27 @@ function registerDynamicTool(
       // ── 4. Build headers — start from static handler headers ──────────────
       const headers: Record<string, string> = { ...(endpoint.handler.headers || {}) }
 
-      // ── 5. Live auth lookup — never baked in, always fresh from DB ─────────
-      const auth = enrichment.auth
-      console.log(`[auth:${endpoint.name}] template=${auth?.template ?? "none"} integration_id="${auth?.integration_id ?? ""}" userId="${userId}"`)
-      if (auth && auth.integration_id) {
-        const storedKey = await getStoredApiKey(userId, auth.integration_id)
-        console.log(`[auth:${endpoint.name}] key_found=${!!storedKey}`)
-        if (storedKey) {
-          switch (auth.template) {
-            case "bearer_token":
-            case "oauth2_client_creds":
-            case "oauth2_auth_code":
-              headers["Authorization"] = `Bearer ${storedKey}`
-              break
-            case "api_key_header":
-              headers[auth.header_name || "X-API-Key"] = storedKey
-              break
-            case "api_key_query":
-              params.set(auth.param_name || "api_key", storedKey)
-              break
-            case "basic_auth":
-              headers["Authorization"] = `Basic ${Buffer.from(storedKey).toString("base64")}`
-              break
-          }
+      // ── 5. Apply auth using the credential fetched in step 1a ─────────────
+      if (auth && storedKey) {
+        switch (auth.template) {
+          case "bearer_token":
+          case "oauth2_client_creds":
+          case "oauth2_auth_code":
+            headers["Authorization"] = `Bearer ${storedKey}`
+            break
+          case "api_key_header":
+            headers[auth.header_name || "X-API-Key"] = storedKey
+            break
+          case "api_key_query":
+            params.set(auth.param_name || "api_key", storedKey)
+            break
+          case "basic_auth":
+            headers["Authorization"] = `Basic ${Buffer.from(storedKey).toString("base64")}`
+            break
         }
-        // No storedKey → auth header omitted → API will return 401
-        // The 401 branch below returns a clear message to the user
       }
+      // No storedKey → auth header omitted → API will return 401
+      // The 401 branch below returns a clear message to the user
 
       // ── 6. Finalize URL ────────────────────────────────────────────────────
       if (params.toString()) {
@@ -138,15 +300,19 @@ function registerDynamicTool(
 
       const method = endpoint.handler.method.toUpperCase()
 
-      // ── 7. Sandbox safety: non-GET calls are ALWAYS simulated ──────────────
+      // ── 7. Build body for non-GET (shared by simulation + live execute paths) ──
+      const qp = endpoint.handler.query_params || []
+      const bodyParams: Record<string, any> = {}
       if (method !== "GET") {
-        const qp = endpoint.handler.query_params || []
-        const bodyParams: Record<string, any> = {}
         for (const key in args) {
           if (!endpoint.handler.path.includes(`{${key}}`) && !qp.includes(key) && args[key] !== undefined) {
             bodyParams[key] = args[key]
           }
         }
+      }
+
+      // ── 7a. Sandbox mode: simulate non-GET, never hit the real API ────────
+      if (!unrestricted && method !== "GET") {
         const simulation = {
           sandbox_simulation: true,
           info: "Sandbox simulation complete. This is the final result — the sandbox does not execute write operations. Do not retry.",
@@ -160,14 +326,53 @@ function registerDynamicTool(
         return { content: [{ type: "text", text: JSON.stringify(simulation, null, 2) }] }
       }
 
-      // ── 8. Execute GET — real call to live API ─────────────────────────────
+      // ── 8. Execute live call — GET always, non-GET only in unrestricted mode ──
+      // H3-gap: validate the FINAL url (post path-param substitution) to catch
+      // composite-registry tools where baseUrl is "" and the full URL is assembled
+      // from handler.path — the init-time check on baseUrl "" is a no-op for these.
+      try {
+        assertSafeBaseUrl(url)
+      } catch (err: unknown) {
+        return { content: [{ type: "text", text: `Refused to dispatch: ${(err as Error).message}` }] }
+      }
+
+      const fetchInit: RequestInit = { method, headers, redirect: "manual" }
+      if (method !== "GET" && Object.keys(bodyParams).length > 0) {
+        // body_format is captured from the OpenAPI requestBody content type at parse
+        // time. Defaults to JSON when absent (most modern APIs).
+        if (endpoint.handler.body_format === "form") {
+          headers["Content-Type"] = headers["Content-Type"] || "application/x-www-form-urlencoded"
+          const formBody = new URLSearchParams()
+          for (const [k, v] of Object.entries(bodyParams)) {
+            if (v === undefined || v === null) continue
+            formBody.append(k, typeof v === "object" ? JSON.stringify(v) : String(v))
+          }
+          fetchInit.body = formBody.toString()
+        } else if (endpoint.handler.body_format === "multipart") {
+          // Let fetch set the Content-Type header including the boundary — if we set
+          // it ourselves the boundary token is missing and the server rejects the body.
+          // Case-insensitive sweep: specs derived from Postman/curl often ship lowercase keys.
+          for (const k of Object.keys(headers)) {
+            if (k.toLowerCase() === "content-type") delete headers[k]
+          }
+          const form = new FormData()
+          for (const [k, v] of Object.entries(bodyParams)) {
+            if (v === undefined || v === null) continue
+            form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v))
+          }
+          fetchInit.body = form
+        } else {
+          headers["Content-Type"] = headers["Content-Type"] || "application/json"
+          fetchInit.body = JSON.stringify(bodyParams)
+        }
+      }
       let response: Awaited<ReturnType<typeof fetch>>
       try {
-        console.log(`[tool:${endpoint.name}] GET ${url}`)
+        console.log(`[tool:${endpoint.name}] ${method} ${url}`)
         const controller = new AbortController()
         const fetchTimer = setTimeout(() => controller.abort(), 10_000)
         try {
-          response = await fetch(url, { method: "GET", headers, signal: controller.signal })
+          response = await fetch(url, { ...fetchInit, signal: controller.signal })
         } finally {
           clearTimeout(fetchTimer)
         }
@@ -177,6 +382,14 @@ function registerDynamicTool(
           : `Network error: ${err.message}`
         console.error(`[tool:${endpoint.name}] ${msg}`)
         return { content: [{ type: "text", text: msg }] }
+      }
+
+      // H4: reject redirects — fetch is set to redirect:"manual" so 3xx responses
+      // are surfaced here rather than followed. This prevents open-redirect SSRF
+      // where a public URL 302s to an internal address like 169.254.169.254.
+      if (response.status >= 300 && response.status < 400) {
+        console.warn(`[tool:${endpoint.name}] Redirect (${response.status}) refused — SSRF protection`)
+        return { content: [{ type: "text", text: `Request refused: API returned a redirect (HTTP ${response.status}) which is not followed for security reasons.` }] }
       }
 
       const textResponse = await response.text()
@@ -244,9 +457,23 @@ async function postHandler(req: Request, res: Response) {
     const params = req.body.params as any
     const toolsData = params?.toolsRegistry as ToolsFile
     const userId    = (params?.userId as string) || ""
+    const unrestricted = params?.unrestricted === true
 
     if (!toolsData || !Array.isArray(toolsData.tools)) {
       res.status(400).json({ jsonrpc: "2.0", error: { code: -32602, message: "toolsRegistry missing or invalid in initialize params" }, id: null })
+      return
+    }
+
+    if (!toolsData.schema_version || toolsData.schema_version < 2) {
+      console.warn("[catalog] Legacy catalog detected — regenerate to pick up auto_path_params and body_format fields.")
+    }
+
+    // SSRF guard — validate baseUrl before registering any tools.
+    // Composite catalogs set baseUrl to "" (tools have per-tool baseUrls baked in via path) — skip those.
+    try {
+      assertSafeBaseUrl(toolsData.baseUrl)
+    } catch (err: any) {
+      res.status(400).json({ jsonrpc: "2.0", error: { code: -32602, message: `Unsafe baseUrl: ${err.message}` }, id: null })
       return
     }
 
@@ -271,7 +498,7 @@ async function postHandler(req: Request, res: Response) {
     }
 
     for (const tool of toolsData.tools) {
-      registerDynamicTool(server, tool, toolsData.baseUrl, userId)
+      registerDynamicTool(server, tool, toolsData.baseUrl, userId, unrestricted)
     }
 
     await server.connect(transport)
