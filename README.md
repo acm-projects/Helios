@@ -12,8 +12,9 @@ API spec upload → intent description → tool grouping preview → mock server
 ## Stack
 
 **Backend** (`backend/`) — Node.js, Express, TypeScript, MongoDB via Mongoose, Anthropic Claude API, SwaggerParser. Two processes:
-- `api.ts` on port `8000` — user-facing REST API (auth, spec CRUD, sandbox / try orchestration, code generation)
-- `server.ts` on port `3000` — MCP dispatcher (executes tool calls against real target APIs). Internal service; must not be publicly exposed
+
+- `api.ts` on port 8000 — user-facing REST API (auth, spec CRUD, sandbox / try orchestration, code generation)
+- `server.ts` on port 3000 — MCP dispatcher (executes tool calls against real target APIs). Internal service; must not be publicly exposed
 
 **Frontend** (`frontend/`) — Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Monaco editor.
 

@@ -1,26 +1,2 @@
-# dependencies
-node_modules/
-
-# env
-.env
-.env.*
-!.env.example
-
-# build output
-dist/
-build/
-.next/
-out/
-*.tsbuildinfo
-
-# logs
-npm-debug.log*
-yarn-error.log*
-
-# Claude Code internal tooling (agent memory, skill plugins)
-.claude/
-.agents/
-
-# OS
-.DS_Store
-Thumbs.db
+info.txt
+.claude

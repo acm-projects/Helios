@@ -25,6 +25,9 @@ next-env.d.ts
 # temporary files
 temporary screenshots/
 
+# claude code agent definitions
+.agents/
+
 # misc
 .DS_Store
 Thumbs.db
