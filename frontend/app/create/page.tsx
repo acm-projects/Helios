@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Search, X, ChevronDown, ChevronRight, Link2, FileText, Upload, Sparkles } from "lucide-react"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
+import { InfoBubble } from "@/app/components/InfoBubble"
 import yaml from "js-yaml"
 
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
@@ -81,6 +82,7 @@ interface PremadeAPI {
   initials: string
   toolCount: number
   localIcon?: string  // path to icon in /public (takes priority over iconSlug)
+  specUrl?: string    // if set, fetch + parse this OpenAPI URL via backend instead of loading local Helios-format JSON
 }
 
 const PREMADE_APIS: PremadeAPI[] = [
@@ -96,7 +98,7 @@ const PREMADE_APIS: PremadeAPI[] = [
   { slug: "github", name: "GitHub", description: "Code repositories", color: "#181717", iconSlug: "github", initials: "GH", toolCount: 1112 },
   { slug: "gitlab", name: "GitLab", description: "DevOps platform", color: "#FC6D26", iconSlug: "gitlab", initials: "GL", toolCount: 1126 },
   { slug: "gmail", name: "Gmail", description: "Email via Google", color: "#EA4335", iconSlug: "gmail", initials: "Gm", toolCount: 79 },
-  { slug: "google_calendar", name: "Google Calendar", description: "Calendar & scheduling", color: "#4285F4", iconSlug: "googlecalendar", initials: "GC", toolCount: 16 },
+  { slug: "google_calendar", name: "Google Calendar", description: "Calendar & scheduling", color: "#4285F4", iconSlug: "googlecalendar", initials: "GC", toolCount: 37, specUrl: "https://api.apis.guru/v2/specs/googleapis.com/calendar/v3/openapi.yaml" },
   { slug: "google_maps", name: "Google Maps", description: "Maps & geocoding", color: "#34A853", iconSlug: "googlemaps", initials: "GM", toolCount: 10 },
   { slug: "jira", name: "Jira", description: "Issue tracking", color: "#0052CC", iconSlug: "jira", initials: "Ji", toolCount: 487 },
   { slug: "linear", name: "Linear", description: "Modern issue tracker", color: "#5E6AD2", iconSlug: "linear", initials: "Li", toolCount: 5 },
@@ -181,12 +183,28 @@ export default function Create() {
 
   useEffect(() => {
     if (!isLoggedIn()) { router.replace("/auth"); return }
+
+    // Hydrate from cache first so the Previous cards render on arrival
+    // (no pop-in after the page-transition completes).
+    try {
+      const cached = sessionStorage.getItem("helios_servers_cache")
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed)) setServers(parsed)
+      }
+    } catch { }
+
     fetch("http://localhost:8000/api/servers", { headers: getAuthHeaders() })
       .then(res => {
         if (res.status === 401) { router.replace("/auth"); return null }
         return res.json()
       })
-      .then(data => { if (data) setServers(data.servers ?? []) })
+      .then(data => {
+        if (!data) return
+        const list = data.servers ?? []
+        setServers(list)
+        try { sessionStorage.setItem("helios_servers_cache", JSON.stringify(list)) } catch { }
+      })
       .catch(() => { })
   }, [router])
 
@@ -195,12 +213,29 @@ export default function Create() {
       const saved = sessionStorage.getItem("helios_create_tools")
       if (saved) setTools(JSON.parse(saved))
     } catch { }
+    try {
+      const form = sessionStorage.getItem("helios_create_form")
+      if (form) {
+        const parsed = JSON.parse(form) as { url?: string; apiName?: string; intent?: string }
+        if (typeof parsed.url === "string") setUrl(parsed.url)
+        if (typeof parsed.apiName === "string") setApiName(parsed.apiName)
+        if (typeof parsed.intent === "string") setIntent(parsed.intent)
+      }
+    } catch { }
   }, [])
 
   useEffect(() => {
     if (skipFirstSave.current) { skipFirstSave.current = false; return }
     sessionStorage.setItem("helios_create_tools", JSON.stringify(tools))
   }, [tools])
+
+  // Persist in-progress form inputs so navigating to /info (or anywhere else)
+  // and coming back restores the user's work. Cleared after a successful launch.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("helios_create_form", JSON.stringify({ url, apiName, intent }))
+    } catch { }
+  }, [url, apiName, intent])
   useEffect(() => { setSimplifyPreview(null) }, [tools, intent])
 
   const triggerParse = async (specUrl: string, name: string, onError: (msg: string) => void) => {
@@ -301,9 +336,9 @@ export default function Create() {
       return unique.length > 0 ? [...prev, ...unique] : prev
     })
     setExpanded(prev => new Set([...prev, pendingApiName]))
-    if (pendingDraft?.specId) {
+    if (pendingApiName && pendingDraft) {
       try {
-        sessionStorage.setItem(`helios_draft_${pendingDraft.specId}`, JSON.stringify({
+        sessionStorage.setItem(`helios_draft_${pendingApiName}`, JSON.stringify({
           specId: pendingDraft.specId, baseUrl: pendingDraft.baseUrl, auth: pendingDraft.auth, toolCount: pendingDraft.toolCount,
         }))
       } catch { }
@@ -334,7 +369,13 @@ export default function Create() {
     const data = await res.json()
     if (!res.ok || data.error) { setPopupOpen(false); setPopupLoading(false); return }
     const catalog: PopupTool[] = (data.catalog ?? []).filter((t: PopupTool) => t.enabled !== false)
-    setPendingDraft({ baseUrl: data.baseUrl ?? "" })
+    setPendingDraft({
+      specId: serverId,
+      baseUrl: data.baseUrl ?? "",
+      toolCount: catalog.length,
+      catalog,
+      auth: data.auth,
+    })
     setPopupTools(catalog)
     setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
     setPopupLoading(false)
@@ -344,20 +385,38 @@ export default function Create() {
     setPopupLoading(true); setPopupOpen(true)
     setPendingSource("premade"); setPendingApiName(api.name); setPendingDraft(null)
     try {
-      const res = await fetch(`/premade/${api.slug}.json`)
-      const data = await res.json()
-      const catalog: PopupTool[] = (data.tools ?? [])
-        .filter((t: PopupTool) => t.enabled !== false)
-        .map((t: PopupTool) => ({
-          name: t.name,
-          description: t.description,
-          enabled: t.enabled ?? true,
-          handler: (t as any).handler,
-          input_schema: (t as any).input_schema,
-        }))
-      setPendingDraft({ baseUrl: data.baseUrl ?? "", auth: data.auth })
-      setPopupTools(catalog)
-      setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
+      if (api.specUrl) {
+        // OpenAPI spec (JSON or YAML) — route through backend parser. Throwaway name
+        // avoids colliding with any existing server the user has; real name is chosen
+        // at save time in handlePopupConfirm's downstream flow.
+        const throwawayName = `${api.slug}_${Date.now()}`
+        const res = await fetch("http://localhost:8000/api/spec/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify({ url: api.specUrl, name: throwawayName }),
+        })
+        const data: ParseSpecResponse = await res.json()
+        if (!res.ok) { setPopupOpen(false); setPopupLoading(false); return }
+        const catalog: PopupTool[] = data.catalog ?? []
+        setPendingDraft({ specId: data.specId, spec: data.spec, baseUrl: data.baseUrl ?? "", toolCount: data.toolCount, catalog, auth: data.auth })
+        setPopupTools(catalog)
+        setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
+      } else {
+        const res = await fetch(`/premade/${api.slug}.json`)
+        const data = await res.json()
+        const catalog: PopupTool[] = (data.tools ?? [])
+          .filter((t: PopupTool) => t.enabled !== false)
+          .map((t: PopupTool) => ({
+            name: t.name,
+            description: t.description,
+            enabled: t.enabled ?? true,
+            handler: (t as any).handler,
+            input_schema: (t as any).input_schema,
+          }))
+        setPendingDraft({ baseUrl: data.baseUrl ?? "", auth: data.auth })
+        setPopupTools(catalog)
+        setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
+      }
     } catch {
       setPopupOpen(false)
     }
@@ -369,15 +428,6 @@ export default function Create() {
     handler: { method: string; path: string; headers: object; query_params: string[]; fixed_query_params?: any }
   }>) => {
     try {
-      const res = await fetch("http://localhost:8000/api/sandbox/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ toolsRegistry: { baseUrl: "", tools: registryTools } })
-      })
-      const data = await res.json()
-      if (!res.ok) { setGenerateError(data.error ?? "Failed to start sandbox."); setIsGenerating(false); return }
-      const syntheticId = `_composite_${Date.now()}`
-      sessionStorage.setItem(`helios_session_${syntheticId}`, JSON.stringify({ sessionId: data.sessionId, tools: data.tools }))
       const toolMap: Record<string, string> = {}
       const authMap: Record<string, AuthConfig[]> = {}
       tools.forEach(t => {
@@ -389,6 +439,19 @@ export default function Create() {
           } catch { }
         }
       })
+      const res = await fetch("http://localhost:8000/api/sandbox/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({
+          toolsRegistry: { baseUrl: "", tools: registryTools },
+          groupMap: toolMap,
+          authMap,
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) { setGenerateError(data.error ?? "Failed to start sandbox."); setIsGenerating(false); return }
+      const syntheticId = `_composite_${Date.now()}`
+      sessionStorage.setItem(`helios_session_${syntheticId}`, JSON.stringify({ sessionId: data.sessionId, tools: data.tools }))
       sessionStorage.setItem(`helios_groups_${syntheticId}`, JSON.stringify({ toolMap, authMap }))
       const editSource = sessionStorage.getItem("helios_edit_source") ?? ""
       if (editSource) sessionStorage.removeItem("helios_edit_source")
@@ -413,7 +476,14 @@ export default function Create() {
         path: t.baseUrl ? `${t.baseUrl}${t.path ?? ""}` : (t.path ?? ""),
         headers: {},
         query_params: t.handler?.query_params ?? [],
-        fixed_query_params: (t.handler as any)?.fixed_query_params
+        fixed_query_params: (t.handler as any)?.fixed_query_params,
+        // Carry the sanitized→original key map through composite assembly so the
+        // backend dispatcher can still rebuild the outgoing request correctly.
+        param_name_map: (t.handler as any)?.param_name_map,
+        // Same reasoning for body_format — Twilio + form-only APIs break without it.
+        body_format: (t.handler as any)?.body_format,
+        // Path params auto-filled from saved credentials (e.g. Twilio's {AccountSid}).
+        auto_path_params: (t.handler as any)?.auto_path_params,
       }
     }))
 
@@ -506,7 +576,7 @@ export default function Create() {
         <main className="flex-1 flex items-center justify-center px-6 py-3">
           <div className="glass-mid glass-flat rounded-3xl w-full max-w-[1152px] h-[768px] flex flex-col shadow-[0_40px_120px_rgba(0,0,0,0.5)] animate-fade-up relative overflow-hidden z-[0]">
             {/* Blurred background layer — see BackgroundManager for --page-bg source */}
-            <div aria-hidden="true" className="absolute pointer-events-none" style={{ inset: '-50px', backgroundImage: "var(--page-bg, url('/Background-Dusk(2).svg'))", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', filter: 'blur(8px) saturate(1.2) brightness(0.72)', zIndex: -1 }} />
+            <div aria-hidden="true" className="absolute pointer-events-none" style={{ inset: '-50px', backgroundImage: "var(--page-bg, url('/Background-Dusk(2).jpg'))", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', filter: 'blur(8px) saturate(1.2) brightness(0.72)', zIndex: -1 }} />
             <div className="overflow-hidden rounded-3xl flex flex-col flex-1 min-h-0 relative" style={{ zIndex: 1 }}>
 
               {/* ── Slide container ─── holds both panels side by side ───── */}
@@ -549,7 +619,7 @@ export default function Create() {
                         {/* Previous servers */}
                         {filteredServers.length > 0 && (
                           <div className="mb-4">
-                            <p className="font-[family-name:--font-cinzel] text-[11px] tracking-[0.28em] text-white/70 uppercase mb-2.5">Previous</p>
+                            <p className="font-[family-name:--font-cinzel] text-[15px] tracking-[0.28em] text-white uppercase mb-2.5">Previous</p>
                             <div className="grid grid-cols-3 gap-2.5">
                               {filteredServers.map(server => (
                                 <button
@@ -576,7 +646,13 @@ export default function Create() {
                         {/* Premade APIs */}
                         {filteredApis.length > 0 && (
                           <div className="mb-3">
-                            <p className="font-[family-name:--font-cinzel] text-[11px] tracking-[0.28em] text-white/70 uppercase mb-2.5">Premade APIs</p>
+                            <p className="font-[family-name:--font-cinzel] text-[15px] tracking-[0.28em] text-white uppercase mb-2.5 inline-flex items-center gap-2">
+                              Premade APIs
+                              <InfoBubble
+                                chapter="premade"
+                                quick="Reference links for every pre-made MCP server Helios ships — official, archived, and community sources."
+                              />
+                            </p>
                             <div className="grid grid-cols-3 gap-2.5">
                               {filteredApis.map(api => (
                                 <button
@@ -631,7 +707,7 @@ export default function Create() {
 
                       {/* ── BOTTOM HALF: Added tools (scrollable) ─────────────── */}
                       <div className="overflow-y-auto px-5 pt-3 pb-3 min-h-0" style={{ flex: "1 1 0", scrollbarGutter: "stable" }}>
-                        <p className="font-[family-name:--font-cinzel] text-[11px] tracking-[0.28em] text-white/70 uppercase mb-2.5">Added Tools</p>
+                        <p className="font-[family-name:--font-cinzel] text-[15px] tracking-[0.28em] text-white uppercase mb-2.5">Added Tools</p>
                         {tools.length === 0 ? (
                           <p className="font-[family-name:--font-cormorant] text-[15px] italic text-white/40 px-1">
                             Add an API to see tools here.
@@ -717,8 +793,13 @@ export default function Create() {
 
                         {/* API Name */}
                         <div className="mb-4">
-                          <h2 className="font-[family-name:--font-cinzel] text-[20px] tracking-[0.18em] text-white text-center mb-4">
+                          <h2 className="font-[family-name:--font-cinzel] text-[20px] tracking-[0.18em] text-white mb-4 inline-flex items-center gap-2.5 justify-center w-full">
                             Custom Tools
+                            <InfoBubble
+                              chapter="api-specs"
+                              quick="Where to find OpenAPI specs for any public API — directories, URL patterns, and generators when none exists."
+                              size={16}
+                            />
                           </h2>
                           <label className="block font-[family-name:--font-cinzel] text-[13px] tracking-[0.22em] text-white uppercase mb-2">
                             API Name
@@ -731,15 +812,14 @@ export default function Create() {
                             className="glass-input w-full rounded-xl px-4 py-3 text-[17px] font-[family-name:--font-cinzel] tracking-wider text-white"
                           />
                         </div>
-
                         {/* Spec URL panel */}
+                        <p className="block font-[family-name:--font-cinzel] text-[13px] tracking-[0.22em] text-white uppercase mb-2">Paste Spec URL</p>
                         <div className="glass rounded-2xl p-4 mb-1">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.07] flex-shrink-0">
                               <Link2 size={15} strokeWidth={1.5} className="text-white/60" />
                             </div>
                             <div>
-                              <p className="font-[family-name:--font-cinzel] text-[17px] tracking-[0.12em] text-white/92">Paste Spec URL</p>
                               <p className="font-[family-name:--font-cormorant] text-[17px] italic text-white/65">Link to an OpenAPI/Swagger JSON or YAML file</p>
                             </div>
                           </div>
@@ -787,7 +867,7 @@ export default function Create() {
                           <span className="font-[family-name:--font-cormorant] text-[17px] italic text-white/30">or</span>
                           <div className="flex-1 h-px bg-white/[0.08]" />
                         </div>
-
+                        <p className="block font-[family-name:--font-cinzel] text-[13px] tracking-[0.22em] text-white uppercase mb-2">Upload OpenAPI File</p>
                         {/* File upload panel */}
                         <div className="glass rounded-2xl p-4">
                           <div className="flex items-center gap-3 mb-3">
@@ -795,7 +875,6 @@ export default function Create() {
                               <Upload size={14} strokeWidth={1.5} className="text-white/60" />
                             </div>
                             <div>
-                              <p className="font-[family-name:--font-cinzel] text-[17px] tracking-[0.12em] text-white/92">Upload OpenAPI File</p>
                               <p className="font-[family-name:--font-cormorant] text-[17px] italic text-white/65">Drop a .json, .yaml, or .yml spec file</p>
                             </div>
                           </div>

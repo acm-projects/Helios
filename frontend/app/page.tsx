@@ -1,6 +1,7 @@
 "use client"
 import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Trash2, ChevronRight } from "lucide-react"
 import { isLoggedIn, getAuthHeaders, logout } from "@/lib/auth"
@@ -35,6 +36,7 @@ export default function Home() {
   const [reanimationKey, setReanimationKey] = useState(0)
   const [prefetching, setPrefetching] = useState<string | null>(null)
   const [newStarId, setNewStarId] = useState<string | null>(null)
+  const [animateMode, setAnimateMode] = useState<"initial" | "steady">("initial")
 
   useEffect(() => {
     document.fonts.ready.then(() => requestAnimationFrame(() => setPageReady(true)))
@@ -44,6 +46,12 @@ export default function Home() {
     const id = sessionStorage.getItem("helios_new_server")
     if (id) { setNewStarId(id); sessionStorage.removeItem("helios_new_server") }
   }, [])
+
+  useEffect(() => {
+    if (!confirmDelete) return
+    document.documentElement.classList.add("popup-open")
+    return () => document.documentElement.classList.remove("popup-open")
+  }, [confirmDelete])
 
   const handleServerClick = async (serverId: string) => {
     if (prefetching) return
@@ -92,7 +100,11 @@ export default function Home() {
     if (res.ok) {
       setDeletingId(idToDelete)
       setTimeout(() => {
-        setServers(prev => prev.filter(s => s.id !== idToDelete))
+        setServers(prev => {
+          const next = prev.filter(s => s.id !== idToDelete)
+          try { sessionStorage.setItem("helios_servers_cache", JSON.stringify(next)) } catch { }
+          return next
+        })
         setDeletingId(null)
         if (affectedIds.size > 0) {
           setReanimatingIds(affectedIds)
@@ -115,7 +127,9 @@ export default function Home() {
       })
       .then(data => {
         if (!data) return
-        setServers(data.servers ?? [])
+        const list = data.servers ?? []
+        setServers(list)
+        try { sessionStorage.setItem("helios_servers_cache", JSON.stringify(list)) } catch { }
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -216,6 +230,18 @@ export default function Home() {
     })
   }, [servers])
 
+  // Once the opening BFS draw finishes, flip to steady mode.
+  // In steady mode, only edges explicitly flagged (touchesReanimating / touchesNewStar)
+  // animate — everything else renders static. Without this, a deletion triggers the
+  // constellationEdges useMemo to recompute BFS delays, and the un-keyed style-prop change
+  // restarts CSS animations with new delays, making distant lines blink off then back on.
+  useEffect(() => {
+    if (animateMode !== "initial" || constellationEdges.length === 0) return
+    const maxDelay = constellationEdges.reduce((m, e) => Math.max(m, e.delay), 0)
+    const t = setTimeout(() => setAnimateMode("steady"), (maxDelay + 1.4) * 1000 + 150)
+    return () => clearTimeout(t)
+  }, [constellationEdges, animateMode])
+
   return (
     <div className={cn("min-h-screen transition-opacity duration-500", pageReady ? "opacity-100" : "opacity-0")}>
 
@@ -224,10 +250,10 @@ export default function Home() {
         <>
         {/* ── Constellation lines — above background, below everything else ── */}
         <svg
-          className="fixed inset-0 w-full h-full pointer-events-none"
+          className="fixed inset-0 pointer-events-none"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
-          style={{ zIndex: 2 }}
+          style={{ zIndex: 2, width: "100vw", height: "100vh" }}
         >
           <defs>
             <linearGradient id="line-fade" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -268,6 +294,23 @@ export default function Home() {
 
             if (deletingId) {
               // Unaffected edge — keep static at fully-drawn state during erase
+              return (
+                <line
+                  key={edgeKey}
+                  x1={source.starX} y1={source.starY}
+                  x2={target.starX} y2={target.starY}
+                  stroke="url(#line-fade)"
+                  strokeWidth="0.18"
+                  strokeLinecap="round"
+                  pathLength={1}
+                  style={{ strokeDasharray: 1, strokeDashoffset: 0, opacity: 1 }}
+                />
+              )
+            }
+
+            // Steady state: only animate edges explicitly flagged. Everything else
+            // stays painted, no restart → no 2-3s flicker after a deletion resettles.
+            if (animateMode === "steady" && !touchesReanimating && !touchesNewStar) {
               return (
                 <line
                   key={edgeKey}
@@ -340,8 +383,9 @@ export default function Home() {
         </>
       )}
 
-      {/* ── Full-page blur wrapper (blurs everything except the modal) ────── */}
-      <div className={cn("relative z-[6] transition-[filter] duration-300", !!confirmDelete && "blur-sm brightness-75")}>
+      {/* Page content — the delete modal renders its own scrim-blur overlay,
+          no need to mutate this wrapper. */}
+      <div className="relative z-[6]">
 
       {/* ── Sticky nav ───────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 flex items-center px-8 h-[80px]">
@@ -356,15 +400,15 @@ export default function Home() {
         </div>
 
         <div className="flex items-center justify-end gap-1">
-          <button className="group relative font-[family-name:--font-cinzel] text-[15px] tracking-[0.15em] px-5 py-2.5 text-white/60 hover:text-white transition-all duration-200 cursor-pointer hover:-translate-y-[1px]">
+          <Link href="/info" className="group relative font-[family-name:--font-cinzel] text-[15px] tracking-[0.15em] px-5 py-2.5 text-white/60 hover:text-white transition-all duration-200 cursor-pointer hover:-translate-y-[1px]">
             Info
             <span className="absolute bottom-1 left-5 right-5 h-[1px] bg-white/70 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
-          </button>
+          </Link>
           <Link href="/keys" className="group relative font-[family-name:--font-cinzel] text-[15px] tracking-[0.15em] px-5 py-2.5 text-white/60 hover:text-white transition-all duration-200 cursor-pointer hover:-translate-y-[1px]">
             Keys
             <span className="absolute bottom-1 left-5 right-5 h-[1px] bg-white/70 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
           </Link>
-          {isLoggedIn() ? (
+          {pageReady && (isLoggedIn() ? (
             <button
               onClick={() => { logout(); router.refresh(); router.push("/auth") }}
               className="group relative font-[family-name:--font-cinzel] text-[15px] tracking-[0.15em] px-5 py-2.5 text-white/60 hover:text-white transition-all duration-200 cursor-pointer hover:-translate-y-[1px]"
@@ -377,7 +421,7 @@ export default function Home() {
               Sign In
               <span className="absolute bottom-1 left-5 right-5 h-[1px] bg-white/70 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
             </Link>
-          )}
+          ))}
         </div>
 
       </div>
@@ -440,7 +484,7 @@ export default function Home() {
                       aria-hidden="true"
                       className="absolute inset-0 pointer-events-none rounded-2xl"
                       style={{
-                        backgroundImage: "var(--page-bg, url('/Background-Midnight(1).svg'))",
+                        backgroundImage: "var(--page-bg, url('/Background-Midnight(1).jpg'))",
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         backgroundAttachment: 'fixed',
@@ -505,13 +549,14 @@ export default function Home() {
 
       </div>{/* end full-page blur wrapper */}
 
-      {/* ── Delete confirmation modal ─────────────────────────────────── */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
-          <div className="absolute inset-0" onClick={() => setConfirmDelete(null)} />
+      {/* ── Delete confirmation modal — portaled to <body> so .page-wrapper
+          filter blur doesn't blur the modal itself ──────────────────── */}
+      {confirmDelete && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/20" onClick={() => setConfirmDelete(null)} />
           <div className="relative overflow-hidden z-[0] glass-mid rounded-3xl px-12 py-10 flex flex-col items-center gap-6
             shadow-[0_32px_80px_rgba(0,0,0,0.5)] animate-fade-up">
-            <div aria-hidden="true" className="absolute pointer-events-none" style={{ inset: '-50px', backgroundImage: "var(--page-bg, url('/Background-Midnight(1).svg'))", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', filter: 'blur(8px) saturate(1.2) brightness(0.72)', zIndex: -1 }} />
+            <div aria-hidden="true" className="absolute pointer-events-none" style={{ inset: '-50px', backgroundImage: "var(--page-bg, url('/Background-Midnight(1).jpg'))", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', filter: 'blur(8px) saturate(1.2) brightness(0.72)', zIndex: -1 }} />
             <span className="font-[family-name:--font-cinzel] text-[20px] tracking-widest text-white/90">
               Delete Server?
             </span>
@@ -536,7 +581,8 @@ export default function Home() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

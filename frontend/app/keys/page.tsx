@@ -4,6 +4,8 @@ import Link from "next/link"
 import { getAuthHeaders, isLoggedIn } from "@/lib/auth"
 import { useRouter } from "next/navigation"
 import { KeyRound, RefreshCw, Trash2, Check, ChevronDown, ChevronRight, Link2 } from "lucide-react"
+import { InfoBubble } from "@/app/components/InfoBubble"
+import { lookupProviderKeyUrl, lookupBasicAuthLabels } from "@/lib/providerKeys"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -196,10 +198,12 @@ export default function KeysPage() {
 function IntegrationRow({ integration, onRefresh }: { integration: Integration; onRefresh: () => void }) {
   const { integrationId, authType, oauthFlow, keyPresent, tokenExpired } = integration
   const isOAuth = authType === "oauth2"
-  const isPlainKey = authType === "api_key" || authType === ("apiKey" as string) || authType === "bearer_token" || authType === "basic_auth"
+  const isBasicAuth = authType === "basic_auth"
+  const isPlainKey = authType === "api_key" || authType === ("apiKey" as string) || authType === "bearer_token"
 
   const statusColor = !keyPresent ? "rgba(248,113,113,0.75)" : tokenExpired ? "rgba(251,191,36,0.75)" : "rgba(110,231,183,0.85)"
   const statusLabel = !keyPresent ? "Missing" : tokenExpired ? "Expired" : "Active"
+  const providerUrl = lookupProviderKeyUrl(integrationId)
 
   const [deleting, setDeleting] = useState(false)
 
@@ -218,7 +222,22 @@ function IntegrationRow({ integration, onRefresh }: { integration: Integration; 
       <div className="flex items-center gap-3">
         <div className="w-2 h-2 rounded-full flex-shrink-0"
           style={{ background: statusColor, boxShadow: `0 0 6px ${statusColor}` }} />
-        <span className="font-[family-name:--font-geist-mono] text-[13px] text-white/70">{integrationId}</span>
+        <span className="inline-flex items-center gap-1.5 font-[family-name:--font-geist-mono] text-[13px] text-white/70">
+          {integrationId}
+          {providerUrl ? (
+            <InfoBubble
+              externalUrl={providerUrl}
+              quick={`Open the ${integrationId} developer dashboard — this is where your credentials for this integration live.`}
+              size={13}
+            />
+          ) : (
+            <InfoBubble
+              chapter="api-keys"
+              quick="Where to find API keys for any provider — including how to hunt down dev dashboards Helios doesn't index by default."
+              size={13}
+            />
+          )}
+        </span>
         <span
           className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.18em] uppercase px-2 py-0.5 rounded-md"
           style={{
@@ -242,6 +261,7 @@ function IntegrationRow({ integration, onRefresh }: { integration: Integration; 
 
       {/* Credential form */}
       {isPlainKey && <ApiKeyForm integrationId={integrationId} isUpdate={keyPresent} onSaved={onRefresh} />}
+      {isBasicAuth && <BasicAuthForm integrationId={integrationId} isUpdate={keyPresent} onSaved={onRefresh} />}
       {isOAuth && <OAuthForm integration={integration} isUpdate={keyPresent} onConnected={onRefresh} />}
     </div>
   )
@@ -295,6 +315,95 @@ function ApiKeyForm({ integrationId, isUpdate, onSaved }: { integrationId: strin
           {saved ? "Saved" : isUpdate ? "Update" : "Save"}
         </button>
       </div>
+      {error && <p className="font-[family-name:--font-cormorant] text-[14px] text-red-400/80">{error}</p>}
+    </div>
+  )
+}
+
+// ─── Basic Auth Form ─────────────────────────────────────────────────────────
+//
+// Two labeled inputs instead of a single "username:password" string. Labels
+// come from providerKeys.lookupBasicAuthLabels — Twilio shows "Account SID"
+// and "Auth Token", everything else falls back to "Username" / "Password".
+//
+// The backend still stores the credential as `${user}:${pass}` because that's
+// what server.ts base64s into the Authorization header. Joining at submit time
+// means zero backend changes — the wire format is unchanged.
+
+function BasicAuthForm({ integrationId, isUpdate, onSaved }: { integrationId: string; isUpdate: boolean; onSaved: () => void }) {
+  const labels = lookupBasicAuthLabels(integrationId)
+  const [user, setUser] = useState("")
+  const [pass, setPass] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSave() {
+    const u = user.trim()
+    const p = pass.trim()
+    if (!u || !p) return
+    setSaving(true); setError(null)
+    try {
+      const res = await fetch(`${BASE}/api/keys/${encodeURIComponent(integrationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ key: `${u}:${p}` })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Save failed")
+      setUser(""); setPass(""); setSaved(true)
+      onSaved()
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err: any) {
+      setError(err.message)
+    }
+    setSaving(false)
+  }
+
+  const canSave = user.trim().length > 0 && pass.trim().length > 0
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-1.5">
+          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.18em] text-white/35 uppercase">{labels.user}</label>
+          <input
+            type="text"
+            value={user}
+            onChange={e => setUser(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && canSave && handleSave()}
+            placeholder={isUpdate ? `New ${labels.user}` : labels.user}
+            className="glass-input rounded-xl px-3 py-2.5 text-[12px] font-[family-name:--font-geist-mono]"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="font-[family-name:--font-cinzel] text-[9px] tracking-[0.18em] text-white/35 uppercase">{labels.pass}</label>
+          <input
+            type="password"
+            value={pass}
+            onChange={e => setPass(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && canSave && handleSave()}
+            placeholder="••••••••"
+            className="glass-input rounded-xl px-3 py-2.5 text-[12px] font-[family-name:--font-geist-mono]"
+          />
+        </div>
+      </div>
+
+      {labels.hint && (
+        <p className="font-[family-name:--font-cormorant] text-[14px] italic text-white/35">
+          {labels.hint}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !canSave}
+        className="self-start btn-gold cursor-pointer rounded-xl px-5 py-2.5 font-[family-name:--font-cinzel] text-[11px] tracking-[0.14em] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+      >
+        {saving ? <RefreshCw size={12} className="animate-spin" /> : saved ? <Check size={12} /> : null}
+        {saved ? "Saved" : isUpdate ? "Update" : "Save"}
+      </button>
+
       {error && <p className="font-[family-name:--font-cormorant] text-[14px] text-red-400/80">{error}</p>}
     </div>
   )

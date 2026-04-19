@@ -1,6 +1,6 @@
 "use client"
 import { Suspense, useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Download, Check, Sparkles } from "lucide-react"
 import { getAuthHeaders } from "@/lib/auth"
@@ -8,6 +8,7 @@ import { getAuthHeaders } from "@/lib/auth"
 function DownloadContent() {
   const params = useSearchParams()
   const specId = params.get("specId")
+  const router = useRouter()
 
   const [pageReady, setPageReady] = useState(false)
   useEffect(() => {
@@ -64,7 +65,7 @@ function DownloadContent() {
       <main className="flex-1 flex items-center justify-center px-4 py-6">
         <div className="glass-mid rounded-3xl px-12 py-8 w-full max-w-[540px] flex flex-col items-center gap-5
           shadow-[0_40px_100px_rgba(0,0,0,0.4)] animate-fade-up relative overflow-hidden z-[0]">
-          <div aria-hidden="true" className="absolute pointer-events-none" style={{ inset: '-50px', backgroundImage: "var(--page-bg, url('/Background-Sunset(5).svg'))", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', filter: 'blur(8px) saturate(1.2) brightness(0.72)', zIndex: -1 }} />
+          <div aria-hidden="true" className="absolute pointer-events-none" style={{ inset: '-50px', backgroundImage: "var(--page-bg, url('/Background-Sunset(5).jpg'))", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', filter: 'blur(8px) saturate(1.2) brightness(0.72)', zIndex: -1 }} />
 
           {/* Checkmark icon */}
           <div className="w-14 h-14 rounded-full flex items-center justify-center"
@@ -106,6 +107,7 @@ function DownloadContent() {
 
             {/* Try in Helios */}
             <button
+              onClick={() => router.push(specId ? `/try?specId=${encodeURIComponent(specId)}` : "/try")}
               className="cursor-pointer rounded-xl py-3.5 flex items-center justify-center gap-2.5 w-full
                 font-[family-name:--font-cinzel] text-[13px] tracking-[0.12em] text-white/75
                 hover:text-white transition-all duration-200"

@@ -5,12 +5,12 @@ import { useState, useEffect, useRef, useCallback } from "react"
 type StarMode = "full" | "sparse" | "none"
 
 const PAGE_CONFIG: Record<string, { bg: string; overlay: string; stars: StarMode }> = {
-  "/":         { bg: "/Background-Midnight(1).svg", overlay: "rgba(0,0,0,0.35)", stars: "full"   },
-  "/auth":     { bg: "/Background-Midnight(1).svg", overlay: "rgba(0,0,0,0.40)", stars: "full"   },
-  "/create":   { bg: "/Background-Dusk(2).svg",     overlay: "rgba(0,0,0,0.35)", stars: "sparse" },
-  "/sandbox":  { bg: "/Background-Sunrise(3).svg",  overlay: "rgba(0,0,0,0.42)", stars: "none"   },
-  "/verify":   { bg: "/Background-Midday(4).svg",   overlay: "rgba(0,0,0,0.45)", stars: "none"   },
-  "/download": { bg: "/Background-Sunset(5).svg",   overlay: "rgba(0,0,0,0.25)", stars: "none"   },
+  "/":         { bg: "/Background-Midnight(1).jpg", overlay: "rgba(0,0,0,0.35)", stars: "full"   },
+  "/auth":     { bg: "/Background-Midnight(1).jpg", overlay: "rgba(0,0,0,0.40)", stars: "full"   },
+  "/create":   { bg: "/Background-Dusk(2).jpg",     overlay: "rgba(0,0,0,0.35)", stars: "sparse" },
+  "/sandbox":  { bg: "/Background-Sunrise(3).jpg",  overlay: "rgba(0,0,0,0.42)", stars: "none"   },
+  "/verify":   { bg: "/Background-Midday(4).jpg",   overlay: "rgba(0,0,0,0.45)", stars: "none"   },
+  "/download": { bg: "/Background-Sunset(5).jpg",   overlay: "rgba(0,0,0,0.25)", stars: "none"   },
 }
 const DEFAULT = PAGE_CONFIG["/"]
 
@@ -81,18 +81,17 @@ const COLORS = [
 ]
 
 const POOL_CONFIGS = [
-  { count: 130, minDist: 153, maxDist: 168, minOp: 0.18, maxOp: 0.45, minSz: 1.0, maxSz: 2.2 },
-  { count: 110, minDist: 167, maxDist: 185, minOp: 0.22, maxOp: 0.52, minSz: 1.4, maxSz: 3.2 },
-  { count:  80, minDist: 184, maxDist: 200, minOp: 0.28, maxOp: 0.58, minSz: 1.8, maxSz: 4.2 },
-  { count:  50, minDist: 198, maxDist: 216, minOp: 0.20, maxOp: 0.50, minSz: 2.4, maxSz: 5.5 },
+  { count: 40, minDist: 140, maxDist: 155, minOp: 0.10, maxOp: 0.30, minSz: 0.6, maxSz: 1.4 },
+  { count: 40, minDist: 153, maxDist: 168, minOp: 0.14, maxOp: 0.38, minSz: 0.8, maxSz: 1.8 },
+  { count: 40, minDist: 167, maxDist: 185, minOp: 0.18, maxOp: 0.45, minSz: 1.0, maxSz: 2.2 },
+  { count: 30, minDist: 184, maxDist: 200, minOp: 0.22, maxOp: 0.52, minSz: 1.4, maxSz: 3.2 },
+  { count: 30, minDist: 198, maxDist: 216, minOp: 0.28, maxOp: 0.58, minSz: 1.8, maxSz: 4.2 },
 ] as const
 
 interface PoolStar {
-  key:        number   // changes on respawn → forces React remount
   id:         string
-  dist:       number   // vh
-  startDeg:   number   // angle at spawnedAt (deg)
-  spawnedAt:  number   // ms timestamp
+  dist:       number
+  startDeg:   number
   opacity:    number
   size:       number
   color:      string
@@ -101,36 +100,14 @@ interface PoolStar {
   pulseDelay: number
 }
 
-// Angle (deg) where a star at `dist` is just off the right screen edge (x ≈ 104%).
-// CW motion means entry from right, exit to left.
-function computeEntryAngle(dist: number): number {
-  // Right edge: x = 104 → cos(θ) = (104-50)*ASPECT / dist
-  const c = (54 * ASPECT) / dist
-  if (c < 1) {
-    const θ = Math.acos(c) * 180 / Math.PI
-    const y = dist * Math.sin(θ * Math.PI / 180) - PIVOT_TOP_VH
-    if (y > -10) return θ   // on-screen y — right-edge entry
-  }
-  // Star enters from top (y = -5%) — used for small dist (top-layer arcs)
-  const s = (PIVOT_TOP_VH - 5) / dist
-  return s <= 1 ? Math.asin(s) * 180 / Math.PI : 65
-}
-
-function buildStar(
-  rng: () => number, li: number, si: number, keyVal: number,
-  startDegOverride?: number,
-): PoolStar {
-  const cfg    = POOL_CONFIGS[li]
-  const dist   = cfg.minDist + rng() * (cfg.maxDist - cfg.minDist)
-  const ea     = computeEntryAngle(dist)
-  const exitDeg = 180 - ea
-  const startDeg = startDegOverride ?? (ea - 5 + (si / cfg.count) * (exitDeg - ea + 10))
+function buildStar(rng: () => number, li: number, si: number): PoolStar {
+  const cfg      = POOL_CONFIGS[li]
+  const dist     = cfg.minDist + rng() * (cfg.maxDist - cfg.minDist)
+  const startDeg = (si / cfg.count) * 360
   return {
-    key:        keyVal,
     id:         `${li}-${si}`,
     dist,
     startDeg,
-    spawnedAt:  Date.now(),
     opacity:    cfg.minOp + rng() * (cfg.maxOp - cfg.minOp),
     size:       cfg.minSz + rng() * (cfg.maxSz - cfg.minSz),
     color:      COLORS[Math.floor(rng() * COLORS.length)],
@@ -141,87 +118,14 @@ function buildStar(
 }
 
 function useStarPool() {
-  const keyRef      = useRef(10000)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const [stars, setStars] = useState<PoolStar[]>(() => {
+  const [stars] = useState<PoolStar[]>(() => {
     const rng = xorshift(31337)
     return POOL_CONFIGS.flatMap((_, li) =>
       Array.from({ length: POOL_CONFIGS[li].count }, (__, si) =>
-        buildStar(rng, li, si, si + li * 1000)
+        buildStar(rng, li, si)
       )
     )
   })
-
-  useEffect(() => {
-    const ORBIT_MS = ORBIT_DUR * 1000
-    const GRACE_MS = 260_000
-
-    function tick() {
-      const now    = Date.now()
-      // Use the real viewport aspect ratio — hardcoding 16:9 caused stars to be
-      // incorrectly flagged as off-screen on non-standard displays.
-      const aspect = window.innerWidth / window.innerHeight
-
-      setStars(prev => prev.map(star => {
-        const elapsed = now - star.spawnedAt
-        if (elapsed < GRACE_MS) return star
-
-        const deg = star.startDeg + (elapsed / ORBIT_MS) * 360
-        const rad = deg * (Math.PI / 180)
-        const x   = 50 + star.dist * Math.cos(rad) / aspect
-        const y   = star.dist * Math.sin(rad) - PIVOT_TOP_VH
-
-        // Safety: never despawn a star that is currently visible on screen.
-        const onScreen = x >= -5 && x <= 105 && y >= -5 && y <= 105
-        if (onScreen) return star
-
-        // Only respawn once clearly outside the viewport with generous margins.
-        if (x < -25 || x > 125 || y < -25 || y > 125) {
-          const li   = parseInt(star.id.split("-")[0])
-          const ea   = computeEntryAngle(star.dist)
-          const rng2 = xorshift(now ^ (keyRef.current * 997))
-          const newDeg = ea - 2 - rng2() * 15
-          return {
-            ...star,
-            key:       ++keyRef.current,
-            startDeg:  newDeg,
-            spawnedAt: now,
-            opacity:   POOL_CONFIGS[li].minOp + rng2() * (POOL_CONFIGS[li].maxOp - POOL_CONFIGS[li].minOp),
-          }
-        }
-        return star
-      }))
-    }
-
-    function startInterval() {
-      intervalRef.current = setInterval(tick, 8000)
-    }
-
-    startInterval()
-
-    let hiddenAt = 0
-    function onVisibility() {
-      if (document.hidden) {
-        hiddenAt = Date.now()
-        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
-      } else {
-        // Shift all spawnedAt forward by the hidden duration so elapsed time
-        // stays in sync with the CSS animation (which browsers pause on hidden tabs).
-        const pausedMs = hiddenAt > 0 ? Date.now() - hiddenAt : 0
-        hiddenAt = 0
-        if (pausedMs > 0) setStars(prev => prev.map(s => ({ ...s, spawnedAt: s.spawnedAt + pausedMs })))
-        startInterval()
-      }
-    }
-
-    document.addEventListener("visibilitychange", onVisibility)
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-      document.removeEventListener("visibilitychange", onVisibility)
-    }
-  }, [])
-
   return stars
 }
 
@@ -231,7 +135,7 @@ interface ShootingStar {
   length: number; thick: number; dur: number; bright: boolean
 }
 
-function useShootingStars() {
+function useShootingStars(enabled: boolean) {
   const [stars, setStars] = useState<ShootingStar[]>([])
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -251,7 +155,7 @@ function useShootingStars() {
 
   const schedule = useCallback((initialDelay?: number) => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    const delay = initialDelay ?? (60000 + Math.random() * 540000)
+    const delay = initialDelay ?? (40000 + Math.random() * 540000)
     timerRef.current = setTimeout(() => {
       if (!document.hidden) spawnOne()
       schedule()
@@ -259,11 +163,19 @@ function useShootingStars() {
   }, [spawnOne])
 
   useEffect(() => {
+    // Disabled (non-star page OR stars faded out): cancel timer, clear in-flight,
+    // and do NOT attach the visibility listener — prevents pile-up when user
+    // navigates to a no-star page and later returns.
+    if (!enabled) {
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
+      setStars([])
+      return
+    }
+
     schedule(15000 + Math.random() * 45000)
 
     function onVisibility() {
       if (document.hidden) {
-        // Cancel pending spawn and clear any in-flight stars so nothing stacks up.
         if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
         setStars([])
       } else {
@@ -276,7 +188,7 @@ function useShootingStars() {
       if (timerRef.current) clearTimeout(timerRef.current)
       document.removeEventListener("visibilitychange", onVisibility)
     }
-  }, [schedule])
+  }, [schedule, enabled])
 
   const remove = useCallback((id: number) => setStars(prev => prev.filter(s => s.id !== id)), [])
   return { stars, remove }
@@ -294,21 +206,48 @@ export default function BackgroundManager() {
   const [active, setActive]     = useState(() => getConfig(pathname))
   const [incoming, setIncoming] = useState<typeof active | null>(null)
   const allStars = useStarPool()
-  const { stars: shootingStars, remove: removeShootingStar } = useShootingStars()
 
-  const starMode = active.stars as StarMode
+  const [visibleStarMode, setVisibleStarMode] = useState<StarMode>(() => getConfig(pathname).stars as StarMode)
+  const [starOpacity, setStarOpacity] = useState(1)
+  const starModeRef = useRef<StarMode>(getConfig(pathname).stars as StarMode)
+
+  const { stars: shootingStars, remove: removeShootingStar } = useShootingStars(visibleStarMode !== "none")
+
   // sparse = only the topmost orbital layer (li=0, ~130 stars, tightest arc near zenith)
-  const stars = starMode === "none"   ? [] :
-                starMode === "sparse" ? allStars.filter(s => s.id.startsWith("0-")) :
+  const stars = visibleStarMode === "none"   ? [] :
+                visibleStarMode === "sparse" ? allStars.filter(s => s.id.startsWith("0-")) :
                 allStars
 
   useEffect(() => {
     const next = getConfig(pathname)
     document.documentElement.style.setProperty('--page-bg', `url('${next.bg}')`)
-    if (next.bg === active.bg) { setActive(next); return }
-    setIncoming(next)
-    const timer = setTimeout(() => { setActive(next); setIncoming(null) }, 650)
-    return () => clearTimeout(timer)
+
+    let bgTimer: ReturnType<typeof setTimeout> | null = null
+    let starTimer: ReturnType<typeof setTimeout> | null = null
+
+    if (next.bg !== active.bg) {
+      setIncoming(next)
+      bgTimer = setTimeout(() => { setActive(next); setIncoming(null) }, 650)
+    } else {
+      setActive(next)
+    }
+
+    const nextStars = next.stars as StarMode
+    if (nextStars !== starModeRef.current) {
+      setStarOpacity(0)
+      starTimer = setTimeout(() => {
+        starModeRef.current = nextStars
+        setVisibleStarMode(nextStars)
+        if (nextStars !== "none") {
+          requestAnimationFrame(() => requestAnimationFrame(() => setStarOpacity(1)))
+        }
+      }, 400)
+    }
+
+    return () => {
+      if (bgTimer) clearTimeout(bgTimer)
+      if (starTimer) clearTimeout(starTimer)
+    }
   }, [pathname])
 
   return (
@@ -328,15 +267,19 @@ export default function BackgroundManager() {
       )}
 
       {/* Star pool — all orbiting shared pivot at (50vw, -150vh) */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: -9 }}>
+      <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{
+        zIndex: -9, opacity: starOpacity, transition: "opacity 400ms ease",
+        maskImage: SKY_MASK, WebkitMaskImage: SKY_MASK,
+        maskSize: "100% 100%", WebkitMaskSize: "100% 100%",
+      }}>
         {stars.map(star => (
           <div
-            key={star.key}
+            key={star.id}
             style={{
               position:           "absolute",
               left:               "50vw",
               top:                `-${PIVOT_TOP_VH}vh`,
-              opacity:            star.opacity * (starMode === "sparse" ? 0.55 : 1),
+              opacity:            star.opacity * (visibleStarMode === "sparse" ? 0.55 : 1),
               // @ts-expect-error — CSS custom property
               "--r":              `${star.dist}vh`,
               animation:          `star-orbit ${ORBIT_DUR}s linear infinite`,
@@ -361,7 +304,7 @@ export default function BackgroundManager() {
       {DEBUG_TRAJECTORIES && (
         <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 9998 }}>
           {stars.map(star => (
-            <div key={`traj-${star.key}`} style={{
+            <div key={`traj-${star.id}`} style={{
               position: "absolute", left: "50vw", top: `-${PIVOT_TOP_VH}vh`,
               width: `${star.dist * 2}vh`, height: `${star.dist * 2}vh`,
               borderRadius: "50%", border: `1px solid ${star.color}55`,
@@ -372,7 +315,7 @@ export default function BackgroundManager() {
       )}
 
       {/* Shooting stars — masked so they fade out at the arc/mountain boundary */}
-      {starMode !== "none" && <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{
+      {visibleStarMode !== "none" && <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{
         zIndex: -8,
         maskImage: SKY_MASK,
         WebkitMaskImage: SKY_MASK,

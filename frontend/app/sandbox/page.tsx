@@ -1,10 +1,12 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
+import { Suspense, useState, useEffect, useLayoutEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Send, User, Bot, ChevronDown, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
+import { InfoBubble } from "@/app/components/InfoBubble"
+import { lookupProviderKeyUrl, lookupBasicAuthLabels } from "@/lib/providerKeys"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
@@ -50,7 +52,7 @@ interface AuthContext {
   basicAuthNote?: string
 }
 
-export default function Sandbox() {
+function SandboxContent() {
   const searchParams = useSearchParams()
   const specId = searchParams.get("specId")
   const compositeId = searchParams.get("compositeId")
@@ -87,7 +89,10 @@ export default function Sandbox() {
           path: t.handler?.path ?? "",
           headers: {},
           query_params: t.handler?.query_params ?? [],
-          fixed_query_params: (t.handler as any)?.fixed_query_params
+          fixed_query_params: (t.handler as any)?.fixed_query_params,
+          param_name_map: (t.handler as any)?.param_name_map,
+          body_format: (t.handler as any)?.body_format,
+          auto_path_params: (t.handler as any)?.auto_path_params,
         }
       }))
 
@@ -139,11 +144,25 @@ export default function Sandbox() {
         }
         const tools: Tool[] = data.tools ?? []
         setSessionId(data.sessionId)
-        setAllTools(tools)
-        setActiveTools(tools.filter(t => t.enabled !== false))
-        if (data.authContext) setAuthContext(data.authContext)
         const initialToggles: Record<string, boolean> = {}
         tools.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
+        // Merge in-flight toggle edits from a prior sandbox → verify trip so
+        // navigating back doesn't silently revert the user's deselections.
+        if (specId) {
+          const togglesRaw = sessionStorage.getItem(`helios_toggles_${specId}`)
+          if (togglesRaw) {
+            try {
+              const pending: Record<string, boolean> = JSON.parse(togglesRaw)
+              for (const name in pending) {
+                if (name in initialToggles) initialToggles[name] = pending[name]
+              }
+            } catch { /* ignore malformed */ }
+          }
+        }
+        const mergedTools = tools.map(t => ({ ...t, enabled: initialToggles[t.function.name] ?? true }))
+        setAllTools(mergedTools)
+        setActiveTools(mergedTools.filter(t => initialToggles[t.function.name]))
+        if (data.authContext) setAuthContext(data.authContext)
         setToolToggles(initialToggles)
       })
       .catch(() => {
@@ -176,7 +195,13 @@ export default function Sandbox() {
     }, 150)
   }
 
-  const handleApply = () => {
+  const handleApply = async () => {
+    const pending = Object.entries(basicAuthFields).filter(
+      ([, f]) => f?.user?.trim() && f?.pass?.trim()
+    )
+    if (pending.length > 0) {
+      await Promise.all(pending.map(([groupName]) => handleSaveBasicAuth(groupName)))
+    }
     const filtered = allTools.filter(t => toolToggles[t.function.name])
     setActiveTools(filtered)
     setMessages([])
@@ -184,16 +209,20 @@ export default function Sandbox() {
 
   const handleNavigateToVerify = () => {
     if (compositeId) {
-      // Persist current toggle state so verify reflects sandbox deselections
+      // Persist current toggle state so verify reflects sandbox deselections.
+      // Source of truth = allTools (what the user just saw in the panel) merged with
+      // any other fields from storage (sessionId, etc).
       const raw = sessionStorage.getItem(`helios_session_${compositeId}`)
-      if (raw) {
-        const session = JSON.parse(raw)
-        const updatedTools = (session.tools ?? []).map((t: Tool) => ({
-          ...t,
-          enabled: toolToggles[t.function.name] ?? t.enabled ?? true,
-        }))
-        sessionStorage.setItem(`helios_session_${compositeId}`, JSON.stringify({ ...session, tools: updatedTools }))
-      }
+      const sessionRest = raw ? JSON.parse(raw) : { sessionId }
+      const updatedTools = allTools.map((t: Tool) => {
+        const name = t.function.name
+        const isEnabled = name in toolToggles ? toolToggles[name] === true : (t.enabled !== false)
+        return { ...t, enabled: isEnabled }
+      })
+      sessionStorage.setItem(
+        `helios_session_${compositeId}`,
+        JSON.stringify({ ...sessionRest, tools: updatedTools })
+      )
       const url = specId
         ? `/verify?compositeId=${compositeId}&specId=${encodeURIComponent(specId)}`
         : `/verify?compositeId=${compositeId}`
@@ -327,8 +356,23 @@ export default function Sandbox() {
   const [savedKeyStatus, setSavedKeyStatus] = useState<Record<string, boolean>>({})
   const [isSavingKey, setIsSavingKey] = useState<string | null>(null)
   const [oauth2Fields, setOauth2Fields] = useState<Record<string, { clientId: string; clientSecret: string }>>({})
+  const [basicAuthFields, setBasicAuthFields] = useState<Record<string, { user: string; pass: string }>>({})
   const [oauth2ConnectStatus, setOauth2ConnectStatus] = useState<Record<string, { ok: boolean; msg: string }>>({})
   const [isConnecting, setIsConnecting] = useState<string | null>(null)
+  const toolsButtonRef = useRef<HTMLButtonElement>(null)
+  const [panelPos, setPanelPos] = useState<{ left: number; bottom: number }>({ left: 24, bottom: 130 })
+
+  useLayoutEffect(() => {
+    if (!panelOpen) return
+    const reposition = () => {
+      const rect = toolsButtonRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setPanelPos({ left: rect.left, bottom: window.innerHeight - rect.top + 10 })
+    }
+    reposition()
+    window.addEventListener("resize", reposition)
+    return () => window.removeEventListener("resize", reposition)
+  }, [panelOpen])
 
   useEffect(() => {
     if (compositeId) {
@@ -348,7 +392,10 @@ export default function Sandbox() {
       const { spec } = JSON.parse(draft)
       const has3 = spec?.components?.securitySchemes && Object.keys(spec.components.securitySchemes).length > 0
       const has2 = spec?.securityDefinitions && Object.keys(spec.securityDefinitions).length > 0
-      setHasSecurityScheme(!!(has3 || has2))
+      // Also check authContext — covers implicit API key detection where the spec has
+      // no explicit securitySchemes but generate_tool_registry found a key param
+      const hasCtx = !!authContext && Object.keys(authContext).length > 0
+      setHasSecurityScheme(!!(has3 || has2 || hasCtx))
     } catch { setHasSecurityScheme(false) }
   }, [specId, compositeId, authContext])
 
@@ -380,6 +427,24 @@ export default function Sandbox() {
         body: JSON.stringify({ key: key.trim() })
       })
       if (res.ok) { setSavedKeyStatus(prev => ({ ...prev, [groupName]: true })); setApiKeys(prev => ({ ...prev, [groupName]: "" })) }
+    } catch { }
+    setIsSavingKey(null)
+  }
+
+  const handleSaveBasicAuth = async (groupName: string) => {
+    const fields = basicAuthFields[groupName]
+    if (!fields?.user?.trim() || !fields?.pass?.trim()) return
+    setIsSavingKey(groupName)
+    try {
+      const res = await fetch(`http://localhost:8000/api/keys/${encodeURIComponent(groupName)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ key: `${fields.user.trim()}:${fields.pass.trim()}` })
+      })
+      if (res.ok) {
+        setSavedKeyStatus(prev => ({ ...prev, [groupName]: true }))
+        setBasicAuthFields(prev => ({ ...prev, [groupName]: { user: "", pass: "" } }))
+      }
     } catch { }
     setIsSavingKey(null)
   }
@@ -442,7 +507,15 @@ export default function Sandbox() {
         <div className="flex items-center gap-4 font-[family-name:--font-cinzel] text-[22px] tracking-[0.18em]">
           <Link href="/create" className="step-inactive cursor-pointer">Create</Link>
           <span className="step-divider text-[10px]">✦</span>
-          <span className="step-active pb-1">Sandbox</span>
+          <span className="step-active pb-1 inline-flex items-center gap-2.5">
+            Sandbox
+            <InfoBubble
+              chapter="how-it-works"
+              quick="How an MCP server actually runs — initialize, list tools, call tools. The three JSON-RPC phases behind this chat."
+              size={16}
+              className="align-baseline"
+            />
+          </span>
           <span className="step-divider text-[10px]">✦</span>
           <span onClick={handleNavigateToVerify} className="step-inactive cursor-pointer hover:text-white/60 transition-colors">Verify</span>
           <span className="step-divider text-[10px]">✦</span>
@@ -632,19 +705,10 @@ export default function Sandbox() {
 
           {/* Input area */}
           <div className="flex-shrink-0 relative z-[0] overflow-hidden border-t border-white/[0.09]">
-            {/* Blur layer — background-attachment:fixed works here (no scroll parent) */}
             <div
               aria-hidden="true"
-              className="absolute pointer-events-none"
-              style={{
-                inset: "-50px",
-                backgroundImage: "var(--page-bg, url('/Background-Dusk(2).svg'))",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundAttachment: "fixed",
-                filter: "blur(8px) saturate(1.1) brightness(0.72)",
-                zIndex: -1,
-              }}
+              className="absolute pointer-events-none bar-blur"
+              style={{ inset: "-50px", zIndex: -1 }}
             />
             <div className="max-w-[820px] mx-auto px-4 pt-3 pb-4">
 
@@ -652,6 +716,7 @@ export default function Sandbox() {
               <div className="flex items-center justify-between mb-3">
                 <div className="relative">
                   <button
+                    ref={toolsButtonRef}
                     onClick={() => setPanelOpen(prev => !prev)}
                     className={cn(
                       "font-[family-name:--font-cinzel] text-[11px] tracking-[0.14em] px-4 py-2 rounded-xl border transition-all duration-200 cursor-pointer",
@@ -668,7 +733,24 @@ export default function Sandbox() {
                   {panelOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setPanelOpen(false)} />
-                      <div className="absolute bottom-full mb-2 left-0 z-50 w-[380px] glass-mid rounded-2xl overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
+                      <div
+                        className="fixed z-50 w-[380px] glass-mid rounded-2xl overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
+                        style={{ left: panelPos.left, bottom: panelPos.bottom }}
+                      >
+                        {/* Blur layer — samples page bg through chat for readability, same pattern as server cards */}
+                        <div
+                          aria-hidden="true"
+                          className="absolute pointer-events-none"
+                          style={{
+                            inset: "-50px",
+                            backgroundImage: "var(--page-bg, url('/Background-Dusk(2).jpg'))",
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                            backgroundAttachment: "fixed",
+                            filter: "blur(8px) saturate(1.2) brightness(0.72)",
+                            zIndex: -1,
+                          }}
+                        />
 
                         {/* Tab headers */}
                         <div className="flex border-b border-white/[0.18]">
@@ -812,10 +894,26 @@ export default function Sandbox() {
                                     ? (groupAuthConfigs.find(c => c.type === "oauth2")?.tokenUrl ?? authContext?.tokenUrl)
                                     : undefined
 
+                                  const providerUrl = lookupProviderKeyUrl(group.name)
                                   return (
                                     <div key={group.name} className="flex flex-col gap-2">
                                       <div className="flex items-center justify-between">
-                                        <span className="font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white/90">{group.name}</span>
+                                        <span className="inline-flex items-center gap-1.5 font-[family-name:--font-cinzel] text-[13px] tracking-wider text-white/90">
+                                          {group.name}
+                                          {providerUrl ? (
+                                            <InfoBubble
+                                              externalUrl={providerUrl}
+                                              quick={`Open the ${group.name} developer dashboard to grab the credentials for this integration.`}
+                                              size={13}
+                                            />
+                                          ) : (
+                                            <InfoBubble
+                                              chapter="api-keys"
+                                              quick="Where to find API keys for any provider — including how to hunt down dev dashboards Helios doesn't index by default."
+                                              size={13}
+                                            />
+                                          )}
+                                        </span>
                                         <span className={cn(
                                           "font-[family-name:--font-geist-mono] text-[10px] tracking-wider",
                                           savedKeyStatus[group.name] ? "text-[#6EE7B7]" : "text-red-400/70"
@@ -887,33 +985,55 @@ export default function Sandbox() {
                                             </button>
                                           </div>
                                         </div>
-                                      ) : (
-                                        <>
-                                          {isBasicAuth && (
-                                            <span className="font-[family-name:--font-cormorant] text-[13px] italic text-white/35">
-                                              Basic Auth — enter as <code className="font-[family-name:--font-geist-mono] text-[11px] not-italic text-white/45">username:password</code>
-                                            </span>
-                                          )}
-                                          <div className="flex gap-2">
-                                            <input type="password"
-                                              placeholder={savedKeyStatus[group.name] ? "Update key..." : isBasicAuth ? "username:password" : "Enter API key..."}
-                                              value={apiKeys[group.name] ?? ""}
-                                              onChange={e => setApiKeys(prev => ({ ...prev, [group.name]: e.target.value }))}
-                                              className="flex-1 glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]"
-                                            />
-                                            <button onClick={() => handleSaveKey(group.name)}
-                                              disabled={!apiKeys[group.name]?.trim() || isSavingKey === group.name}
-                                              className={cn(
-                                                "font-[family-name:--font-cinzel] text-[10px] tracking-widest px-4 py-2 rounded-lg transition-colors",
-                                                !apiKeys[group.name]?.trim() || isSavingKey === group.name
-                                                  ? "bg-white/[0.05] text-white/25 cursor-not-allowed"
-                                                  : "btn-gold cursor-pointer"
+                                      ) : isBasicAuth ? (
+                                        (() => {
+                                          const labels = lookupBasicAuthLabels(group.name)
+                                          const fields = basicAuthFields[group.name]
+                                          return (
+                                            <div className="flex flex-col gap-2">
+                                              <span className="font-[family-name:--font-cormorant] text-[13px] italic text-white/55">
+                                                Basic Auth — enter your credentials below.
+                                              </span>
+                                              <input type="text"
+                                                placeholder={labels.user}
+                                                value={fields?.user ?? ""}
+                                                onChange={e => setBasicAuthFields(prev => ({ ...prev, [group.name]: { user: e.target.value, pass: prev[group.name]?.pass ?? "" } }))}
+                                                className="glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]"
+                                              />
+                                              <input type="password"
+                                                placeholder={labels.pass}
+                                                value={fields?.pass ?? ""}
+                                                onChange={e => setBasicAuthFields(prev => ({ ...prev, [group.name]: { user: prev[group.name]?.user ?? "", pass: e.target.value } }))}
+                                                className="glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]"
+                                              />
+                                              {labels.hint && (
+                                                <span className="font-[family-name:--font-cormorant] text-[12px] italic text-white/40">
+                                                  {labels.hint}
+                                                </span>
                                               )}
-                                            >
-                                              {isSavingKey === group.name ? "..." : "Save"}
-                                            </button>
-                                          </div>
-                                        </>
+                                            </div>
+                                          )
+                                        })()
+                                      ) : (
+                                        <div className="flex gap-2">
+                                          <input type="password"
+                                            placeholder={savedKeyStatus[group.name] ? "Update key..." : "Enter API key..."}
+                                            value={apiKeys[group.name] ?? ""}
+                                            onChange={e => setApiKeys(prev => ({ ...prev, [group.name]: e.target.value }))}
+                                            className="flex-1 glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]"
+                                          />
+                                          <button onClick={() => handleSaveKey(group.name)}
+                                            disabled={!apiKeys[group.name]?.trim() || isSavingKey === group.name}
+                                            className={cn(
+                                              "font-[family-name:--font-cinzel] text-[10px] tracking-widest px-4 py-2 rounded-lg transition-colors",
+                                              !apiKeys[group.name]?.trim() || isSavingKey === group.name
+                                                ? "bg-white/[0.05] text-white/25 cursor-not-allowed"
+                                                : "btn-gold cursor-pointer"
+                                            )}
+                                          >
+                                            {isSavingKey === group.name ? "..." : "Save"}
+                                          </button>
+                                        </div>
                                       )}
                                     </div>
                                   )
@@ -985,5 +1105,13 @@ export default function Sandbox() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SandboxPage() {
+  return (
+    <Suspense>
+      <SandboxContent />
+    </Suspense>
   )
 }
