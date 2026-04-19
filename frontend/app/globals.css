@@ -21,6 +21,7 @@ body {
   font-family: var(--font-cormorant), Georgia, serif;
   color: rgba(255, 255, 255, 0.92);
   background: #070c18;
+  overflow-x: hidden;
   overflow-y: scroll;
 }
 
@@ -98,11 +99,56 @@ div {
   border-color: rgba(255, 255, 255, 0.18);
 }
 
+/* Top nav — intentionally NO blur, NO background. Just a subtle divider.
+   See "Blur archetypes" below for the three allowed blurred surfaces. */
 .glass-nav {
-  background: rgba(15, 18, 30, 0.45);
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+/* ── Blur archetypes — STRICT. Use one of these three, never roll your own.
+   ────────────────────────────────────────────────────────────────────────
+   1. .surface-blur   Cards, chat bubbles, tool panels, popover card bodies.
+                      Gentle, transparent, no darkening.
+   2. .scrim-blur     Full-screen backdrop BEHIND a modal/popover. Blurs
+                      the page and barely tints. NEVER combine with
+                      brightness() on the page wrapper.
+   3. .bar-blur       Heavy "cockpit" bar — bottom input bars on try +
+                      sandbox. Deliberately dark.
+   Rules:
+   - No inline `style={{ backdropFilter }}` in components.
+   - No brightness() modifier to darken behind modals.
+   - Top nav has NO blur.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.surface-blur {
+  position: relative;
+  z-index: 0;
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.scrim-blur {
+  background: rgba(6, 8, 16, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Popup backdrop: any popup toggles html.popup-open, which blurs the
+   page-wrapper. Popups must be portaled to <body> so they sit OUTSIDE
+   .page-wrapper and stay sharp. */
+html.popup-open .page-wrapper {
+  filter: blur(14px) brightness(0.72);
+  transition: filter 0.18s ease;
+  pointer-events: none;
+}
+
+.bar-blur {
+  background: rgba(2, 8, 20, 0.55);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
 }
 
 .glass-input {
@@ -297,6 +343,71 @@ div {
   animation: dot-bounce 1.2s ease-in-out infinite 0.4s;
 }
 
+/* ── Page transitions ────────────────────────────────────
+   `top` (not transform) to avoid breaking background-attachment: fixed
+   on page blur layers. Opacity during animation briefly severs .glass
+   panels from BackgroundManager (stacking context) — accepted artifact
+   for the ~380ms window. No global style swaps. */
+
+@keyframes pageSlideDownEnter {
+  0%   { top: -56px; opacity: 0; }
+  100% { top: 0;     opacity: 1; }
+}
+
+@keyframes pageSlideDownExit {
+  0%   { top: 0;    opacity: 1; }
+  100% { top: 64px; opacity: 0; }
+}
+
+.page-wrapper { position: relative; top: 0; }
+
+.page-entering {
+  animation: pageSlideDownEnter 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.page-leaving {
+  animation: pageSlideDownExit 0.18s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+/* ── Info popover ─────────────────────────────────────────────── */
+
+@keyframes infoFadeIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes infoDropIn {
+  0%   { opacity: 0; transform: translateY(-14px) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0)     scale(1); }
+}
+
+.animate-info-fade-in {
+  animation: infoFadeIn 0.22s ease-out both;
+}
+
+.animate-info-drop-in {
+  animation: infoDropIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.page-entering-from-left {
+  animation: pageSlideInFromLeft 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.page-entering-from-right {
+  animation: pageSlideInFromRight 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.page-leaving-to-right {
+  animation: pageSlideOutToRight 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+.page-leaving-to-left {
+  animation: pageSlideOutToLeft 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
 /* ── Scrollbar ────────────────────────────────────────────── */
 
 ::-webkit-scrollbar {
@@ -385,8 +496,13 @@ div {
   }
 
   78% {
-    opacity: 0.15;
-    width: 40px;
+    opacity: 0.08;
+    width: 30px;
+  }
+
+  88% {
+    opacity: 0;
+    width: 12px;
   }
 
   100% {
@@ -413,9 +529,14 @@ div {
       drop-shadow(22px -14px 4px rgba(255, 255, 255, 0.62)) drop-shadow(46px -30px 10px rgba(255, 255, 255, 0.38)) drop-shadow(78px -51px 18px rgba(201, 168, 76, 0.20));
   }
 
-  78% {
-    translate: 10px -7px;
-    filter: drop-shadow(4px -3px 2px rgba(255, 255, 255, 0.18));
+  70% {
+    translate: 0px 0px;
+    filter: drop-shadow(3px -2px 2px rgba(255, 255, 255, 0.14));
+  }
+
+  88% {
+    translate: 0px 0px;
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.05));
   }
 
   100% {
@@ -431,7 +552,6 @@ div {
   background: linear-gradient(135deg, #ffffff 0%, #e8f0ff 50%, #ffffff 100%);
   cursor: pointer;
   pointer-events: auto;
-  will-change: rotate, scale, opacity;
   position: relative;
 }
 
@@ -573,5 +693,17 @@ div {
 @keyframes star-pulse {
   0%, 100% { transform: scale(1);   opacity: 1;    }
   50%       { transform: scale(0.5); opacity: 0.25; }
+}
+
+/* ── Reduced motion — respect the OS/browser preference ────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 

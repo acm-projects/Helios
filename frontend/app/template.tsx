@@ -1,25 +1,26 @@
 "use client"
-import { motion } from "framer-motion"
 
-// Opacity-only — no y transform. Any transform (even translateY(0px) leftover
-// after animation) on this wrapper creates a CSS containing block that breaks
-// background-attachment:fixed on the blur layers inside every panel.
-const variants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit:    { opacity: 0 },
-}
+import { useEffect, useRef, useState } from "react"
 
 export default function Template({ children }: { children: React.ReactNode }) {
+  const [entering, setEntering] = useState(true)
+  const ref = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const onEnd = () => setEntering(false)
+    el.addEventListener("animationend", onEnd, { once: true })
+    const safety = window.setTimeout(onEnd, 650)
+    return () => {
+      el.removeEventListener("animationend", onEnd)
+      window.clearTimeout(safety)
+    }
+  }, [])
+
   return (
-    <motion.div
-      variants={variants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      transition={{ duration: 0.42, ease: "easeOut" }}
-    >
+    <div ref={ref} className={`page-wrapper transition-[filter] duration-300${entering ? " page-entering" : ""}`}>
       {children}
-    </motion.div>
+    </div>
   )
 }

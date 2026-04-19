@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cinzel, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import BackgroundManager from "./components/BackgroundManager"
+import PageTransitionHandler from "./components/PageTransitionHandler"
 import Providers from "./providers";
 
 const geistSans = Geist({
@@ -23,7 +24,7 @@ const cinzel = Cinzel({
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "600"],
   style: ["normal", "italic"],
 });
 
@@ -39,17 +40,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preload" href="/Background-Midnight(1).svg" as="image" />
-        <link rel="preload" href="/Background-Dusk(2).svg" as="image" />
-        <link rel="preload" href="/Background-Sunrise(3).svg" as="image" />
-        <link rel="preload" href="/Background-Midday-nosun.svg" as="image" />
-        <link rel="preload" href="/Background-Sunset(5).svg" as="image" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${cormorant.variable} antialiased`}
       >
         <BackgroundManager />
+        <PageTransitionHandler />
         <Providers>{children}</Providers>
       </body>
     </html>
