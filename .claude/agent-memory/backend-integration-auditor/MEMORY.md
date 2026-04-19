@@ -1,2 +1,0 @@
-- [Helios Backend Architecture](project_helios_backend.md) — dual DB connections, auth state, collection names, upcoming features
-- [Recurring Audit Patterns](audit_patterns.md) — anti-patterns and vulnerability classes found across audit sessions
