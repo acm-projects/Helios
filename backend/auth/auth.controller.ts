@@ -17,7 +17,7 @@ const pendingStates = new Map<string, number>()
 // One-time code store — maps code → { userId, expiry }
 const pendingTokens = new Map<string, { userId: string; expiry: number }>()
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = 10;
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

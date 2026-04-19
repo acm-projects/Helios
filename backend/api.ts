@@ -42,7 +42,10 @@ function toOpenAITool(tool: any, enabled = true) {
             method: tool.handler.method,
             path: tool.handler.path,
             query_params: tool.handler.query_params ?? [],
-            fixed_query_params: tool.handler.fixed_query_params
+            fixed_query_params: tool.handler.fixed_query_params,
+            param_name_map: tool.handler.param_name_map,
+            body_format: tool.handler.body_format,
+            auto_path_params: tool.handler.auto_path_params,
         },
         enabled
     }
@@ -152,39 +155,41 @@ app.post("/api/spec/simplify", authMiddleware, async (req, res) => {
         return res.status(400).json({ error: "userIntent must be a non-empty string" })
     }
     try {
-        const result = await filterToolsByIntent({ baseUrl: "", tools: catalog, auth: [] }, userIntent.trim())
+        const result = await filterToolsByIntent({ schema_version: 2, baseUrl: "", tools: catalog, auth: [] }, userIntent.trim())
         res.json({ catalog: result.tools })
     } catch (err: any) {
         res.status(500).json({ error: err.message })
     }
 })
 
-// Starts an MCP session. Three entry paths:
+// Shared registry builder for both sandbox (GET-only simulation) and try (unrestricted).
+// Three entry paths:
 //   toolsRegistry — pre-built composite registry from the create page (multi-API, baseUrl is "")
 //   spec          — unsaved new server passed directly from the frontend
 //   specId        — existing saved server, loaded from DB
-app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
+async function buildMcpRegistry(req: any): Promise<
+    | { ok: true; registry: any; frontendTools: any[] }
+    | { ok: false; status: number; error: string }
+> {
     let registry: any = null
     let frontendTools: any[] | null = null
 
     if (req.body.toolsRegistry) {
         const reg = req.body.toolsRegistry
         if (!Array.isArray(reg.tools) || reg.tools.length === 0) {
-            return res.status(400).json({ error: "toolsRegistry must have a non-empty tools array" })
+            return { ok: false, status: 400, error: "toolsRegistry must have a non-empty tools array" }
         }
         const invalid = reg.tools.find((t: any) => !t.name || !t.handler?.method || !t.handler?.path)
         if (invalid) {
-            return res.status(400).json({ error: `Tool "${invalid.name || "unknown"}" is missing required fields (name, handler.method, handler.path)` })
+            return { ok: false, status: 400, error: `Tool "${invalid.name || "unknown"}" is missing required fields (name, handler.method, handler.path)` }
         }
     }
 
     try {
         if (req.body.toolsRegistry) {
-            // Pre-built composite registry — inject integration_id per group
             registry = req.body.toolsRegistry
             const groupMap: Record<string, string> = req.body.groupMap ?? {}
             const authMap: Record<string, AuthConfig[]> = req.body.authMap ?? {}
-            
             registry = {
                 ...registry,
                 tools: registry.tools.map((tool: any) => {
@@ -198,16 +203,15 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
                         enrichment.auth.integration_id = groupName
                     }
                     return { ...tool, enrichment }
-                })
+                }),
+                auth: aggregateAuthMap(authMap),
             }
             frontendTools = req.body.toolsRegistry.tools.map((tool: any) => toOpenAITool(tool))
         } else if (req.body.spec) {
-            // New unsaved server — spec passed directly from frontend (not yet in DB)
             registry = await generateToolRegistry(req.body.spec)
             if (!registry.baseUrl && req.body.baseUrl) {
                 registry = { ...registry, baseUrl: req.body.baseUrl }
             }
-            // Set integration_id on enrichment so server.ts can lookup auth live
             registry.tools = registry.tools.map((tool: any) => {
                 if (tool.enrichment && tool.enrichment.auth && req.body.specId) {
                     tool.enrichment.auth.integration_id = req.body.specId
@@ -215,11 +219,9 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
                 return tool
             })
         } else {
-            // Existing saved server — load from DB
             const doc = await Spec.findOne({ _id: req.body.specId, userId: req.user!.userId }).lean()
-            if (!doc) return res.status(404).json({ error: "Spec not found" })
+            if (!doc) return { ok: false, status: 404, error: "Spec not found" }
 
-            // Composite saved servers have no spec to re-parse — rebuild from catalog
             if (doc.type === "composite") {
                 const groupMap: Record<string, string> = doc.groupMap ?? {}
                 const authMap: Record<string, AuthConfig[]> = doc.authMap ?? {}
@@ -233,56 +235,93 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
                     if (enrichment?.auth && groupName) enrichment.auth.integration_id = groupName
                     return { ...t, enrichment }
                 })
-                // MCP sandbox only registers enabled tools; frontend panel sees all with enabled flags
-                registry = { baseUrl: "", tools: allCatalogTools.filter((t: any) => t.enabled !== false), auth: [{ type: "none" }] }
+                registry = { baseUrl: "", tools: allCatalogTools.filter((t: any) => t.enabled !== false), auth: aggregateAuthMap(authMap) }
                 frontendTools = allCatalogTools.map((t: any) => toOpenAITool(t, t.enabled !== false))
             } else {
-            if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
-                // Saved catalog exists — skip expensive re-parse and use stored tools directly
-                const enabledTools = doc.catalog.filter((t: any) => t.enabled !== false)
-                if (enabledTools.length === 0) return res.status(400).json({ error: "No enabled tools in saved catalog" })
-                registry = { baseUrl: doc.baseUrl || doc.spec?.servers?.[0]?.url || "", tools: enabledTools, auth: doc.auth ?? [] }
-            } else {
-                // No saved catalog yet — must parse from spec
-                registry = await generateToolRegistry(doc)
-                registry.tools = registry.tools.map((t: any) => ({ ...t, enabled: true }))
+                if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
+                    const enabledTools = doc.catalog.filter((t: any) => t.enabled !== false)
+                    if (enabledTools.length === 0) return { ok: false, status: 400, error: "No enabled tools in saved catalog" }
+                    registry = { baseUrl: doc.baseUrl || doc.spec?.servers?.[0]?.url || "", tools: enabledTools, auth: doc.auth ?? [] }
+                } else {
+                    registry = await generateToolRegistry(doc)
+                    registry.tools = registry.tools.map((t: any) => ({ ...t, enabled: true }))
+                }
+                const flatAuthConfigs: AuthConfig[] = Array.isArray(doc.auth) && (doc.auth as any[]).some((a: any) => a?.type && a.type !== "none")
+                    ? doc.auth as AuthConfig[]
+                    : [{ type: "none" as const }]
+                registry.tools = registry.tools.map((tool: any) => {
+                    let enrichment = tool.enrichment
+                    if (!enrichment || !enrichment.auth) {
+                        enrichment = buildEnrichmentFromAuthConfigs(flatAuthConfigs)
+                    }
+                    if (enrichment && enrichment.auth) {
+                        enrichment.auth.integration_id = req.body.specId
+                    }
+                    return { ...tool, enrichment }
+                })
+                frontendTools = (doc.catalog ?? registry.tools).map((tool: any) => toOpenAITool(tool, tool.enabled !== false))
             }
-
-            // Set integration_id on enrichment so server.ts can lookup auth live.
-            // If a catalog tool has no enrichment, build it from doc.auth so auth
-            // is never silently skipped for saved non-composite servers.
-            const flatAuthConfigs: AuthConfig[] = Array.isArray(doc.auth) && (doc.auth as any[]).some((a: any) => a?.type && a.type !== "none")
-                ? doc.auth as AuthConfig[]
-                : [{ type: "none" as const }]
-            registry.tools = registry.tools.map((tool: any) => {
-                let enrichment = tool.enrichment
-                if (!enrichment || !enrichment.auth) {
-                    enrichment = buildEnrichmentFromAuthConfigs(flatAuthConfigs)
-                }
-                if (enrichment && enrichment.auth) {
-                    enrichment.auth.integration_id = req.body.specId
-                }
-                return { ...tool, enrichment }
-            })
-
-            // Frontend panel sees all catalog tools (including disabled); MCP sandbox only uses enabled ones above
-            frontendTools = (doc.catalog ?? registry.tools).map((tool: any) => toOpenAITool(tool, tool.enabled !== false))
-            } // end non-composite else
         }
     } catch (err: any) {
-        return res.status(400).json({ error: "Failed to load spec: " + err.message })
+        return { ok: false, status: 400, error: "Failed to load spec: " + err.message }
     }
 
-    let sessionId: string
-    try {
-        sessionId = await initializeAgent(registry, req.user!.userId)
-    } catch (err: any) {
-        return res.status(500).json({ error: "Failed to start MCP session: " + err.message })
+    return { ok: true, registry, frontendTools: frontendTools ?? registry.tools.map((tool: any) => toOpenAITool(tool)) }
+}
+
+// Flatten a composite authMap (groupName → AuthConfig[]) into a single auth
+// array so buildAuthContext can surface oauth2/basic/api_key hints. Composite
+// registries previously hardcoded auth: [{ type: "none" }], which caused the
+// frontend's hasSecurityScheme check to incorrectly say no keys were needed.
+// Rolling window over chat history. Maintains the tail of entries that fit
+// within maxChars of serialized content, updated incrementally. Replaces the
+// previous per-turn truncateHistory(hist) scan that was O(n) each call and
+// O(n²) over a long conversation.
+function createRollingHistory(history: any[], maxChars: number) {
+    const lenOf = (entry: any): number => {
+        const raw = entry?.content
+        if (raw === undefined) return 0
+        if (typeof raw === "string") return raw.length
+        try { return (JSON.stringify(raw) ?? "").length } catch { return 0 }
     }
 
-    const openAITools = frontendTools ?? registry.tools.map((tool: any) => toOpenAITool(tool))
+    const view: any[] = []
+    let chars = 0
 
-    // Build authContext — carries OAuth2/BasicAuth URLs/notes for the AI system prompt
+    // Seed from the tail of the incoming history, keeping at least the last 2
+    // entries even if a single entry exceeds the budget.
+    for (let i = history.length - 1; i >= 0; i--) {
+        const entryLen = lenOf(history[i])
+        if (chars + entryLen > maxChars && view.length >= 2) break
+        view.unshift(history[i])
+        chars += entryLen
+    }
+
+    return {
+        view,
+        push(entry: any) {
+            history.push(entry)
+            view.push(entry)
+            chars += lenOf(entry)
+            while (chars > maxChars && view.length > 2) {
+                const dropped = view.shift()
+                chars -= lenOf(dropped)
+            }
+        }
+    }
+}
+
+function aggregateAuthMap(authMap: Record<string, AuthConfig[]>): AuthConfig[] {
+    const out: AuthConfig[] = []
+    for (const configs of Object.values(authMap ?? {})) {
+        for (const c of configs ?? []) {
+            if (c && c.type !== "none") out.push(c)
+        }
+    }
+    return out.length > 0 ? out : [{ type: "none" }]
+}
+
+function buildAuthContext(registry: any): Record<string, string> {
     const authContextObj: Record<string, string> = {}
     const registryAuth: AuthConfig[] = registry.auth ?? []
     for (const a of registryAuth) {
@@ -291,10 +330,38 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
             if (a.tokenUrl) authContextObj.tokenUrl = a.tokenUrl
         } else if (a.type === "basic_auth") {
             authContextObj.basicAuthNote = "Enter your credentials as \"username:password\" in the API Keys panel."
+        } else if (a.type === "api_key" || a.type === "bearer_token") {
+            authContextObj.apiKeyNote = a.type
         }
     }
+    return authContextObj
+}
 
-    res.json({ sessionId, tools: openAITools, baseUrl: registry.baseUrl ?? "", authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined })
+app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
+    const built = await buildMcpRegistry(req)
+    if (!built.ok) return res.status(built.status).json({ error: built.error })
+    let sessionId: string
+    try {
+        sessionId = await initializeAgent(built.registry, req.user!.userId, false)
+    } catch (err: any) {
+        return res.status(500).json({ error: "Failed to start MCP session: " + err.message })
+    }
+    const authContextObj = buildAuthContext(built.registry)
+    res.json({ sessionId, tools: built.frontendTools, baseUrl: built.registry.baseUrl ?? "", authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined })
+})
+
+// Try mode: every method executes live, no simulation. Used by /try page for downloaded servers.
+app.post("/api/try/start", authMiddleware, async (req, res) => {
+    const built = await buildMcpRegistry(req)
+    if (!built.ok) return res.status(built.status).json({ error: built.error })
+    let sessionId: string
+    try {
+        sessionId = await initializeAgent(built.registry, req.user!.userId, true)
+    } catch (err: any) {
+        return res.status(500).json({ error: "Failed to start MCP session: " + err.message })
+    }
+    const authContextObj = buildAuthContext(built.registry)
+    res.json({ sessionId, tools: built.frontendTools, baseUrl: built.registry.baseUrl ?? "", authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined })
 })
 
 app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
@@ -336,7 +403,6 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
     const sanitizePromptField = (s: string) => s.replace(/[\n\r`]/g, " ").slice(0, 300)
 
     const authHints: string[] = []
-    const toolsRegistry = req.body.tools ?? []
     const authContext = req.body.authContext as { oauth2Url?: string; tokenUrl?: string; basicAuthNote?: string } | undefined
     if (authContext?.oauth2Url) {
         authHints.push(`This API uses OAuth 2.0. If the user does not have an access token yet, tell them: "To authorize, visit: ${sanitizePromptField(authContext.oauth2Url)} — log in and copy the access_token from the response. Then paste it into the API Keys panel (Tools button → API Keys tab) and save it."`)
@@ -347,56 +413,29 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
     if (authContext?.basicAuthNote) {
         authHints.push(`This API uses Basic Auth. The API key field expects "username:password" (colon-separated, no spaces). ${sanitizePromptField(authContext.basicAuthNote)}`)
     }
-    const authInstruction = authHints.length > 0 ? ` AUTH CONTEXT: ${authHints.join(" ")}` : ""
-
-    const hasSpotify = toolsRegistry.some((t: any) =>
-        (t.handler?.path ?? "").includes("api.spotify.com") ||
-        (t.function?.name ?? t.name ?? "").startsWith("get_an_artist") ||
-        (t.function?.name ?? t.name ?? "").startsWith("search") && (t.handler?.path ?? "").includes("spotify")
-    )
-    const spotifyHints = hasSpotify
-        ? ` SPOTIFY API RULES: (1) Any endpoint that accepts a "market" parameter MUST include market="US" — omitting it causes a 400 error. (2) For recommendations, seed_genres must be comma-separated lowercase slugs like "indie,rock,pop". Call get_recommendation_genres first if unsure. (3) Use "search" for finding music by mood or vibe. (4) If a tool returns an API error, fix the parameters and retry once.`
-        : ""
+    const sandboxCredentialPolicy = ` CREDENTIAL POLICY: All API credentials (API keys, tokens, usernames, passwords, client IDs, client secrets, and any provider-specific identifiers) are stored securely on the server and auto-injected into every outgoing request by the dispatcher. You NEVER need them, you NEVER ask the user for them, and you NEVER echo, request, or display them in conversation. If the user volunteers a credential in chat, acknowledge it but do not store or use it — instruct them to save it in the Tools → API Keys panel instead. Only when a tool returns 401/403 should you tell the user their saved credential is missing or invalid and point them to Tools → API Keys.`
+    const authInstruction = sandboxCredentialPolicy + (authHints.length > 0 ? ` AUTH CONTEXT: ${authHints.join(" ")}` : "")
 
     const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
 
-    const systemContent = `Today's date is ${todayStr}. You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}${spotifyHints}`
+    const systemContent = `Today's date is ${todayStr}. You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}`
 
     let iterations = 0;
     let totalTokens = 0;
     let forceTextNext = false;
     let lastToolNames = "";
 
-    // Truncate history to stay under Anthropic's 30k input-tokens/minute rate limit.
-    // Budget: 20k chars ≈ 5k tokens for history, leaving headroom for system prompt + tools.
-    // Safety: always keeps the last 2 entries (current user turn + one assistant turn).
-    // Bug fix: JSON.stringify(undefined) returns undefined (not "undefined"), so we must
-    // guard the .length call — otherwise a missing content field crashes with TypeError.
-    function truncateHistory(hist: any[]): any[] {
-        if (hist.length === 0) return hist
-        const MAX_CHARS = 20_000
-        let total = 0
-        for (let i = hist.length - 1; i >= 0; i--) {
-            try {
-                const raw = hist[i]?.content
-                const serialized = raw === undefined ? ""
-                    : typeof raw === "string" ? raw
-                    : (JSON.stringify(raw) ?? "")
-                total += serialized.length
-            } catch { /* skip entries that can't be serialized */ }
-            if (total > MAX_CHARS) {
-                const keepFrom = Math.min(i + 1, hist.length - 2)
-                return hist.slice(Math.max(0, keepFrom))
-            }
-        }
-        return hist
-    }
+    // Rolling window keeps history within Anthropic's 30k input-tokens/minute budget.
+    // 20k chars ≈ 5k tokens, leaving headroom for system prompt + tools. rolling.push
+    // appends to both history (returned to frontend) and the view (sent to the API)
+    // and trims the front of view incrementally — always preserving the last 2 entries.
+    const rolling = createRollingHistory(history, 20_000)
 
     try {
         while (iterations < MAX_ITERATIONS && totalTokens < TOKEN_BUDGET) {
             const toolChoice = forceTextNext ? "none" : "auto";
             forceTextNext = false;
-            const { message, tokens } = await messageAI(systemContent, truncateHistory(history), anthropicTools, toolChoice);
+            const { message, tokens } = await messageAI(systemContent, rolling.view, anthropicTools, toolChoice);
             totalTokens += tokens;
             iterations++;
 
@@ -407,12 +446,12 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
 
             // No tool calls — model is done
             if (toolUseBlocks.length === 0) {
-                history.push({ role: "assistant", content: message.content })
+                rolling.push({ role: "assistant", content: message.content })
                 break
             }
 
             // Store assistant turn with full content blocks (tool_use + text)
-            history.push({ role: "assistant", content: message.content })
+            rolling.push({ role: "assistant", content: message.content })
 
             // Execute all tool calls in parallel
             const toolResults = await Promise.allSettled(
@@ -465,7 +504,7 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
                     content: result.status === "fulfilled" ? result.value : `Unexpected error for tool "${block.name}".`
                 }
             })
-            history.push({ role: "user", content: toolResultBlocks })
+            rolling.push({ role: "user", content: toolResultBlocks })
 
             const toolNames = toolUseBlocks.map((b: any) => b.name).join(", ")
             console.log(`[Step ${iterations}] Tools: ${toolNames} | Tokens so far: ${totalTokens}`)
@@ -473,7 +512,7 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
             // Session expired — surface clean message and stop
             const sessionExpired = toolResultBlocks.some((b: any) => b.content === "SESSION_EXPIRED")
             if (sessionExpired) {
-                history.push({ role: "assistant", content: "Your sandbox session has expired. Please refresh the page to start a new one." })
+                rolling.push({ role: "assistant", content: "Your sandbox session has expired. Please refresh the page to start a new one." })
                 break
             }
 
@@ -492,7 +531,7 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
                     } catch {}
                     return "Sandbox simulation complete."
                 })
-                history.push({ role: "assistant", content: simTexts.join("\n\n") })
+                rolling.push({ role: "assistant", content: simTexts.join("\n\n") })
                 break
             }
 
@@ -505,9 +544,9 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
         }
 
         if (iterations >= MAX_ITERATIONS) {
-            history.push({ role: "assistant", content: `I reached my step limit (${MAX_ITERATIONS} attempts) without completing the task. Try breaking it into smaller steps.` })
+            rolling.push({ role: "assistant", content: `I reached my step limit (${MAX_ITERATIONS} attempts) without completing the task. Try breaking it into smaller steps.` })
         } else if (totalTokens >= TOKEN_BUDGET) {
-            history.push({ role: "assistant", content: `I used too many tokens (${totalTokens}) and had to stop. The conversation is getting too long — try starting a new one.` })
+            rolling.push({ role: "assistant", content: `I used too many tokens (${totalTokens}) and had to stop. The conversation is getting too long — try starting a new one.` })
         }
     } catch (err: any) {
         const errMsg = String(err?.message ?? err ?? "unknown error")
@@ -538,21 +577,173 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
     res.json({ reply, history })
 })
 
+// Try mode chat — production server prompt, no simulation, real writes execute live.
+app.post("/api/try/chat", authMiddleware, async (req, res) => {
+    const MAX_ITERATIONS = 10;
+    const TOKEN_BUDGET = 60000;
+    // Try mode is not simulation-bound — list endpoints (calendar events, search
+    // results, etc.) routinely return 5–20 KB of useful data. 2k was a sandbox
+    // optimization that caused "events from 2020" hallucinations when response
+    // metadata timestamps leaked through before items[] was reached.
+    const MAX_RESPONSE_CHARS = 8000;
+
+    const sessionId = req.body.sessionId
+    if (!sessionId || typeof sessionId !== "string" || !/^[0-9a-f-]{36}$/.test(sessionId)) {
+        return res.status(400).json({ error: "Invalid or missing sessionId" })
+    }
+    if (!req.body.message || typeof req.body.message !== "string") {
+        return res.status(400).json({ error: "message must be a non-empty string" })
+    }
+    if (!Array.isArray(req.body.history)) {
+        return res.status(400).json({ error: "history must be an array" })
+    }
+    if (!Array.isArray(req.body.tools)) {
+        return res.status(400).json({ error: "tools must be an array" })
+    }
+    if (req.body.history.length > 200) {
+        return res.status(400).json({ error: "Conversation history is too long. Please start a new session." })
+    }
+
+    const history: any[] = req.body.history
+    const historyBaseLen = history.length
+    history.push({ role: "user", content: req.body.message })
+
+    const anthropicTools = (req.body.tools ?? [])
+        .filter((t: any) => t.function?.name)
+        .map(toAnthropicTool)
+
+    const sanitizePromptField = (s: string) => s.replace(/[\n\r`]/g, " ").slice(0, 300)
+
+    const authHints: string[] = []
+    const authContext = req.body.authContext as { oauth2Url?: string; tokenUrl?: string; basicAuthNote?: string } | undefined
+    if (authContext?.oauth2Url) {
+        authHints.push(`This API uses OAuth 2.0. If a tool returns 401, the access token is missing or expired — direct the user to visit ${sanitizePromptField(authContext.oauth2Url)} and paste the resulting access_token into the Tools → API Keys panel.`)
+    }
+    if (authContext?.tokenUrl && !authContext?.oauth2Url) {
+        authHints.push(`This API uses OAuth 2.0 Client Credentials. If a tool returns 401, the user must POST to ${sanitizePromptField(authContext.tokenUrl)} with their client_id and client_secret, then paste the resulting access_token into Tools → API Keys.`)
+    }
+    if (authContext?.basicAuthNote) {
+        authHints.push(`This API uses Basic Auth. ${sanitizePromptField(authContext.basicAuthNote)}`)
+    }
+    const credentialPolicy = ` CREDENTIAL POLICY: All API credentials (API keys, tokens, usernames, passwords, client IDs, client secrets, and any provider-specific identifiers) are stored securely on the server and auto-injected into every outgoing request by the dispatcher. You NEVER need them, you NEVER ask the user for them, and you NEVER echo, request, or display them in conversation. If the user volunteers a credential in chat, acknowledge it but do not store or use it — instruct them to save it in the Tools → API Keys panel instead. Only when a tool returns 401/403 should you tell the user their saved credential is missing or invalid and point them to Tools → API Keys.`
+    const authInstruction = credentialPolicy + (authHints.length > 0 ? ` AUTH CONTEXT: ${authHints.join(" ")}` : "")
+
+    const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+
+    const systemContent = `Today's date is ${todayStr}. You are a live assistant connected to the user's real APIs through their generated MCP server. Every tool call executes against the production API — GET, POST, PUT, PATCH, DELETE all hit the real service and cause real side effects. This is not a sandbox; there are no simulations. Before any destructive or irreversible write (delete, bulk update, send, etc.) briefly confirm the intent with the user in plain language — a one-line check is enough. Always call the correct tool for the task and execute it. When listing or searching, pass explicit filters the API supports (date ranges, query strings, pagination) — never rely on default ordering. If a tool response ends with "[truncated — N characters omitted]", the real response was longer than shown; only the prefix (usually response metadata) is visible, so do not claim the items array is empty or assume the visible timestamps are the user's data. Instead, narrow the query (tighter date range, explicit fields, pagination) and retry. If a tool returns an error, read the message carefully, correct the parameters, and retry once. If a tool returns 401, tell the user their credentials are missing or expired and point them to Tools → API Keys. Be direct and conversational — you are helping the user operate their own systems.${authInstruction}`
+
+    let iterations = 0;
+    let totalTokens = 0;
+
+    // Rolling window — same bookkeeping as the sandbox handler. See createRollingHistory.
+    const rolling = createRollingHistory(history, 20_000)
+
+    try {
+        while (iterations < MAX_ITERATIONS && totalTokens < TOKEN_BUDGET) {
+            // Production mode: no forced-text-next — multi-hop tool chains must work.
+            const { message, tokens } = await messageAI(systemContent, rolling.view, anthropicTools, "auto");
+            totalTokens += tokens;
+            iterations++;
+
+            const toolUseBlocks = message.content.filter((b: any) => b.type === "tool_use") as any[]
+
+            if (toolUseBlocks.length === 0) {
+                rolling.push({ role: "assistant", content: message.content })
+                break
+            }
+
+            rolling.push({ role: "assistant", content: message.content })
+
+            const toolResults = await Promise.allSettled(
+                toolUseBlocks.map(async (block: any) => {
+                    try {
+                        const toolResponse = await callTool(sessionId, block.name, block.input)
+                        const limited = Array.isArray(toolResponse) && toolResponse.length > 100
+                            ? toolResponse.slice(0, 100)
+                            : toolResponse
+                        let content = JSON.stringify(limited)
+                        if (content.length > MAX_RESPONSE_CHARS) {
+                            content = content.slice(0, MAX_RESPONSE_CHARS) + `... [truncated — ${content.length - MAX_RESPONSE_CHARS} characters omitted]`
+                        }
+                        return content
+                    } catch (toolErr: any) {
+                        const errMsg = String(toolErr?.message ?? toolErr ?? "unknown error")
+                        if (errMsg.includes("-32000") || errMsg.includes("Invalid request") || errMsg.includes("unexpected response")) {
+                            return "SESSION_EXPIRED"
+                        }
+                        return `Tool execution error: ${errMsg}`
+                    }
+                })
+            )
+
+            const toolResultBlocks = toolUseBlocks.map((block: any, i: number) => {
+                const result = toolResults[i]
+                return {
+                    type: "tool_result" as const,
+                    tool_use_id: block.id,
+                    content: result.status === "fulfilled" ? result.value : `Unexpected error for tool "${block.name}".`
+                }
+            })
+            rolling.push({ role: "user", content: toolResultBlocks })
+
+            const toolNames = toolUseBlocks.map((b: any) => b.name).join(", ")
+            console.log(`[try Step ${iterations}] Tools: ${toolNames} | Tokens so far: ${totalTokens}`)
+
+            const sessionExpired = toolResultBlocks.some((b: any) => b.content === "SESSION_EXPIRED")
+            if (sessionExpired) {
+                // Roll back so the client can retry with a fresh session
+                history.splice(historyBaseLen)
+                return res.status(410).json({ sessionExpired: true, error: "Session expired — a fresh one will be started automatically." })
+            }
+        }
+
+        if (iterations >= MAX_ITERATIONS) {
+            rolling.push({ role: "assistant", content: `I reached my step limit (${MAX_ITERATIONS} attempts) without completing the task. Try breaking it into smaller steps.` })
+        } else if (totalTokens >= TOKEN_BUDGET) {
+            rolling.push({ role: "assistant", content: `I used too many tokens (${totalTokens}) and had to stop. Start a new conversation.` })
+        }
+    } catch (err: any) {
+        const errMsg = String(err?.message ?? err ?? "unknown error")
+        console.error("Try chat handler error:", errMsg)
+        history.splice(historyBaseLen)
+        const is429 = err?.status === 429 || errMsg.includes("rate_limit")
+        if (is429) {
+            return res.status(429).json({
+                error: "Rate limit reached — too many requests this minute. Wait a few seconds and try again.",
+                retryAfterMs: 30_000
+            })
+        }
+        return res.status(500).json({ error: "Internal server error" })
+    }
+
+    const lastEntry = history[history.length - 1]
+    const lastContent = lastEntry?.content
+    const reply = typeof lastContent === "string"
+        ? lastContent
+        : Array.isArray(lastContent)
+            ? lastContent.filter((b: any) => b.type === "text").map((b: any) => b.text).join("")
+            : ""
+    res.json({ reply, history })
+})
+
 app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
     try {
         const doc = await Spec.findOne({ _id: req.params.specId, userId: req.user!.userId }).lean()
         if (!doc) return res.status(404).json({ error: "Spec not found" })
 
-        // Composite servers have no parseable spec — return saved catalog directly
+        // Composite servers have no parseable spec — return saved catalog directly.
+        // Flatten the per-group authMap into a single auth array so the composite
+        // can be imported into a new server as one unit (group identity is lost).
         if (doc.type === "composite") {
             const catalog = (doc.catalog ?? []).map((t: any) => ({ ...t, enabled: t.enabled !== false }))
-            return res.json({ catalog, baseUrl: "", fromSaved: true })
+            const auth = doc.authMap ? aggregateAuthMap(doc.authMap as any) : (doc.auth ?? [])
+            return res.json({ catalog, baseUrl: "", auth, fromSaved: true })
         }
 
         if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
             // Saved catalog exists — return it directly, no re-parse needed
             const catalog = doc.catalog.map((t: any) => ({ ...t, enabled: t.enabled !== false }))
-            return res.json({ catalog, baseUrl: doc.baseUrl || "", fromSaved: true })
+            return res.json({ catalog, baseUrl: doc.baseUrl || "", auth: doc.auth ?? [], fromSaved: true })
         }
 
         // No saved catalog — parse from spec and return defaults
@@ -565,7 +756,7 @@ app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
             handler: tool.handler,
             enrichment: tool.enrichment
         }))
-        res.json({ catalog, baseUrl: registry.baseUrl || "", fromSaved: false })
+        res.json({ catalog, baseUrl: registry.baseUrl || "", auth: registry.auth ?? [], fromSaved: false })
     } catch (err: any) {
         res.status(500).json({ error: err.message })
     }
@@ -573,7 +764,7 @@ app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
 
 app.post("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
     try {
-        const { catalog, spec, baseUrl, toolCount } = req.body
+        const { catalog, spec, baseUrl, toolCount, replace } = req.body
         if (!Array.isArray(catalog)) return res.status(400).json({ error: "catalog must be an array" })
 
         const existing = await Spec.findOne({ _id: req.params.specId, userId: req.user!.userId })
@@ -598,8 +789,20 @@ app.post("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
                 starX,
                 starY,
             })
+        } else if (replace) {
+            // Overwrite the existing server's catalog/spec — preserve userId, createdAt, star position
+            existing.catalog = catalog
+            existing.toolCount = toolCount || catalog.length
+            if (baseUrl) existing.baseUrl = baseUrl
+            if (spec) {
+                if (spec.type !== undefined)     existing.type     = spec.type ?? null
+                if (spec.auth !== undefined)     existing.auth     = spec.auth ?? []
+                if (spec.groupMap !== undefined) existing.groupMap = spec.groupMap ?? null
+                if (spec.authMap !== undefined)  existing.authMap  = spec.authMap ?? null
+            }
+            await existing.save()
         } else {
-            return res.status(409).json({ error: `A server named "${req.params.specId}" already exists. Please choose a different name.` })
+            return res.status(409).json({ error: `A server named "${req.params.specId}" already exists. Please choose a different name.`, conflict: true })
         }
 
         res.json({ ok: true })
@@ -620,7 +823,9 @@ app.delete("/api/servers/:specId", authMiddleware, async (req, res) => {
 
 app.get("/api/servers", authMiddleware, async (req, res) => {
     try {
-        const all = await Spec.find({ userId: req.user!.userId }).lean()
+        const all = await Spec.find({ userId: req.user!.userId })
+            .select("_id baseUrl toolCount createdAt starX starY catalog")
+            .lean()
 
         // Lazily assign star positions for any server that doesn't have one yet.
         // Mutate in-memory FIRST so this response always has coordinates, then
@@ -761,19 +966,30 @@ app.post("/api/oauth2/authorize", authMiddleware, async (req, res) => {
     }
 })
 
+// Escapes HTML special characters to prevent XSS in interpolated HTML strings.
+// Applied to any user/OAuth-provider-supplied value before it appears in a page.
+function escapeHtml(s: string): string {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!))
+}
+
 // Step 2: auth server redirects here with ?code=&state=
 // No authMiddleware — this is a browser redirect, not a fetch with a JWT
 app.get("/api/oauth2/callback", async (req, res) => {
     const { code, state, error } = req.query as Record<string, string>
 
-    const closePopup = (ok: boolean, message: string) => res.send(`
-        <!DOCTYPE html><html><body><script>
-        window.opener?.postMessage(${JSON.stringify({ heliosOAuth: true, ok, message })}, "*");
-        window.close();
-        </script><p>${message}</p></body></html>
-    `)
+    // H5: targetOrigin locked to FRONTEND_ORIGIN — never "*", which would let any
+    // origin read the postMessage payload (contains ok/message from the OAuth flow).
+    const TARGET_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000"
 
-    if (error) return closePopup(false, `Authorization denied: ${error}`)
+    const closePopup = (ok: boolean, message: string) => {
+        const safeMessage = escapeHtml(message)
+        res.send(`<!DOCTYPE html><html><body><script>
+        window.opener?.postMessage(${JSON.stringify({ heliosOAuth: true, ok, message: escapeHtml(message) })}, ${JSON.stringify(TARGET_ORIGIN)});
+        window.close();
+        </script><p>${safeMessage}</p></body></html>`)
+    }
+
+    if (error) return closePopup(false, `Authorization denied: ${escapeHtml(error)}`)
     if (!code || !state) return closePopup(false, "Missing code or state")
 
     const session = pendingAuth.get(state)
@@ -792,11 +1008,19 @@ app.get("/api/oauth2/callback", async (req, res) => {
             client_id: session.clientId,
             client_secret: session.clientSecret,
         })
-        const tokenRes = await fetch(session.tokenUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: params.toString(),
-        })
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 10_000)
+        let tokenRes: Response
+        try {
+            tokenRes = await fetch(session.tokenUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params.toString(),
+                signal: controller.signal,
+            })
+        } finally {
+            clearTimeout(timer)
+        }
         const tokenData = await tokenRes.json() as any
         if (!tokenRes.ok || !tokenData.access_token) {
             const msg = tokenData.error_description || tokenData.error || "Token exchange failed"
@@ -857,8 +1081,7 @@ app.get("/api/servers/:serverId/keys", authMiddleware, async (req, res) => {
         const doc = await Spec.findOne({ _id: req.params.serverId, userId: req.user!.userId }).lean()
         if (!doc) return res.status(404).json({ error: "Server not found" })
 
-        // Collect integration IDs → auth type from authMap or flat auth array
-        const integrations: Array<{
+        type Integration = {
             integrationId: string;
             authType: "apiKey" | "oauth2" | "bearer_token" | "basic_auth" | "none";
             oauthFlow?: string;
@@ -867,19 +1090,20 @@ app.get("/api/servers/:serverId/keys", authMiddleware, async (req, res) => {
             scopes?: string[];
             keyPresent: boolean;
             tokenExpired: boolean;
-        }> = []
+        }
 
+        // First pass: enumerate integrations from authMap / flat auth / catalog enrichment.
+        // keyPresent/tokenExpired are filled in after a single batched ApiKey lookup
+        // below — replaces an N+1 pattern that fired one findOne per integration.
+        const integrations: Integration[] = []
         const seen = new Set<string>()
 
-        // authMap: groupName → AuthConfig[]
         if (doc.authMap) {
             for (const [groupName, configs] of Object.entries(doc.authMap as Record<string, any[]>)) {
                 if (seen.has(groupName)) continue
-                seen.add(groupName)
                 const cfg = configs?.[0]
                 if (!cfg || cfg.type === "none") continue
-                const record = await ApiKey.findOne({ userId: req.user!.userId, integrationId: groupName }).lean()
-                const tokenExpired = !!(record?.expiresAt && record.expiresAt <= new Date())
+                seen.add(groupName)
                 integrations.push({
                     integrationId: groupName,
                     authType: cfg.type,
@@ -887,24 +1111,18 @@ app.get("/api/servers/:serverId/keys", authMiddleware, async (req, res) => {
                     tokenUrl: cfg.tokenUrl,
                     authorizationUrl: cfg.authorizationUrl,
                     scopes: cfg.scopes ? Object.keys(cfg.scopes) : undefined,
-                    keyPresent: !!record,
-                    tokenExpired,
+                    keyPresent: false,
+                    tokenExpired: false,
                 })
             }
-        }
-
-        // Flat auth array (non-composite servers): use specId as integrationId
-        if (!doc.authMap) {
+        } else {
             const flatAuth = Array.isArray(doc.auth) ? (doc.auth as any[]).filter((a: any) => a?.type && a.type !== "none") : []
+            const integrationId = req.params.serverId
 
             if (flatAuth.length > 0) {
-                // Auth config stored in doc.auth — use it directly
                 const cfg = flatAuth[0]
-                const integrationId = req.params.serverId
                 if (!seen.has(integrationId)) {
                     seen.add(integrationId)
-                    const record = await ApiKey.findOne({ userId: req.user!.userId, integrationId }).lean()
-                    const tokenExpired = !!(record?.expiresAt && record.expiresAt <= new Date())
                     integrations.push({
                         integrationId,
                         authType: cfg.type,
@@ -912,16 +1130,15 @@ app.get("/api/servers/:serverId/keys", authMiddleware, async (req, res) => {
                         tokenUrl: cfg.tokenUrl,
                         authorizationUrl: cfg.authorizationUrl,
                         scopes: cfg.scopes ? Object.keys(cfg.scopes) : undefined,
-                        keyPresent: !!record,
-                        tokenExpired,
+                        keyPresent: false,
+                        tokenExpired: false,
                     })
                 }
             } else {
-                // doc.auth is empty — fall back to catalog tool enrichments
                 const firstAuthTool = (doc.catalog ?? []).find((t: any) =>
                     t.enrichment?.auth?.template && t.enrichment.auth.template !== "none"
                 )
-                if (firstAuthTool) {
+                if (firstAuthTool && !seen.has(integrationId)) {
                     const auth = firstAuthTool.enrichment.auth
                     const template = auth.template as string
                     const authType = template.includes("oauth2") ? "oauth2"
@@ -931,22 +1148,34 @@ app.get("/api/servers/:serverId/keys", authMiddleware, async (req, res) => {
                     const oauthFlow = template === "oauth2_client_creds" ? "client_credentials"
                         : template === "oauth2_auth_code" ? "authorization_code"
                         : undefined
-                    const integrationId = req.params.serverId
-                    if (!seen.has(integrationId)) {
-                        seen.add(integrationId)
-                        const record = await ApiKey.findOne({ userId: req.user!.userId, integrationId }).lean()
-                        const tokenExpired = !!(record?.expiresAt && record.expiresAt <= new Date())
-                        integrations.push({
-                            integrationId,
-                            authType,
-                            oauthFlow,
-                            tokenUrl: auth.token_url,
-                            authorizationUrl: auth.authorization_url,
-                            keyPresent: !!record,
-                            tokenExpired,
-                        })
-                    }
+                    seen.add(integrationId)
+                    integrations.push({
+                        integrationId,
+                        authType,
+                        oauthFlow,
+                        tokenUrl: auth.token_url,
+                        authorizationUrl: auth.authorization_url,
+                        keyPresent: false,
+                        tokenExpired: false,
+                    })
                 }
+            }
+        }
+
+        // Single batched lookup for every integration we built above.
+        if (integrations.length > 0) {
+            const ids = integrations.map(i => i.integrationId)
+            const records = await ApiKey.find({
+                userId: req.user!.userId,
+                integrationId: { $in: ids },
+            }).lean()
+            const byId = new Map(records.map(r => [r.integrationId, r]))
+            const now = new Date()
+            for (const integration of integrations) {
+                const record = byId.get(integration.integrationId)
+                if (!record) continue
+                integration.keyPresent = true
+                integration.tokenExpired = !!(record.expiresAt && record.expiresAt <= now)
             }
         }
 
