@@ -1,8 +1,7 @@
 "use client"
 import { usePathname } from "next/navigation"
 import { useState, useEffect, useRef, useCallback } from "react"
-
-type StarMode = "full" | "sparse" | "none"
+import { StarsBackground, type StarMode } from "./StarsBackground"
 
 const PAGE_CONFIG: Record<string, { bg: string; overlay: string; stars: StarMode }> = {
   "/":         { bg: "/Background-Midnight(1).jpg", overlay: "rgba(0,0,0,0.35)", stars: "full"   },
@@ -27,8 +26,7 @@ const ARC_CX       = 50
 const ARC_R        = (_diff * _diff + 50 * 50) / (2 * _diff)
 const ARC_CY       = ARC_CENTER_Y - ARC_R
 
-const DEBUG_ARC          = false
-const DEBUG_TRAJECTORIES = false
+const DEBUG_ARC = false
 
 function arcYAt(x: number): number {
   const dx = x - ARC_CX
@@ -59,75 +57,7 @@ const _arcMaskSvg = [
 ].join("")
 const SKY_MASK = `url("data:image/svg+xml,${_arcMaskSvg}")`
 
-const PIVOT_TOP_VH = 150
-const ASPECT       = 16 / 9   // assumed W:H for geometry
-const MARGIN_PCT   = 4
-const ORBIT_DUR    = 2400      // seconds — same for every star (Earth's rotation)
-
-// ── Star pool ────────────────────────────────────────────────────────────────
-function xorshift(seed: number) {
-  let s = (seed >>> 0) || 1
-  return () => { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return (s >>> 0) / 0x100000000 }
-}
-
-const COLORS = [
-  "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff",
-  "#eef2ff", "#eef2ff", "#eef2ff",
-  "#c6d4ff", "#c6d4ff",
-  "#d6ecff",
-  "#fff7d6", "#fff7d6",
-  "#ffd98a",
-  "#ffe4c8",
-]
-
-const POOL_CONFIGS = [
-  { count: 40, minDist: 140, maxDist: 155, minOp: 0.10, maxOp: 0.30, minSz: 0.6, maxSz: 1.4 },
-  { count: 40, minDist: 153, maxDist: 168, minOp: 0.14, maxOp: 0.38, minSz: 0.8, maxSz: 1.8 },
-  { count: 40, minDist: 167, maxDist: 185, minOp: 0.18, maxOp: 0.45, minSz: 1.0, maxSz: 2.2 },
-  { count: 30, minDist: 184, maxDist: 200, minOp: 0.22, maxOp: 0.52, minSz: 1.4, maxSz: 3.2 },
-  { count: 30, minDist: 198, maxDist: 216, minOp: 0.28, maxOp: 0.58, minSz: 1.8, maxSz: 4.2 },
-] as const
-
-interface PoolStar {
-  id:         string
-  dist:       number
-  startDeg:   number
-  opacity:    number
-  size:       number
-  color:      string
-  pulse:      boolean
-  pulseDur:   number
-  pulseDelay: number
-}
-
-function buildStar(rng: () => number, li: number, si: number): PoolStar {
-  const cfg      = POOL_CONFIGS[li]
-  const dist     = cfg.minDist + rng() * (cfg.maxDist - cfg.minDist)
-  const startDeg = (si / cfg.count) * 360
-  return {
-    id:         `${li}-${si}`,
-    dist,
-    startDeg,
-    opacity:    cfg.minOp + rng() * (cfg.maxOp - cfg.minOp),
-    size:       cfg.minSz + rng() * (cfg.maxSz - cfg.minSz),
-    color:      COLORS[Math.floor(rng() * COLORS.length)],
-    pulse:      rng() > 0.65,
-    pulseDur:   3 + rng() * 6,
-    pulseDelay: rng() * 8,
-  }
-}
-
-function useStarPool() {
-  const [stars] = useState<PoolStar[]>(() => {
-    const rng = xorshift(31337)
-    return POOL_CONFIGS.flatMap((_, li) =>
-      Array.from({ length: POOL_CONFIGS[li].count }, (__, si) =>
-        buildStar(rng, li, si)
-      )
-    )
-  })
-  return stars
-}
+const MARGIN_PCT = 4  // debug overlay readout only
 
 // ── Shooting stars ────────────────────────────────────────────────────────────
 interface ShootingStar {
@@ -205,18 +135,12 @@ export default function BackgroundManager() {
   const pathname = usePathname()
   const [active, setActive]     = useState(() => getConfig(pathname))
   const [incoming, setIncoming] = useState<typeof active | null>(null)
-  const allStars = useStarPool()
 
   const [visibleStarMode, setVisibleStarMode] = useState<StarMode>(() => getConfig(pathname).stars as StarMode)
   const [starOpacity, setStarOpacity] = useState(1)
   const starModeRef = useRef<StarMode>(getConfig(pathname).stars as StarMode)
 
   const { stars: shootingStars, remove: removeShootingStar } = useShootingStars(visibleStarMode !== "none")
-
-  // sparse = only the topmost orbital layer (li=0, ~130 stars, tightest arc near zenith)
-  const stars = visibleStarMode === "none"   ? [] :
-                visibleStarMode === "sparse" ? allStars.filter(s => s.id.startsWith("0-")) :
-                allStars
 
   useEffect(() => {
     const next = getConfig(pathname)
@@ -266,53 +190,15 @@ export default function BackgroundManager() {
         }} />
       )}
 
-      {/* Star pool — all orbiting shared pivot at (50vw, -150vh) */}
+      {/* Star field — parallax layers rotating around (50vw, -150vh) pivot.
+          Mask clips below the horizon arc; opacity fades on page-mode change. */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{
         zIndex: -9, opacity: starOpacity, transition: "opacity 400ms ease",
         maskImage: SKY_MASK, WebkitMaskImage: SKY_MASK,
         maskSize: "100% 100%", WebkitMaskSize: "100% 100%",
       }}>
-        {stars.map(star => (
-          <div
-            key={star.id}
-            style={{
-              position:           "absolute",
-              left:               "50vw",
-              top:                `-${PIVOT_TOP_VH}vh`,
-              opacity:            star.opacity * (visibleStarMode === "sparse" ? 0.55 : 1),
-              // @ts-expect-error — CSS custom property
-              "--r":              `${star.dist}vh`,
-              animation:          `star-orbit ${ORBIT_DUR}s linear infinite`,
-              animationDirection: "normal",
-              animationDelay:     `-${(star.startDeg / 360) * ORBIT_DUR}s`,
-            }}
-          >
-            <div style={{
-              width: `${star.size}px`, height: `${star.size}px`,
-              borderRadius: "50%", background: star.color,
-              boxShadow: `0 0 ${star.size * 2.5}px ${star.size * 0.8}px ${star.color}55`,
-              ...(star.pulse ? {
-                animation: `star-pulse ${star.pulseDur}s ease-in-out infinite`,
-                animationDelay: `${star.pulseDelay}s`,
-              } : {}),
-            }} />
-          </div>
-        ))}
+        <StarsBackground mode={visibleStarMode} />
       </div>
-
-      {/* DEBUG: orbit trajectory circles */}
-      {DEBUG_TRAJECTORIES && (
-        <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 9998 }}>
-          {stars.map(star => (
-            <div key={`traj-${star.id}`} style={{
-              position: "absolute", left: "50vw", top: `-${PIVOT_TOP_VH}vh`,
-              width: `${star.dist * 2}vh`, height: `${star.dist * 2}vh`,
-              borderRadius: "50%", border: `1px solid ${star.color}55`,
-              transform: "translate(-50%, -50%)",
-            }} />
-          ))}
-        </div>
-      )}
 
       {/* Shooting stars — masked so they fade out at the arc/mountain boundary */}
       {visibleStarMode !== "none" && <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{

@@ -15,6 +15,32 @@ function hashStr(s: string): number {
   return Math.abs(h)
 }
 
+// Per-server star tint. Mix of real stellar spectral classes (hot blue → red)
+// plus exotic/fantasy nebula colors (cyan, lavender, purple, pink, magenta)
+// for broader visual variety. Hash modulo palette length picks one per server.
+const SERVER_STAR_COLORS = [
+  // Real stellar spectrum — hot to cool
+  "#9bb0ff", // hot blue      (O/B)
+  "#c6d4ff", // blue-white
+  "#e8f0ff", // icy (original)
+  "#ffffff", // white         (A)
+  "#fff0b8", // yellow-white  (F)
+  "#ffcf6f", // yellow        (G, sun-like)
+  "#ffc79a", // peach
+  "#ff9458", // orange        (K)
+  "#ff7a5a", // red            (M)
+
+  // Exotic / nebula
+  "#7dd3ff", // light blue / cyan
+  "#89e8ff", // bright cyan
+  "#d4bcff", // lavender
+  "#b495ff", // purple
+  "#a78bff", // deep violet
+  "#ff9ed4", // nebula pink
+  "#e884ff", // magenta
+  "#9effc8", // mint / aqua
+]
+
 interface SavedServer {
   id: string
   baseUrl: string
@@ -57,23 +83,24 @@ export default function Home() {
     if (prefetching) return
     setPrefetching(serverId)
     try {
-      const res = await fetch("http://localhost:8000/api/sandbox/start", {
+      const res = await fetch("http://localhost:8000/api/try/start", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ specId: serverId })
       })
       const data = await res.json()
       if (!data.error) {
-        sessionStorage.setItem(`helios_prefetch_${serverId}`, JSON.stringify({
+        // Matches the shape the /try page reads from sessionStorage.
+        // authContext key must be present (even if null) so /try accepts the cache.
+        sessionStorage.setItem(`helios_try_session_${serverId}`, JSON.stringify({
           sessionId: data.sessionId,
           tools: data.tools,
-          baseUrl: data.baseUrl ?? "",
           authContext: data.authContext ?? null
         }))
       }
     } catch {}
     setPrefetching(null)
-    router.push(`/sandbox?specId=${serverId}`)
+    router.push(`/try?specId=${serverId}`)
   }
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
@@ -352,6 +379,7 @@ export default function Home() {
             const twinkleDur  = 2.5 + (h % 30) / 10
             const twinkleDelay = (h % 20) / 10
             const rotateDur   = 20 + (h % 25)
+            const starColor   = SERVER_STAR_COLORS[h % SERVER_STAR_COLORS.length]
             const isNew = server.id === newStarId
 
             return (
@@ -373,6 +401,7 @@ export default function Home() {
                     ["--twinkle-dur"   as string]: `${twinkleDur}s`,
                     ["--twinkle-delay" as string]: `${twinkleDelay}s`,
                     ["--rotate-dur"    as string]: `${rotateDur}s`,
+                    ["--star-color"    as string]: starColor,
                   }}
                 />
                 <span className="star-label">{server.id}</span>
@@ -432,7 +461,7 @@ export default function Home() {
         {/* ── Main CTA ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-center min-h-[68vh] pb-4">
           <div className="flex flex-col items-center gap-6 animate-fade-up">
-            <p className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.45em] uppercase text-white">
+            <p className="font-[family-name:--font-cinzel] text-[20px] tracking-[0.45em] uppercase text-white">
               MCP Server Generator
             </p>
             <Link href="/create">

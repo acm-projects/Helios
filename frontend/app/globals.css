@@ -549,7 +549,9 @@ html.popup-open .page-wrapper {
 /* 4-pointed star shape */
 .star-dot {
   clip-path: polygon(50% 0%, 63% 37%, 100% 50%, 63% 63%, 50% 100%, 37% 63%, 0% 50%, 37% 37%);
-  background: linear-gradient(135deg, #ffffff 0%, #e8f0ff 50%, #ffffff 100%);
+  /* --star-color picks the middle gradient stop per-server (set inline from page.tsx).
+     Falls back to icy-blue for servers without a color assigned. */
+  background: linear-gradient(135deg, #ffffff 0%, var(--star-color, #e8f0ff) 50%, #ffffff 100%);
   cursor: pointer;
   pointer-events: auto;
   position: relative;

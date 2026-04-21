@@ -7,6 +7,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
 import { InfoBubble } from "@/app/components/InfoBubble"
+import { MotionStarsBackground } from "@/app/components/MotionStars"
 import { lookupProviderKeyUrl, lookupBasicAuthLabels } from "@/lib/providerKeys"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -140,51 +141,6 @@ function drawGalaxy(canvas: HTMLCanvasElement, seed: number): void {
   coreGrad.addColorStop(1, "rgba(0,0,0,0)")
   ctx.fillStyle = coreGrad
   ctx.fillRect(0, 0, W, H)
-
-  // 5. Dense tiny star field
-  const numTiny = 2000 + Math.floor(rng() * 700)
-  for (let i = 0; i < numTiny; i++) {
-    const x = rng() * W
-    const y = rng() * H
-    const sz = 0.18 + rng() * 0.55
-    const op = 0.18 + rng() * 0.72
-    const w = rng()
-    let sr: number, sg: number, sb: number
-    if (w < 0.62) { sr = 195; sg = 215; sb = 255 }
-    else if (w < 0.82) { sr = 255; sg = 248; sb = 220 }
-    else if (w < 0.93) { sr = 255; sg = 185; sb = 135 }
-    else { sr = 155; sg = 185; sb = 255 }
-    ctx.beginPath()
-    ctx.arc(x, y, sz, 0, Math.PI * 2)
-    ctx.fillStyle = `rgba(${sr},${sg},${sb},${op})`
-    ctx.fill()
-  }
-
-  // 6. Medium stars with halos
-  const numMed = 140 + Math.floor(rng() * 70)
-  for (let i = 0; i < numMed; i++) {
-    const x = rng() * W
-    const y = rng() * H
-    const sz = 0.7 + rng() * 1.5
-    const w = rng()
-    const sr = w < 0.7 ? 210 : 255
-    const sg = w < 0.7 ? 228 : 242
-    const sb = w < 0.7 ? 255 : 210
-    const haloR = sz * 7
-    const hg = ctx.createRadialGradient(x, y, 0, x, y, haloR)
-    hg.addColorStop(0, `rgba(${sr},${sg},${sb},0.28)`)
-    hg.addColorStop(0.5, `rgba(${sr},${sg},${sb},0.08)`)
-    hg.addColorStop(1, `rgba(${sr},${sg},${sb},0)`)
-    ctx.beginPath()
-    ctx.arc(x, y, haloR, 0, Math.PI * 2)
-    ctx.fillStyle = hg
-    ctx.fill()
-    ctx.beginPath()
-    ctx.arc(x, y, sz, 0, Math.PI * 2)
-    ctx.fillStyle = `rgba(${sr},${sg},${sb},0.88)`
-    ctx.fill()
-  }
-
 }
 
 // ── Galaxy Canvas ─────────────────────────────────────────────────────────────
@@ -624,6 +580,9 @@ function TryContent() {
     return (
       <div className="flex flex-col h-screen w-full relative overflow-hidden">
         <GalaxyCanvas seed={galaxySeed} />
+        <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -9 }}>
+          <MotionStarsBackground transparent />
+        </div>
 
         <div className="relative z-30 flex items-center px-8 h-[93px] flex-shrink-0">
           <div className="flex-1 flex items-center">
@@ -674,8 +633,13 @@ function TryContent() {
   return (
     <div className="flex flex-col h-screen w-full relative overflow-hidden">
 
-      {/* Galaxy background */}
+      {/* Galaxy background — static canvas: nebula, core glow */}
       <GalaxyCanvas seed={galaxySeed} />
+
+      {/* Parallax star layers — drift upward at 3 different speeds, multi-color */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -9 }}>
+        <MotionStarsBackground transparent />
+      </div>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div ref={headerRef} className="relative z-30 flex items-center px-8 h-[93px] flex-shrink-0" style={{ opacity: 0 }}>
