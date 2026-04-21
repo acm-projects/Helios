@@ -872,7 +872,7 @@ export async function parseSwaggerUrl(specUrl: string): Promise<any> {
   }
 }
 
-export async function generateToolRegistry(spec: string): Promise<ToolsFile> {
+export async function generateToolRegistry(spec: any): Promise<ToolsFile> {
   if ((spec as any).openapi || (spec as any).swagger) {
     return parseOpenApiSpec(spec);
   }

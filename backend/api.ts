@@ -241,7 +241,7 @@ async function buildMcpRegistry(req: any): Promise<
                 if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
                     const enabledTools = doc.catalog.filter((t: any) => t.enabled !== false)
                     if (enabledTools.length === 0) return { ok: false, status: 400, error: "No enabled tools in saved catalog" }
-                    registry = { baseUrl: doc.baseUrl || doc.spec?.servers?.[0]?.url || "", tools: enabledTools, auth: doc.auth ?? [] }
+                    registry = { baseUrl: doc.baseUrl || "", tools: enabledTools, auth: doc.auth ?? [] }
                 } else {
                     registry = await generateToolRegistry(doc)
                     registry.tools = registry.tools.map((t: any) => ({ ...t, enabled: true }))
@@ -864,7 +864,7 @@ app.get("/api/servers", authMiddleware, async (req, res) => {
 
 // Download — generates a standalone MCP server ZIP for the given saved spec
 app.get("/api/servers/:specId/download", authMiddleware, async (req, res) => {
-    const specId = req.params.specId
+    const specId = req.params.specId as string
     try {
         const doc = await Spec.findOne({ _id: specId, userId: req.user!.userId }).lean()
         if (!doc) return res.status(404).json({ error: "Server not found" })
@@ -875,6 +875,7 @@ app.get("/api/servers/:specId/download", authMiddleware, async (req, res) => {
         }
 
         const registry = {
+            schema_version: 2,
             baseUrl: doc.baseUrl || "",
             tools: catalog.filter((t: any) => t.enabled !== false),
             auth: doc.auth || []
@@ -1117,7 +1118,7 @@ app.get("/api/servers/:serverId/keys", authMiddleware, async (req, res) => {
             }
         } else {
             const flatAuth = Array.isArray(doc.auth) ? (doc.auth as any[]).filter((a: any) => a?.type && a.type !== "none") : []
-            const integrationId = req.params.serverId
+            const integrationId = req.params.serverId as string
 
             if (flatAuth.length > 0) {
                 const cfg = flatAuth[0]
@@ -1142,7 +1143,7 @@ app.get("/api/servers/:serverId/keys", authMiddleware, async (req, res) => {
                     const auth = firstAuthTool.enrichment.auth
                     const template = auth.template as string
                     const authType = template.includes("oauth2") ? "oauth2"
-                        : template.includes("api_key") ? "api_key"
+                        : template.includes("api_key") ? "apiKey"
                         : template === "basic_auth" ? "basic_auth"
                         : "bearer_token"
                     const oauthFlow = template === "oauth2_client_creds" ? "client_credentials"
