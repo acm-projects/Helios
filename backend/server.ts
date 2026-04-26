@@ -165,22 +165,33 @@ function registerDynamicTool(
       inputSchema: hasInputParams ? schema : undefined
     },
     async (args) => {
-      // ── 0. Decode HTML-encoded angle brackets in markup-format params ──────
-      // Claude defensively HTML-encodes `<` and `>` (`&lt;`/`&gt;`) in string
-      // values even when the description explicitly says "use raw characters" —
-      // Twilio's TwiML field is the canonical bite, returning error 12100
-      // ("Document parse failure"). Targeted decode of `&lt;`/`&gt;` only;
-      // `&amp;`, `&quot;`, `&#39;` are left alone because those entities are
-      // legitimate (and required) inside markup body text. Driven by the spec
-      // `format` field — generic, not provider-specific.
+      // ── 0. Decode HTML-encoded entities in markup-format params ────────────
+      // Claude defensively HTML-encodes special characters in string values
+      // even when the description explicitly says "use raw characters" — Twilio's
+      // TwiML field is the canonical bite, returning error 12100 ("Document parse
+      // failure"). We decode:
+      //   &lt; / &gt;     — angle brackets (must be literal for tag delimiters)
+      //   &quot; / &#34;  — double quotes (must be literal in attribute values
+      //                     like <Pause length="1"/>; harmless inside body text
+      //                     because XML parsers treat both forms identically)
+      //   &apos; / &#39;  — single quotes (same reasoning as above)
+      // We deliberately do NOT decode &amp; — actual ampersands inside markup
+      // body text MUST stay encoded, and Claude correctly emits &amp; for them.
+      // Driven by the spec `format` field — generic, not provider-specific.
       const props = endpoint.input_schema.properties
       for (const k in args) {
         const v = args[k]
         if (typeof v !== "string") continue
         const fmt = String(props[k]?.format || "").toLowerCase()
         if (fmt !== "twiml" && fmt !== "xml" && fmt !== "html") continue
-        if (v.includes("&lt;") || v.includes("&gt;")) {
-          args[k] = v.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+        if (v.includes("&lt;") || v.includes("&gt;") || v.includes("&quot;") || v.includes("&#34;") || v.includes("&apos;") || v.includes("&#39;")) {
+          args[k] = v
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&#34;/g, '"')
+            .replace(/&apos;/g, "'")
+            .replace(/&#39;/g, "'")
         }
       }
 

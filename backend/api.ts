@@ -168,11 +168,13 @@ app.post("/api/spec/simplify", authMiddleware, async (req, res) => {
 //   spec          — unsaved new server passed directly from the frontend
 //   specId        — existing saved server, loaded from DB
 async function buildMcpRegistry(req: any): Promise<
-    | { ok: true; registry: any; frontendTools: any[] }
+    | { ok: true; registry: any; frontendTools: any[]; groupMap?: Record<string, string>; authMap?: Record<string, AuthConfig[]> }
     | { ok: false; status: number; error: string }
 > {
     let registry: any = null
     let frontendTools: any[] | null = null
+    let outGroupMap: Record<string, string> | undefined
+    let outAuthMap: Record<string, AuthConfig[]> | undefined
 
     if (req.body.toolsRegistry) {
         const reg = req.body.toolsRegistry
@@ -207,6 +209,8 @@ async function buildMcpRegistry(req: any): Promise<
                 auth: aggregateAuthMap(authMap),
             }
             frontendTools = req.body.toolsRegistry.tools.map((tool: any) => toOpenAITool(tool))
+            if (Object.keys(groupMap).length > 0) outGroupMap = groupMap
+            if (Object.keys(authMap).length > 0) outAuthMap = authMap
         } else if (req.body.spec) {
             registry = await generateToolRegistry(req.body.spec)
             if (!registry.baseUrl && req.body.baseUrl) {
@@ -237,6 +241,8 @@ async function buildMcpRegistry(req: any): Promise<
                 })
                 registry = { baseUrl: "", tools: allCatalogTools.filter((t: any) => t.enabled !== false), auth: aggregateAuthMap(authMap) }
                 frontendTools = allCatalogTools.map((t: any) => toOpenAITool(t, t.enabled !== false))
+                if (Object.keys(groupMap).length > 0) outGroupMap = groupMap
+                if (Object.keys(authMap).length > 0) outAuthMap = authMap
             } else {
                 if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
                     const enabledTools = doc.catalog.filter((t: any) => t.enabled !== false)
@@ -266,7 +272,7 @@ async function buildMcpRegistry(req: any): Promise<
         return { ok: false, status: 400, error: "Failed to load spec: " + err.message }
     }
 
-    return { ok: true, registry, frontendTools: frontendTools ?? registry.tools.map((tool: any) => toOpenAITool(tool)) }
+    return { ok: true, registry, frontendTools: frontendTools ?? registry.tools.map((tool: any) => toOpenAITool(tool)), groupMap: outGroupMap, authMap: outAuthMap }
 }
 
 // Flatten a composite authMap (groupName → AuthConfig[]) into a single auth
@@ -347,7 +353,14 @@ app.post("/api/sandbox/start", authMiddleware, async (req, res) => {
         return res.status(500).json({ error: "Failed to start MCP session: " + err.message })
     }
     const authContextObj = buildAuthContext(built.registry)
-    res.json({ sessionId, tools: built.frontendTools, baseUrl: built.registry.baseUrl ?? "", authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined })
+    res.json({
+        sessionId,
+        tools: built.frontendTools,
+        baseUrl: built.registry.baseUrl ?? "",
+        authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined,
+        groupMap: built.groupMap,
+        authMap: built.authMap,
+    })
 })
 
 // Try mode: every method executes live, no simulation. Used by /try page for downloaded servers.
@@ -361,7 +374,14 @@ app.post("/api/try/start", authMiddleware, async (req, res) => {
         return res.status(500).json({ error: "Failed to start MCP session: " + err.message })
     }
     const authContextObj = buildAuthContext(built.registry)
-    res.json({ sessionId, tools: built.frontendTools, baseUrl: built.registry.baseUrl ?? "", authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined })
+    res.json({
+        sessionId,
+        tools: built.frontendTools,
+        baseUrl: built.registry.baseUrl ?? "",
+        authContext: Object.keys(authContextObj).length > 0 ? authContextObj : undefined,
+        groupMap: built.groupMap,
+        authMap: built.authMap,
+    })
 })
 
 app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
@@ -418,7 +438,7 @@ app.post("/api/sandbox/chat", authMiddleware, async (req, res) => {
 
     const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
 
-    const systemContent = `Today's date is ${todayStr}. You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}`
+    const systemContent = `Today's date is ${todayStr}. You are a sandbox testing assistant for API tools. Always call the appropriate tool for every user request — including POST, PUT, PATCH, and DELETE operations. GET requests return real data from the live API. POST, PUT, PATCH, and DELETE requests are intercepted by the sandbox: the tool never touches the real API and instead returns a simulation of what would have been sent. When you receive a sandbox_simulation response, you are done — present the simulated_request to the user as a success and stop immediately. Do not call the same tool again. Never describe a simulation as an error, failure, or technical issue. CONTENT FIELDS ARE THE DELIVERABLE: when a tool parameter accepts user-facing content (message bodies, email bodies, SMS text, TwiML scripts, post content, chat messages), put the COMPLETE substantive content in that parameter — the exact words the recipient would see or hear in production. Do not write placeholders, generic greetings, or summaries; if the user asked you to convey specific information, embed it verbatim inside the content parameter. If an API tool returns an error, read the exact error message and retry with corrected parameters before telling the user it failed. If a tool returns a 401 error, tell the user their API key or token is missing or expired and guide them to open the Tools panel → API Keys tab.${authInstruction}`
 
     let iterations = 0;
     let totalTokens = 0;
@@ -630,7 +650,7 @@ app.post("/api/try/chat", authMiddleware, async (req, res) => {
 
     const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
 
-    const systemContent = `Today's date is ${todayStr}. You are a live assistant connected to the user's real APIs through their generated MCP server. Every tool call executes against the production API — GET, POST, PUT, PATCH, DELETE all hit the real service and cause real side effects. This is not a sandbox; there are no simulations. Before any destructive or irreversible write (delete, bulk update, send, etc.) briefly confirm the intent with the user in plain language — a one-line check is enough. Always call the correct tool for the task and execute it. When listing or searching, pass explicit filters the API supports (date ranges, query strings, pagination) — never rely on default ordering. If a tool response ends with "[truncated — N characters omitted]", the real response was longer than shown; only the prefix (usually response metadata) is visible, so do not claim the items array is empty or assume the visible timestamps are the user's data. Instead, narrow the query (tighter date range, explicit fields, pagination) and retry. If a tool returns an error, read the message carefully, correct the parameters, and retry once. If a tool returns 401, tell the user their credentials are missing or expired and point them to Tools → API Keys. Be direct and conversational — you are helping the user operate their own systems.${authInstruction}`
+    const systemContent = `Today's date is ${todayStr}. You are a live assistant connected to the user's real APIs through their generated MCP server. Every tool call executes against the production API — GET, POST, PUT, PATCH, DELETE all hit the real service and cause real side effects. This is not a sandbox; there are no simulations. Before any destructive or irreversible write (delete, bulk update, send, etc.) briefly confirm the intent with the user in plain language — a one-line check is enough. Always call the correct tool for the task and execute it. CONTENT FIELDS ARE THE DELIVERABLE: when a tool parameter accepts user-facing content (message bodies, email bodies, SMS text, TwiML scripts, post content, voicemail scripts, chat messages), put the COMPLETE substantive content in that parameter — the exact words the recipient will see or hear. Do not write placeholders, generic greetings, or summaries; the chat reply is for the user, but the parameter value is what actually gets sent or spoken. If the user asked you to convey specific information (an availability window, a status update, etc.), embed that information verbatim inside the content parameter. When listing or searching, pass explicit filters the API supports (date ranges, query strings, pagination) — never rely on default ordering. If a tool response ends with "[truncated — N characters omitted]", the real response was longer than shown; only the prefix (usually response metadata) is visible, so do not claim the items array is empty or assume the visible timestamps are the user's data. Instead, narrow the query (tighter date range, explicit fields, pagination) and retry. If a tool returns an error, read the message carefully, correct the parameters, and retry once. If a tool returns 401, tell the user their credentials are missing or expired and point them to Tools → API Keys. Be direct and conversational — you are helping the user operate their own systems.${authInstruction}`
 
     let iterations = 0;
     let totalTokens = 0;
@@ -731,13 +751,14 @@ app.get("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
         const doc = await Spec.findOne({ _id: req.params.specId, userId: req.user!.userId }).lean()
         if (!doc) return res.status(404).json({ error: "Spec not found" })
 
-        // Composite servers have no parseable spec — return saved catalog directly.
-        // Flatten the per-group authMap into a single auth array so the composite
-        // can be imported into a new server as one unit (group identity is lost).
+        // Composite servers have no parseable spec — return saved catalog plus the
+        // per-group authMap and toolMap so callers can preserve child API identity
+        // when importing the composite into another server. `auth` is the flattened
+        // aggregate kept for backward compat with older callers.
         if (doc.type === "composite") {
             const catalog = (doc.catalog ?? []).map((t: any) => ({ ...t, enabled: t.enabled !== false }))
             const auth = doc.authMap ? aggregateAuthMap(doc.authMap as any) : (doc.auth ?? [])
-            return res.json({ catalog, baseUrl: "", auth, fromSaved: true })
+            return res.json({ catalog, baseUrl: "", auth, authMap: doc.authMap ?? null, groupMap: doc.groupMap ?? null, fromSaved: true })
         }
 
         if (doc.catalog && Array.isArray(doc.catalog) && doc.catalog.length > 0) {
@@ -796,10 +817,12 @@ app.post("/api/servers/:specId/catalog", authMiddleware, async (req, res) => {
             if (baseUrl) existing.baseUrl = baseUrl
             if (spec) {
                 if (spec.type !== undefined)     existing.type     = spec.type ?? null
-                if (spec.auth !== undefined)     existing.auth     = spec.auth ?? []
-                if (spec.groupMap !== undefined) existing.groupMap = spec.groupMap ?? null
-                if (spec.authMap !== undefined)  existing.authMap  = spec.authMap ?? null
+                if (spec.auth !== undefined)     { existing.auth     = spec.auth ?? [];   existing.markModified("auth") }
+                if (spec.groupMap !== undefined) { existing.groupMap = spec.groupMap ?? null; existing.markModified("groupMap") }
+                if (spec.authMap !== undefined)  { existing.authMap  = spec.authMap  ?? null; existing.markModified("authMap") }
             }
+            // catalog is Mixed[] — same caveat as above for nested edits
+            existing.markModified("catalog")
             await existing.save()
         } else {
             return res.status(409).json({ error: `A server named "${req.params.specId}" already exists. Please choose a different name.`, conflict: true })
@@ -1100,8 +1123,27 @@ app.get("/api/servers/:serverId/keys", authMiddleware, async (req, res) => {
         const seen = new Set<string>()
 
         if (doc.authMap) {
+            // Only surface integrations that an enabled catalog tool actually
+            // routes to via groupMap. This guards against orphan authMap entries
+            // left behind by older saves (e.g. a stale Gmail/Maps entry from a
+            // contaminated launchSandbox run).
+            const usedGroups: Set<string> | null = (() => {
+                if (!doc.groupMap) return null
+                const enabledNames = new Set(
+                    (doc.catalog ?? [])
+                        .filter((t: any) => t.enabled !== false)
+                        .map((t: any) => t.name)
+                )
+                const used = new Set<string>()
+                for (const [toolName, group] of Object.entries(doc.groupMap as Record<string, string>)) {
+                    if (enabledNames.size === 0 || enabledNames.has(toolName)) used.add(group)
+                }
+                return used
+            })()
+
             for (const [groupName, configs] of Object.entries(doc.authMap as Record<string, any[]>)) {
                 if (seen.has(groupName)) continue
+                if (usedGroups && !usedGroups.has(groupName)) continue
                 const cfg = configs?.[0]
                 if (!cfg || cfg.type === "none") continue
                 seen.add(groupName)

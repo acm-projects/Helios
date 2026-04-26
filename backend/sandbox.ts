@@ -128,6 +128,14 @@ function compressSchema(schema: any): any {
             const compressed: any = { type: prop?.type ?? "string" }
             if (prop?.enum?.length) compressed.enum = prop.enum
             if (prop?.items?.type) compressed.items = { type: prop.items.type }
+            // Preserve description (truncated) — parameter descriptions carry format
+            // hints injected by the parser (e.g. "pass raw XML, not a URL"). Stripping
+            // them forced the LLM to guess by parameter name alone, which is how the
+            // Twilio CreateCall tool ended up dialing demo URLs instead of using Twiml.
+            if (prop?.description) compressed.description = String(prop.description).slice(0, 200)
+            // Preserve format — server.ts decode logic depends on it (twiml/xml/html
+            // angle-bracket repair) and it gives the LLM a useful field-type signal.
+            if (prop?.format) compressed.format = prop.format
             out.properties[key] = compressed
         }
     }
