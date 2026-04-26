@@ -144,6 +144,17 @@ function SandboxContent() {
         }
         const tools: Tool[] = data.tools ?? []
         setSessionId(data.sessionId)
+        // Saved composite: backend returns groupMap/authMap so the API Keys panel
+        // can render per-child rows instead of collapsing to one specId-named row.
+        if (specId && data.groupMap && data.authMap) {
+          setToolGroupMap(data.groupMap)
+          try {
+            sessionStorage.setItem(
+              `helios_groups_${specId}`,
+              JSON.stringify({ toolMap: data.groupMap, authMap: data.authMap })
+            )
+          } catch { }
+        }
         const initialToggles: Record<string, boolean> = {}
         tools.forEach((t: Tool) => { initialToggles[t.function.name] = t.enabled ?? true })
         // Merge in-flight toggle edits from a prior sandbox → verify trip so
@@ -247,6 +258,10 @@ function SandboxContent() {
   }
 
   const handleEdit = () => {
+    // For composites, preserve each tool's child apiName from groupMap so
+    // launchSandbox can rebuild the per-child authMap. Without this, every
+    // tool collapses to specId and auth grouping is destroyed.
+    const fallbackName = specId ?? "Server"
     const toolItems = allTools.map(t => ({
       id: t.function.name,
       name: t.function.name,
@@ -255,12 +270,33 @@ function SandboxContent() {
       path: t.handler?.path,
       baseUrl: "",
       source: "past" as const,
-      apiName: specId ?? "Server",
+      apiName: toolGroupMap[t.function.name] ?? fallbackName,
       input_schema: t.function.parameters as object,
       handler: t.handler,
     }))
     sessionStorage.setItem("helios_create_tools", JSON.stringify(toolItems))
     sessionStorage.setItem("helios_edit_source", specId!)
+    // Seed per-apiName drafts so launchSandbox can find auth for each group.
+    // Pulls from the same helios_groups_<key> blob the panel already uses.
+    const groupsKey = compositeId ?? specId
+    if (groupsKey) {
+      try {
+        const raw = sessionStorage.getItem(`helios_groups_${groupsKey}`)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          const authMap: Record<string, AuthConfig[]> = parsed.authMap ?? {}
+          const seeded = new Set(toolItems.map(t => t.apiName))
+          for (const apiName of seeded) {
+            const auth = authMap[apiName]
+            if (auth && auth.length > 0) {
+              sessionStorage.setItem(`helios_draft_${apiName}`, JSON.stringify({
+                baseUrl: "", auth, toolCount: toolItems.filter(t => t.apiName === apiName).length,
+              }))
+            }
+          }
+        }
+      } catch { }
+    }
     router.push("/create")
   }
 
@@ -375,16 +411,19 @@ function SandboxContent() {
   }, [panelOpen])
 
   useEffect(() => {
-    if (compositeId) {
-      const groupsRaw = sessionStorage.getItem(`helios_groups_${compositeId}`)
-      if (!groupsRaw) { setHasSecurityScheme(false); return }
+    const groupsKey = compositeId ?? specId
+    const groupsRaw = groupsKey ? sessionStorage.getItem(`helios_groups_${groupsKey}`) : null
+    if (groupsRaw) {
       try {
         const parsed = JSON.parse(groupsRaw)
         const authMap: Record<string, AuthConfig[]> = parsed.authMap ?? {}
-        setHasSecurityScheme(Object.values(authMap).some(configs => configs.some(c => c.type !== "none")))
-      } catch { setHasSecurityScheme(false) }
-      return
+        if (Object.keys(authMap).length > 0) {
+          setHasSecurityScheme(Object.values(authMap).some(configs => configs.some(c => c.type !== "none")))
+          return
+        }
+      } catch { /* fall through to spec-based detection */ }
     }
+    if (compositeId) { setHasSecurityScheme(false); return }
     if (!specId) { setHasSecurityScheme(false); return }
     const draft = sessionStorage.getItem(`helios_draft_${specId}`)
     if (!draft) { setHasSecurityScheme(!!authContext && Object.keys(authContext).length > 0); return }
@@ -392,12 +431,10 @@ function SandboxContent() {
       const { spec } = JSON.parse(draft)
       const has3 = spec?.components?.securitySchemes && Object.keys(spec.components.securitySchemes).length > 0
       const has2 = spec?.securityDefinitions && Object.keys(spec.securityDefinitions).length > 0
-      // Also check authContext — covers implicit API key detection where the spec has
-      // no explicit securitySchemes but generate_tool_registry found a key param
       const hasCtx = !!authContext && Object.keys(authContext).length > 0
       setHasSecurityScheme(!!(has3 || has2 || hasCtx))
     } catch { setHasSecurityScheme(false) }
-  }, [specId, compositeId, authContext])
+  }, [specId, compositeId, authContext, allTools])
 
   useEffect(() => {
     if (!panelOpen || panelTab !== "keys") return
@@ -877,9 +914,10 @@ function SandboxContent() {
                               <div className="flex flex-col gap-5">
                                 {toolGroups.map(group => {
                                   const groupAuthMap: Record<string, AuthConfig[]> = (() => {
-                                    if (!compositeId) return {}
+                                    const key = compositeId ?? specId
+                                    if (!key) return {}
                                     try {
-                                      const raw = sessionStorage.getItem(`helios_groups_${compositeId}`)
+                                      const raw = sessionStorage.getItem(`helios_groups_${key}`)
                                       return raw ? (JSON.parse(raw).authMap ?? {}) : {}
                                     } catch { return {} }
                                   })()
@@ -989,6 +1027,7 @@ function SandboxContent() {
                                         (() => {
                                           const labels = lookupBasicAuthLabels(group.name)
                                           const fields = basicAuthFields[group.name]
+                                          const basicDisabled = !fields?.user?.trim() || !fields?.pass?.trim() || isSavingKey === group.name
                                           return (
                                             <div className="flex flex-col gap-2">
                                               <span className="font-[family-name:--font-cormorant] text-[13px] italic text-white/55">
@@ -1000,12 +1039,24 @@ function SandboxContent() {
                                                 onChange={e => setBasicAuthFields(prev => ({ ...prev, [group.name]: { user: e.target.value, pass: prev[group.name]?.pass ?? "" } }))}
                                                 className="glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]"
                                               />
-                                              <input type="password"
-                                                placeholder={labels.pass}
-                                                value={fields?.pass ?? ""}
-                                                onChange={e => setBasicAuthFields(prev => ({ ...prev, [group.name]: { user: prev[group.name]?.user ?? "", pass: e.target.value } }))}
-                                                className="glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]"
-                                              />
+                                              <div className="flex gap-2">
+                                                <input type="password"
+                                                  placeholder={labels.pass}
+                                                  value={fields?.pass ?? ""}
+                                                  onChange={e => setBasicAuthFields(prev => ({ ...prev, [group.name]: { user: prev[group.name]?.user ?? "", pass: e.target.value } }))}
+                                                  className="flex-1 glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]"
+                                                />
+                                                <button
+                                                  onClick={() => handleSaveBasicAuth(group.name)}
+                                                  disabled={basicDisabled}
+                                                  className={cn(
+                                                    "font-[family-name:--font-cinzel] text-[10px] tracking-widest px-4 py-2 rounded-lg transition-colors whitespace-nowrap",
+                                                    basicDisabled ? "bg-white/[0.05] text-white/25 cursor-not-allowed" : "btn-gold cursor-pointer"
+                                                  )}
+                                                >
+                                                  {isSavingKey === group.name ? "..." : "Save"}
+                                                </button>
+                                              </div>
                                               {labels.hint && (
                                                 <span className="font-[family-name:--font-cormorant] text-[12px] italic text-white/40">
                                                   {labels.hint}

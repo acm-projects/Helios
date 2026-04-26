@@ -10,6 +10,9 @@ const PAGE_CONFIG: Record<string, { bg: string; overlay: string; stars: StarMode
   "/sandbox":  { bg: "/Background-Sunrise(3).jpg",  overlay: "rgba(0,0,0,0.42)", stars: "none"   },
   "/verify":   { bg: "/Background-Midday(4).jpg",   overlay: "rgba(0,0,0,0.45)", stars: "none"   },
   "/download": { bg: "/Background-Sunset(5).jpg",   overlay: "rgba(0,0,0,0.25)", stars: "none"   },
+  // /try paints its own GalaxyCanvas + static MotionStarsBackground; suppress
+  // the global mouse-parallax star layer here so it doesn't sit on top.
+  "/try":      { bg: "/Background-Midnight(1).jpg", overlay: "rgba(0,0,0,0.40)", stars: "none"   },
 }
 const DEFAULT = PAGE_CONFIG["/"]
 

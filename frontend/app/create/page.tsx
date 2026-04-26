@@ -28,6 +28,10 @@ interface ToolItem {
   baseUrl?: string
   source: "custom" | "premade" | "past"
   apiName: string
+  // Outer composite this tool was imported from (e.g. "Google Suite") when
+  // apiName is a child API (e.g. "Calendar"). Used so the picker can grey out
+  // an already-added composite and so removeServer can cascade.
+  compositeParent?: string
   input_schema?: object
   handler?: { method: string; path: string; query_params?: string[] }
 }
@@ -53,6 +57,9 @@ interface PendingDraft {
   toolCount?: number
   catalog?: PopupTool[]
   auth?: AuthConfig[]
+  // Composite imports only — preserve child API identity when expanding.
+  groupMap?: Record<string, string> | null
+  authMap?: Record<string, AuthConfig[]> | null
 }
 
 interface ParseSpecResponse {
@@ -142,6 +149,8 @@ export default function Create() {
   const [isDragging, setIsDragging] = useState(false)
   const [jsonError, setJsonError] = useState("")
   const [isParsing, setIsParsing] = useState(false)
+  const [stagedSpec, setStagedSpec] = useState<unknown>(null)
+  const [stagedFileName, setStagedFileName] = useState<string | null>(null)
   const [duplicateNotice, setDuplicateNotice] = useState<string[]>([])
 
   const [tools, setTools] = useState<ToolItem[]>([])
@@ -155,7 +164,7 @@ export default function Create() {
     filteredTools: Array<{ name: string; description: string }>
   } | null>(null)
 
-  const MAX_TOOLS_PER_API = 60
+  const MAX_TOOLS_PER_API = 200
 
   const [popupOpen, setPopupOpen] = useState(false)
   const [popupLoading, setPopupLoading] = useState(false)
@@ -238,7 +247,7 @@ export default function Create() {
   }, [url, apiName, intent])
   useEffect(() => { setSimplifyPreview(null) }, [tools, intent])
 
-  const triggerParse = async (specUrl: string, name: string, onError: (msg: string) => void) => {
+  const triggerParse = async (name: string, payload: { url?: string; spec?: unknown }, onError: (msg: string) => void) => {
     setIsCreating(true); setPopupLoading(true); setPopupOpen(true)
     setPendingSource("custom"); setPendingApiName(name)
     let res: Response, data: ParseSpecResponse
@@ -246,7 +255,7 @@ export default function Create() {
       res = await fetch("http://localhost:8000/api/spec/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ url: specUrl, name }),
+        body: JSON.stringify({ ...payload, name }),
       })
       data = await res.json()
     } catch {
@@ -267,55 +276,52 @@ export default function Create() {
   }
 
   const handleCreateTool = async () => {
+    if (!apiName.trim()) return
+    setFormError(""); setJsonError("")
+    if (stagedSpec !== null) {
+      const spec = stagedSpec
+      await triggerParse(apiName, { spec }, msg => setJsonError(msg))
+      setStagedSpec(null); setStagedFileName(null)
+      return
+    }
     const trimmedUrl = url.trim()
-    if (!trimmedUrl || !apiName) { setFormError("Spec URL and API Name are required."); return }
-    setFormError("")
-    await triggerParse(trimmedUrl, apiName, msg => setFormError(msg))
+    if (!trimmedUrl) { setFormError("Provide a spec URL or upload a file."); return }
+    await triggerParse(apiName, { url: trimmedUrl }, msg => setFormError(msg))
   }
 
   const handleJsonFile = useCallback(async (file: File) => {
-    if (!apiName) { setJsonError("Enter an API Name first."); return }
     const isYaml = file.name.endsWith(".yaml") || file.name.endsWith(".yml")
     const isJson = file.name.endsWith(".json")
     if (!isJson && !isYaml) { setJsonError("Only .json, .yaml, or .yml files are supported."); return }
-    setJsonError(""); setIsParsing(true); setPopupLoading(true); setPopupOpen(true)
-    setPendingSource("custom"); setPendingApiName(apiName)
+    setJsonError(""); setIsParsing(true)
     let spec: unknown
     try {
       const text = await file.text()
       spec = isYaml ? yaml.load(text) : JSON.parse(text)
     } catch {
       setJsonError(`Could not parse file — make sure it is valid ${isYaml ? "YAML" : "JSON"}.`)
-      setPopupOpen(false); setPopupLoading(false); setIsParsing(false)
+      setIsParsing(false)
       return
     }
-    let res: Response, data: ParseSpecResponse
-    try {
-      res = await fetch("http://localhost:8000/api/spec/parse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ spec, name: apiName }),
-      })
-      data = await res.json()
-    } catch {
-      setJsonError("Could not reach the server.")
-      setPopupOpen(false); setPopupLoading(false); setIsParsing(false)
-      return
-    }
-    if (!res.ok) {
-      setJsonError(data.error ?? "Failed to parse spec.")
-      setPopupOpen(false); setPopupLoading(false); setIsParsing(false)
-      return
-    }
-    const catalog: PopupTool[] = data.catalog ?? []
-    setPendingDraft({ specId: data.specId, spec: data.spec, baseUrl: data.baseUrl ?? "", toolCount: data.toolCount, catalog, auth: data.auth })
-    setPopupTools(catalog)
-    setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
-    setPopupLoading(false); setIsParsing(false)
-  }, [apiName])
+    setStagedSpec(spec)
+    setStagedFileName(file.name)
+    setIsParsing(false)
+  }, [])
 
   const handlePopupConfirm = () => {
     const selected = popupTools.filter(t => popupSelected.has(t.name))
+    // Composite imports: expand each tool's apiName back to its child API
+    // (e.g., "Google Suite" → "Gmail" / "Calendar" / "Maps") so every inner
+    // provider gets its own API Keys row downstream.
+    const childGroupMap = pendingDraft?.groupMap ?? null
+    const childAuthMap = pendingDraft?.authMap ?? null
+    const isCompositeImport = !!childGroupMap && Object.keys(childGroupMap).length > 0
+
+    const resolveApiName = (toolName: string): string => {
+      if (isCompositeImport) return childGroupMap![toolName] ?? pendingApiName
+      return pendingApiName
+    }
+
     const newTools: ToolItem[] = selected.map(t => ({
       id: `${pendingApiName}-${t.name}-${Date.now()}`,
       name: t.name,
@@ -324,7 +330,8 @@ export default function Create() {
       path: t.handler?.path,
       baseUrl: pendingDraft?.baseUrl ?? "",
       source: pendingSource,
-      apiName: pendingApiName,
+      apiName: resolveApiName(t.name),
+      compositeParent: isCompositeImport ? pendingApiName : undefined,
       input_schema: t.input_schema,
       handler: t.handler,
     }))
@@ -335,12 +342,30 @@ export default function Create() {
       if (duplicates.length > 0) setDuplicateNotice(duplicates.map(t => t.name))
       return unique.length > 0 ? [...prev, ...unique] : prev
     })
-    setExpanded(prev => new Set([...prev, pendingApiName]))
-    if (pendingApiName && pendingDraft) {
+
+    const expandNames = new Set(newTools.map(t => t.apiName))
+    setExpanded(prev => new Set([...prev, ...expandNames]))
+
+    if (pendingDraft) {
       try {
-        sessionStorage.setItem(`helios_draft_${pendingApiName}`, JSON.stringify({
-          specId: pendingDraft.specId, baseUrl: pendingDraft.baseUrl, auth: pendingDraft.auth, toolCount: pendingDraft.toolCount,
-        }))
+        if (isCompositeImport && childAuthMap) {
+          // Seed drafts only for child APIs that the user actually selected, so
+          // unselected children (e.g., Gmail/Maps when only Calendar was picked)
+          // don't leave stale auth in sessionStorage.
+          const selectedChildren = new Set(newTools.map(t => t.apiName))
+          for (const [childApi, childAuth] of Object.entries(childAuthMap)) {
+            if (!selectedChildren.has(childApi)) continue
+            sessionStorage.setItem(`helios_draft_${childApi}`, JSON.stringify({
+              baseUrl: pendingDraft.baseUrl,
+              auth: childAuth,
+              toolCount: Object.values(childGroupMap!).filter(n => n === childApi).length,
+            }))
+          }
+        } else if (pendingApiName) {
+          sessionStorage.setItem(`helios_draft_${pendingApiName}`, JSON.stringify({
+            specId: pendingDraft.specId, baseUrl: pendingDraft.baseUrl, auth: pendingDraft.auth, toolCount: pendingDraft.toolCount,
+          }))
+        }
       } catch { }
     }
     setPopupOpen(false); setUrl(""); setApiName("")
@@ -375,6 +400,8 @@ export default function Create() {
       toolCount: catalog.length,
       catalog,
       auth: data.auth,
+      groupMap: data.groupMap ?? null,
+      authMap: data.authMap ?? null,
     })
     setPopupTools(catalog)
     setPopupSelected(new Set(catalog.map((t: PopupTool) => t.name)))
@@ -439,6 +466,11 @@ export default function Create() {
           } catch { }
         }
       })
+      // Diagnostic: surface what's actually being launched. Remove once contamination
+      // path is confirmed eliminated.
+      console.log("[launchSandbox] tools.apiName ->", tools.map(t => t.apiName))
+      console.log("[launchSandbox] groupMap ->", toolMap)
+      console.log("[launchSandbox] authMap keys ->", Object.keys(authMap))
       const res = await fetch("http://localhost:8000/api/sandbox/start", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
@@ -453,6 +485,14 @@ export default function Create() {
       const syntheticId = `_composite_${Date.now()}`
       sessionStorage.setItem(`helios_session_${syntheticId}`, JSON.stringify({ sessionId: data.sessionId, tools: data.tools }))
       sessionStorage.setItem(`helios_groups_${syntheticId}`, JSON.stringify({ toolMap, authMap }))
+      // Handoff to sandbox: drop the create-page working set so a later visit
+      // doesn't rehydrate stale tools. Edit flow re-seeds these from sandbox.
+      sessionStorage.removeItem("helios_create_tools")
+      sessionStorage.removeItem("helios_create_form")
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const k = sessionStorage.key(i)
+        if (k && k.startsWith("helios_draft_")) sessionStorage.removeItem(k)
+      }
       const editSource = sessionStorage.getItem("helios_edit_source") ?? ""
       if (editSource) sessionStorage.removeItem("helios_edit_source")
       const sandboxUrl = editSource
@@ -488,9 +528,14 @@ export default function Create() {
     }))
 
     if (simplifyPreview) {
-      setIsGenerating(true)
       const filteredNames = new Set(simplifyPreview.filteredTools.map(t => t.name))
-      await launchSandbox(registryTools.filter(t => filteredNames.has(t.name)))
+      const filteredRegistry = registryTools.filter(t => filteredNames.has(t.name))
+      if (filteredRegistry.length > MAX_TOOLS_PER_API) {
+        setGenerateError(`Intent filter left ${filteredRegistry.length} tools — still over the ${MAX_TOOLS_PER_API}-tool sandbox limit. Narrow your intent or remove tools.`)
+        return
+      }
+      setIsGenerating(true)
+      await launchSandbox(filteredRegistry)
       return
     }
     if (tools.length > MAX_TOOLS_PER_API && !intent.trim()) {
@@ -523,7 +568,12 @@ export default function Create() {
   }
 
   const q = searchQuery.toLowerCase()
-  const addedServerIds = new Set(tools.filter(t => t.source === "past").map(t => t.apiName))
+  // Past-server picker uses the COMPOSITE PARENT (when present) so an imported
+  // composite greys out even though its tools carry child apiNames after the
+  // composite-expansion split.
+  const addedServerIds = new Set(
+    tools.filter(t => t.source === "past").map(t => t.compositeParent ?? t.apiName)
+  )
   const filteredApis = PREMADE_APIS.filter(a => a.name.toLowerCase().includes(q) || a.description.toLowerCase().includes(q))
   const filteredServers = servers.filter(s => s.id.toLowerCase().includes(q) && !addedServerIds.has(s.id))
 
@@ -824,41 +874,18 @@ export default function Create() {
                             </div>
                           </div>
                           {formError && <p className="font-[family-name:--font-cinzel] text-red-400 text-[14px] tracking-wider mb-3">{formError}</p>}
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="https://api.example.com/openapi.json"
-                              value={url}
-                              onChange={e => setUrl(e.target.value)}
-                              onKeyDown={e => { if (e.key === "Enter") handleCreateTool() }}
-                              className="glass-input flex-1 rounded-xl px-4 py-2.5 text-[16px] font-[family-name:--font-geist-mono]"
-                            />
-                            <div className="relative flex-shrink-0 group/addbtn">
-                              <button
-                                type="button"
-                                onClick={handleCreateTool}
-                                disabled={isCreating || !url.trim() || !apiName.trim()}
-                                className={cn(
-                                  "font-[family-name:--font-cinzel] text-[14px] tracking-[0.14em] px-5 py-2.5 rounded-xl transition-all duration-200",
-                                  isCreating || !url.trim() || !apiName.trim()
-                                    ? "bg-white/[0.05] text-white/25 cursor-not-allowed"
-                                    : "btn-gold cursor-pointer"
-                                )}
-                              >
-                                {isCreating ? "..." : "Add"}
-                              </button>
-                              {!apiName.trim() && (
-                                <div className="pointer-events-none absolute bottom-full right-0 mb-2 opacity-0 group-hover/addbtn:opacity-100 transition-opacity duration-150">
-                                  <div className="glass rounded-lg px-3 py-2 whitespace-nowrap shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-                                    <span className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.12em] text-white/80">
-                                      Enter an API name first
-                                    </span>
-                                  </div>
-                                  <div className="w-2 h-2 bg-white/[0.13] border-r border-b border-white/[0.20] rotate-45 ml-auto mr-3 -mt-1" />
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          <input
+                            type="text"
+                            placeholder={stagedSpec !== null ? "Clear the staged file to paste a URL" : "https://api.example.com/openapi.json"}
+                            value={url}
+                            onChange={e => setUrl(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") handleCreateTool() }}
+                            disabled={stagedSpec !== null}
+                            className={cn(
+                              "glass-input w-full rounded-xl px-4 py-2.5 text-[16px] font-[family-name:--font-geist-mono] transition-opacity duration-150",
+                              stagedSpec !== null && "opacity-40 cursor-not-allowed"
+                            )}
+                          />
                         </div>
 
                         {/* OR */}
@@ -881,25 +908,55 @@ export default function Create() {
                           {jsonError && <p className="font-[family-name:--font-cinzel] text-red-400 text-[14px] tracking-wider mb-3">{jsonError}</p>}
                           <div
                             className={cn(
-                              "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-6 transition-all duration-150 cursor-pointer",
-                              isDragging
-                                ? "border-[#C9A84C]/70 bg-[#C9A84C]/[0.06]"
-                                : "border-white/50 hover:border-white/80 hover:bg-white/[0.03]"
+                              "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-6 transition-all duration-150",
+                              url.trim() && !stagedFileName
+                                ? "border-white/20 opacity-40 cursor-not-allowed"
+                                : "cursor-pointer",
+                              !(url.trim() && !stagedFileName) && (
+                                isDragging
+                                  ? "border-[#C9A84C]/70 bg-[#C9A84C]/[0.06]"
+                                  : stagedFileName
+                                  ? "border-[#C9A84C]/50 bg-[#C9A84C]/[0.04]"
+                                  : "border-white/50 hover:border-white/80 hover:bg-white/[0.03]"
+                              )
                             )}
-                            onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+                            onDragOver={e => {
+                              if (url.trim() && !stagedFileName) return
+                              e.preventDefault(); setIsDragging(true)
+                            }}
                             onDragLeave={() => setIsDragging(false)}
                             onDrop={e => {
+                              if (url.trim() && !stagedFileName) return
                               e.preventDefault(); setIsDragging(false)
                               const file = e.dataTransfer.files[0]
                               if (file) handleJsonFile(file)
                             }}
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => {
+                              if (url.trim() && !stagedFileName) return
+                              fileInputRef.current?.click()
+                            }}
                           >
-                            <FileText size={20} strokeWidth={1} className={isDragging ? "text-[#C9A84C]/80" : "text-white/80"} />
+                            <FileText size={20} strokeWidth={1} className={isDragging || stagedFileName ? "text-[#C9A84C]/80" : "text-white/80"} />
                             <span className="font-[family-name:--font-cinzel] text-[16px] tracking-wider text-white">
-                              {isParsing ? "Parsing..." : "Drop API spec here"}
+                              {isParsing
+                                ? "Parsing..."
+                                : stagedFileName
+                                ? stagedFileName
+                                : url.trim()
+                                ? "Clear the URL to upload a file"
+                                : "Drop API spec here"}
                             </span>
-                            <span className="font-[family-name:--font-cormorant] text-[17px] italic text-white/30">or click to browse</span>
+                            {stagedFileName ? (
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setStagedSpec(null); setStagedFileName(null); setJsonError("") }}
+                                className="font-[family-name:--font-cormorant] text-[15px] italic text-white/50 hover:text-white/80 underline underline-offset-2 transition-colors cursor-pointer"
+                              >
+                                clear
+                              </button>
+                            ) : !url.trim() ? (
+                              <span className="font-[family-name:--font-cormorant] text-[17px] italic text-white/30">or click to browse</span>
+                            ) : null}
                           </div>
                           <input
                             ref={fileInputRef}
@@ -912,6 +969,33 @@ export default function Create() {
                               e.target.value = ""
                             }}
                           />
+                        </div>
+
+                        {/* Unified Add button — handles both URL and staged file */}
+                        <div className="relative mt-4 group/addbtn">
+                          <button
+                            type="button"
+                            onClick={handleCreateTool}
+                            disabled={isCreating || !apiName.trim() || (!url.trim() && stagedSpec === null)}
+                            className={cn(
+                              "w-full font-[family-name:--font-cinzel] text-[14px] tracking-[0.16em] px-5 py-3 rounded-xl transition-all duration-200",
+                              isCreating || !apiName.trim() || (!url.trim() && stagedSpec === null)
+                                ? "bg-white/[0.05] text-white/25 cursor-not-allowed"
+                                : "btn-gold cursor-pointer"
+                            )}
+                          >
+                            {isCreating ? "..." : "Add"}
+                          </button>
+                          {!apiName.trim() && (url.trim() || stagedSpec !== null) && (
+                            <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/addbtn:opacity-100 transition-opacity duration-150">
+                              <div className="glass rounded-lg px-3 py-2 whitespace-nowrap shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+                                <span className="font-[family-name:--font-cinzel] text-[12px] tracking-[0.12em] text-white/80">
+                                  Enter an API name first
+                                </span>
+                              </div>
+                              <div className="w-2 h-2 bg-white/[0.13] border-r border-b border-white/[0.20] rotate-45 mx-auto -mt-1" />
+                            </div>
+                          )}
                         </div>
 
                         {/* Duplicate notice */}

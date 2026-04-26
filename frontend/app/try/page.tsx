@@ -8,6 +8,8 @@ import Link from "next/link"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
 import { InfoBubble } from "@/app/components/InfoBubble"
 import { MotionStarsBackground } from "@/app/components/MotionStars"
+import RandomPlanet from "@/components/ui/random-planet"
+import { getServerStarColor } from "@/lib/serverStars"
 import { lookupProviderKeyUrl, lookupBasicAuthLabels } from "@/lib/providerKeys"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -157,7 +159,13 @@ function GalaxyCanvas({ seed }: { seed: number }) {
     }
     draw()
     window.addEventListener("resize", draw)
-    return () => window.removeEventListener("resize", draw)
+    // visualViewport fires on browser zoom (Ctrl +/-) more reliably than the
+    // window resize event in some browsers — keeps the nebula filling the screen.
+    window.visualViewport?.addEventListener("resize", draw)
+    return () => {
+      window.removeEventListener("resize", draw)
+      window.visualViewport?.removeEventListener("resize", draw)
+    }
   }, [seed])
 
   return (
@@ -177,6 +185,7 @@ function TryContent() {
 
   // Galaxy
   const galaxySeed = specId ? hashStr(specId) : 31337
+  const starColor = specId ? getServerStarColor(specId) : "#ffcf6f"
 
   // Sandbox state (same as sandbox page)
   const [sessionId, setSessionId] = useState("")
@@ -246,7 +255,7 @@ function TryContent() {
           setActiveTools((tools ?? []).filter((t: Tool) => t.enabled !== false))
           if (cachedAuthCtx) setAuthContext(cachedAuthCtx)
           const toggles: Record<string, boolean> = {}
-          ;(tools ?? []).forEach((t: Tool) => { toggles[t.function.name] = t.enabled ?? true })
+            ; (tools ?? []).forEach((t: Tool) => { toggles[t.function.name] = t.enabled ?? true })
           setToolToggles(toggles)
           return
         }
@@ -289,7 +298,7 @@ function TryContent() {
         setIntegrations(list)
         setSavedKeyStatus(Object.fromEntries(list.map(i => [i.integrationId, i.keyPresent && !i.tokenExpired])))
       })
-      .catch(() => {})
+      .catch(() => { })
   }
   useEffect(() => {
     if (!panelOpen || panelTab !== "keys" || !specId) return
@@ -313,8 +322,8 @@ function TryContent() {
     import("animejs").then(({ createTimeline }) => {
       if (cancelled) return
       const tl = createTimeline({ defaults: { ease: "outExpo" } })
-      if (headerRef.current)   tl.add(headerRef.current,   { opacity: [0, 1], y: [-18, 0], duration: 650 }, 0)
-      if (chatRef.current)     tl.add(chatRef.current,     { opacity: [0, 1], duration: 700 }, 180)
+      if (headerRef.current) tl.add(headerRef.current, { opacity: [0, 1], y: [-18, 0], duration: 650 }, 0)
+      if (chatRef.current) tl.add(chatRef.current, { opacity: [0, 1], duration: 700 }, 180)
       if (inputAreaRef.current) tl.add(inputAreaRef.current, { opacity: [0, 1], y: [18, 0], duration: 600 }, 280)
     })
     return () => { cancelled = true }
@@ -444,8 +453,8 @@ function TryContent() {
         setMessages(prev => [...prev, {
           id: Date.now().toString(), role: "assistant",
           content: is429 ? "Rate limit reached — wait a moment and try again."
-                 : is410 ? "Could not recover session — try refreshing the page."
-                 : (data?.error ?? "Something went wrong."),
+            : is410 ? "Could not recover session — try refreshing the page."
+              : (data?.error ?? "Something went wrong."),
           timestamp: new Date(),
         }])
         setIsLoading(false)
@@ -584,6 +593,15 @@ function TryContent() {
           <MotionStarsBackground transparent />
         </div>
 
+        {/* Left-docked procedural planet — over stars, under UI */}
+        <div
+          className="fixed left-[-1100px] top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ zIndex: 1 }}
+          aria-hidden="true"
+        >
+          <RandomPlanet size={1600} rotationSpeed={0.045} color={starColor} seed={galaxySeed} />
+        </div>
+
         <div className="relative z-30 flex items-center px-8 h-[93px] flex-shrink-0">
           <div className="flex-1 flex items-center">
             <div className="relative">
@@ -636,9 +654,25 @@ function TryContent() {
       {/* Galaxy background — static canvas: nebula, core glow */}
       <GalaxyCanvas seed={galaxySeed} />
 
-      {/* Parallax star layers — drift upward at 3 different speeds, multi-color */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -9 }}>
+      {/* Static multi-layer starfield. Masked so stars inside the sphere's disc are clipped. */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: -9,
+          WebkitMaskImage: "radial-gradient(circle 548px at -110px 50%, transparent 99%, black 100%)",
+          maskImage: "radial-gradient(circle 548px at -110px 50%, transparent 99%, black 100%)",
+        }}
+      >
         <MotionStarsBackground transparent />
+      </div>
+
+      {/* Left-docked procedural star — over stars, under UI */}
+      <div
+        className="fixed left-[-1100px] top-1/2 -translate-y-1/2 pointer-events-none"
+        style={{ zIndex: 1 }}
+        aria-hidden="true"
+      >
+        <RandomPlanet size={1100} rotationSpeed={0.010} color={starColor} seed={galaxySeed} />
       </div>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -856,7 +890,7 @@ function TryContent() {
           </div>
 
           {/* ── Input area ─────────────────────────────────────────────── */}
-          <div ref={inputAreaRef} className="flex-shrink-0 relative z-[0] overflow-hidden border-t border-white/[0.07]" style={{ opacity: 0 }}>
+          <div ref={inputAreaRef} className="flex-shrink-0 relative z-20 overflow-hidden border-t border-white/[0.07]" style={{ opacity: 0 }}>
             <div
               aria-hidden="true"
               className="absolute pointer-events-none bar-blur"
@@ -1051,6 +1085,7 @@ function TryContent() {
                                           (() => {
                                             const labels = lookupBasicAuthLabels(id)
                                             const fields = basicAuthFields[id]
+                                            const basicDisabled = !fields?.user?.trim() || !fields?.pass?.trim() || isSavingKey === id
                                             return (
                                               <div className="flex flex-col gap-2">
                                                 <span className="font-[family-name:--font-cormorant] text-[13px] italic text-white/50">
@@ -1061,11 +1096,23 @@ function TryContent() {
                                                   value={fields?.user ?? ""}
                                                   onChange={e => setBasicAuthFields(prev => ({ ...prev, [id]: { user: e.target.value, pass: prev[id]?.pass ?? "" } }))}
                                                   className="glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]" />
-                                                <input type="password"
-                                                  placeholder={labels.pass}
-                                                  value={fields?.pass ?? ""}
-                                                  onChange={e => setBasicAuthFields(prev => ({ ...prev, [id]: { user: prev[id]?.user ?? "", pass: e.target.value } }))}
-                                                  className="glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]" />
+                                                <div className="flex gap-2">
+                                                  <input type="password"
+                                                    placeholder={labels.pass}
+                                                    value={fields?.pass ?? ""}
+                                                    onChange={e => setBasicAuthFields(prev => ({ ...prev, [id]: { user: prev[id]?.user ?? "", pass: e.target.value } }))}
+                                                    className="flex-1 glass-input rounded-lg px-3 py-2 text-[12px] font-[family-name:--font-geist-mono]" />
+                                                  <button
+                                                    onClick={() => handleSaveBasicAuth(id)}
+                                                    disabled={basicDisabled}
+                                                    className={cn(
+                                                      "font-[family-name:--font-cinzel] text-[10px] tracking-widest px-4 py-2 rounded-lg transition-colors whitespace-nowrap",
+                                                      basicDisabled ? "bg-white/[0.05] text-white/22 cursor-not-allowed" : "btn-gold cursor-pointer"
+                                                    )}
+                                                  >
+                                                    {isSavingKey === id ? "..." : "Save"}
+                                                  </button>
+                                                </div>
                                                 {labels.hint && (
                                                   <span className="font-[family-name:--font-cormorant] text-[12px] italic text-white/40">
                                                     {labels.hint}

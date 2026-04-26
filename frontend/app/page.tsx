@@ -5,41 +5,9 @@ import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Trash2, ChevronRight } from "lucide-react"
 import { isLoggedIn, getAuthHeaders, logout } from "@/lib/auth"
+import { SERVER_STAR_COLORS, hashStr } from "@/lib/serverStars"
 
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
-
-// ── Star constellation helpers ─────────────────────────────
-function hashStr(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
-  return Math.abs(h)
-}
-
-// Per-server star tint. Mix of real stellar spectral classes (hot blue → red)
-// plus exotic/fantasy nebula colors (cyan, lavender, purple, pink, magenta)
-// for broader visual variety. Hash modulo palette length picks one per server.
-const SERVER_STAR_COLORS = [
-  // Real stellar spectrum — hot to cool
-  "#9bb0ff", // hot blue      (O/B)
-  "#c6d4ff", // blue-white
-  "#e8f0ff", // icy (original)
-  "#ffffff", // white         (A)
-  "#fff0b8", // yellow-white  (F)
-  "#ffcf6f", // yellow        (G, sun-like)
-  "#ffc79a", // peach
-  "#ff9458", // orange        (K)
-  "#ff7a5a", // red            (M)
-
-  // Exotic / nebula
-  "#7dd3ff", // light blue / cyan
-  "#89e8ff", // bright cyan
-  "#d4bcff", // lavender
-  "#b495ff", // purple
-  "#a78bff", // deep violet
-  "#ff9ed4", // nebula pink
-  "#e884ff", // magenta
-  "#9effc8", // mint / aqua
-]
 
 interface SavedServer {
   id: string
@@ -101,6 +69,12 @@ export default function Home() {
     } catch {}
     setPrefetching(null)
     router.push(`/try?specId=${serverId}`)
+  }
+
+  const handleCardClick = (serverId: string) => {
+    if (prefetching) return
+    // Sandbox page handles its own data fetch via /api/sandbox/start on mount.
+    router.push(`/sandbox?specId=${encodeURIComponent(serverId)}`)
   }
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
@@ -502,7 +476,7 @@ export default function Home() {
                   // relative to the viewport — no matter what the inner card does.
                   <div
                     key={server.id}
-                    onClick={() => handleServerClick(server.id)}
+                    onClick={() => handleCardClick(server.id)}
                     className={cn(
                       "w-[260px] aspect-[4/3] relative z-[0] rounded-2xl cursor-pointer",
                       prefetching === server.id && "opacity-60 pointer-events-none"

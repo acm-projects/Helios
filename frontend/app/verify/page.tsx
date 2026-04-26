@@ -196,7 +196,9 @@ function VerifyContent() {
         const data = await res.json()
         if (!res.ok) { setError(data.error || "Failed to save."); setIsSaving(false); return }
         sessionStorage.removeItem(`helios_session_${compositeId}`)
+        sessionStorage.removeItem(`helios_groups_${compositeId}`)
         sessionStorage.removeItem("helios_create_tools")
+        sessionStorage.removeItem("helios_create_form")
         router.push(`/download?specId=${serverName.trim()}`)
         return
       }
