@@ -44,12 +44,9 @@ export default function AuthPage() {
       {/* ── Background ──────────────────────────────────────────────────── */}
 
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="relative z-30 flex items-center px-8 h-[62px]">
-        <span className="font-[family-name:--font-cinzel] font-semibold text-[22px] tracking-[0.35em] pr-[0.35em] select-none"
-          style={{ color: "#ffffff", textShadow: "0 0 40px rgba(255,255,255,0.15)" }}>
-          HELIOS
-        </span>
-      </div>
+      {/* Auth page suppresses the top-left HELIOS title — branding lives
+          in the gold badge above the auth card instead. */}
+      <div className="relative z-30 flex items-center px-8 h-[62px]" />
 
       {/* ── Auth card ────────────────────────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center px-4 py-12">
@@ -58,13 +55,12 @@ export default function AuthPage() {
 
           {/* Logo + heading */}
           <div className="flex flex-col items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            <div className="rounded-2xl flex items-center justify-center px-5 py-2.5"
               style={{ background: "linear-gradient(135deg,#C9A84C,#E8C46A)" }}>
-              <span className="font-[family-name:--font-cinzel] text-[18px] font-bold text-[#1a1200]">H</span>
+              <span className="font-[family-name:--font-cinzel] text-[18px] font-bold tracking-[0.15em] text-[#1a1200]">
+                Helios
+              </span>
             </div>
-            <h1 className="font-[family-name:--font-cinzel] text-[22px] tracking-[0.15em] text-white/90">
-              Helios
-            </h1>
             <p className="font-[family-name:--font-cormorant] text-[15px] italic text-white/40">
               {view === "login" ? "Welcome back" : "Create your account"}
             </p>
