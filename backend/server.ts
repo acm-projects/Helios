@@ -195,6 +195,63 @@ function registerDynamicTool(
         }
       }
 
+      // ── 0a. Strip XML wrappers and tool-call leakage from markup values ───
+      // Claude has three distinct over-engineering habits in markup-format
+      // fields, each fatal to the receiving parser:
+      //   (1) Wraps the payload in `<![CDATA[ ... ]]>` — valid syntax inside
+      //       a parent element, but not a valid root.
+      //   (2) Prefixes an XML prolog `<?xml version="1.0" ... ?>` — fine in
+      //       a full document, fatal in a fragment field.
+      //   (3) Leaks its own tool-call wrapper tags (`</invoke>`, `</Twiml>`)
+      //       at the tail when the parameter VALUE is itself XML, producing
+      //       trailing junk after the well-formed root closes.
+      // Strip order: prolog → CDATA peel → prolog again (LLM nests them) →
+      // truncate-at-root-close (handles tail leakage).
+      for (const k in args) {
+        const v = args[k]
+        if (typeof v !== "string") continue
+        const fmt = String(props[k]?.format || "").toLowerCase()
+        if (fmt !== "twiml" && fmt !== "xml" && fmt !== "html") continue
+        let cleaned = v.trim()
+        cleaned = cleaned.replace(/^\s*<\?xml[^?]*\?>\s*/i, "")
+        const cdataMatch = cleaned.match(/^\s*<!\[CDATA\[([\s\S]*)\]\]>\s*$/)
+        if (cdataMatch) cleaned = cdataMatch[1].trim()
+        cleaned = cleaned.replace(/^\s*<\?xml[^?]*\?>\s*/i, "")
+        // Truncate anything after the closing root tag. Find the root element
+        // name from the first `<Foo...>` and cut at its first `</Foo>`. If
+        // the root is self-closing or never closes, we leave the value alone.
+        const rootMatch = cleaned.match(/^<\s*([a-zA-Z][\w-]*)/)
+        if (rootMatch) {
+          const closeRe = new RegExp(`</\\s*${rootMatch[1]}\\s*>`, "i")
+          const closeMatch = cleaned.match(closeRe)
+          if (closeMatch && closeMatch.index !== undefined) {
+            cleaned = cleaned.slice(0, closeMatch.index + closeMatch[0].length)
+          }
+        }
+        if (cleaned !== v) args[k] = cleaned
+      }
+
+      // ── 0b. Drop URL fields when a sibling content field is populated ──────
+      // The LLM defensively fills both `Url` and `Twiml` (or `body` and `webhook_url`,
+      // etc.) on the same call. Twilio's rule — and most APIs with a content/URL
+      // dual surface — is that the URL wins when both are present, which silently
+      // overrides the user's intended message with whatever the URL returns
+      // (often a placeholder or a demo endpoint). Detect the conflict by spec
+      // `format` and strip the URL side. Generic across providers.
+      const hasNonEmptyMarkup = Object.entries(args).some(([k, v]) => {
+        if (typeof v !== "string" || v.trim() === "") return false
+        const fmt = String(props[k]?.format || "").toLowerCase()
+        return fmt === "twiml" || fmt === "xml" || fmt === "html"
+      })
+      if (hasNonEmptyMarkup) {
+        for (const k of Object.keys(args)) {
+          const v = args[k]
+          if (typeof v !== "string" || v.trim() === "") continue
+          const fmt = String(props[k]?.format || "").toLowerCase()
+          if (fmt === "uri") delete args[k]
+        }
+      }
+
       // ── 0. Restore original param names ────────────────────────────────────
       // Anthropic rejects schema keys that violate ^[a-zA-Z0-9_.-]{1,64}$, so
       // generate_tool_registry.ts may have renamed some properties. The AI
