@@ -55,12 +55,18 @@ export default function AuthPage() {
 
           {/* Logo + heading */}
           <div className="flex flex-col items-center gap-3 mb-8">
-            <div className="rounded-2xl flex items-center justify-center px-5 py-2.5"
-              style={{ background: "linear-gradient(135deg,#C9A84C,#E8C46A)" }}>
-              <span className="font-[family-name:--font-cinzel] text-[18px] font-bold tracking-[0.15em] text-[#1a1200]">
-                Helios
-              </span>
-            </div>
+            <span
+              className="font-[family-name:--font-cinzel] text-[44px] font-bold tracking-[0.15em] leading-none"
+              style={{
+                background: "linear-gradient(135deg,#C9A84C,#E8C46A)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                color: "transparent",
+              }}
+            >
+              Helios
+            </span>
             <p className="font-[family-name:--font-cormorant] text-[15px] italic text-white/40">
               {view === "login" ? "Welcome back" : "Create your account"}
             </p>

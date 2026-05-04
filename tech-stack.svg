@@ -1,0 +1,344 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1120" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a14"/>
+      <stop offset="100%" stop-color="#13131e"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffc857"/>
+    </marker>
+    <marker id="arrBack" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8294"/>
+    </marker>
+    <marker id="arrFE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#61DAFB"/>
+    </marker>
+    <marker id="arrBE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5FA04E"/>
+    </marker>
+    <marker id="arrAuth" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FB015B"/>
+    </marker>
+  </defs>
+
+  <rect width="1700" height="1120" fill="url(#bg)"/>
+
+  <text x="850" y="50" text-anchor="middle" font-size="34" font-weight="700" fill="#fff">Helios — Tech Stack</text>
+  <text x="850" y="78" text-anchor="middle" font-size="14" fill="#9aa3b2">Every arrow shows real data flow · forward in gold · response in gray · auth in pink · runtime deps in cyan/green</text>
+
+  <!-- ============================================== -->
+  <!-- ============ AUTH CLUSTER ==================== -->
+  <!-- ============================================== -->
+  <g>
+    <text x="50" y="135" font-size="12" font-weight="700" fill="#FB015B" letter-spacing="3">AUTH FLOW  ·  one-time + every request</text>
+
+    <!-- Step 1: Next.js → Google (redirect) -->
+    <path d="M 370 380 L 370 295 L 470 295" stroke="#FB015B" stroke-width="1.8" fill="none" marker-end="url(#arrAuth)"/>
+    <text x="385" y="285" font-size="11" fill="#FB015B" font-weight="600">1. redirect</text>
+
+    <!-- Google OAuth card -->
+    <g transform="translate(470,170)">
+      <rect width="140" height="120" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.15)"/>
+      <g transform="translate(50,18) scale(1.7)">
+        <path fill="#4285F4" d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
+      </g>
+      <text x="70" y="88" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Google OAuth</text>
+      <text x="70" y="105" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">user clicks "Sign in"</text>
+    </g>
+
+    <!-- Step 2: Google → JWT (callback w/ code, sign) -->
+    <path d="M 610 230 L 660 230" stroke="#FB015B" stroke-width="1.8" fill="none" marker-end="url(#arrAuth)"/>
+    <text x="635" y="220" font-size="11" fill="#FB015B" font-weight="600" text-anchor="middle">2. code</text>
+
+    <!-- JWT card -->
+    <g transform="translate(660,170)">
+      <rect width="140" height="120" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.15)"/>
+      <g transform="translate(50,18) scale(1.7)" fill="#FB015B">
+        <path d="M10.2 0v6.456L12 8.928l1.8-2.472V0zm3.6 6.456v3.072l2.904-.96L20.52 3.36l-2.928-2.136zm2.904 2.112l-1.8 2.496 2.928.936 6.144-1.992-1.128-3.432zM17.832 12l-2.928.936 1.8 2.496 6.144 1.992 1.128-3.432zm-1.128 3.432l-2.904-.96v3.072l3.792 5.232 2.928-2.136zM13.8 17.544L12 15.072l-1.8 2.472V24h3.6zm-3.6 0v-3.072l-2.904.96L3.48 20.64l2.928 2.136zm-2.904-2.112l1.8-2.496L6.168 12 .024 13.992l1.128 3.432zM6.168 12l2.928-.936-1.8-2.496-6.144-1.992-1.128 3.432zm1.128-3.432l2.904.96V6.456L6.408 1.224 3.48 3.36Z"/>
+      </g>
+      <text x="70" y="88" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">JWT + bcrypt</text>
+      <text x="70" y="105" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">Express signs token</text>
+    </g>
+
+    <!-- Step 3: JWT → Express (token returned) -->
+    <path d="M 730 290 L 730 350 L 635 350 L 635 380" stroke="#FB015B" stroke-width="1.8" fill="none" marker-end="url(#arrAuth)"/>
+    <text x="745" y="330" font-size="11" fill="#FB015B" font-weight="600">3. token</text>
+
+    <!-- Step 4: every fetch attaches token -->
+    <text x="450" y="343" font-size="11" fill="#FB015B" font-weight="600" font-style="italic">4. Authorization: Bearer ... on every Next.js → Express request</text>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- ============ MAIN SPINE ====================== -->
+  <!-- ============================================== -->
+
+  <!-- USER -->
+  <g transform="translate(80,380)">
+    <rect width="150" height="130" rx="14" fill="rgba(255,200,87,0.10)" stroke="#ffc857" stroke-width="2"/>
+    <g transform="translate(57,18)" fill="#fff">
+      <circle cx="18" cy="20" r="13"/>
+      <path d="M 0 60 Q 18 35 36 60 L 36 70 L 0 70 Z"/>
+    </g>
+    <text x="75" y="115" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">USER</text>
+  </g>
+
+  <!-- Next.js -->
+  <g transform="translate(300,380)">
+    <rect width="150" height="130" rx="14" fill="rgba(255,200,87,0.10)" stroke="#ffc857" stroke-width="2"/>
+    <g transform="translate(54,15) scale(1.8)" fill="#fff">
+      <path d="M18.665 21.978C16.758 23.255 14.465 24 12 24 5.377 24 0 18.623 0 12S5.377 0 12 0s12 5.377 12 12c0 3.583-1.574 6.801-4.067 9.001L9.219 7.2H7.2v9.596h1.615V9.251l9.85 12.727Zm-3.332-8.533 1.6 2.061V7.2h-1.6v6.245Z"/>
+    </g>
+    <text x="75" y="100" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Next.js 16</text>
+    <text x="75" y="115" text-anchor="middle" font-size="10" fill="#9aa3b2">App Router · :3001</text>
+  </g>
+
+  <!-- Express -->
+  <g transform="translate(560,380)">
+    <rect width="150" height="130" rx="14" fill="rgba(255,200,87,0.10)" stroke="#ffc857" stroke-width="2"/>
+    <g transform="translate(50,30) scale(1.8)" fill="#fff">
+      <path d="M24 18.588a1.529 1.529 0 01-1.895-.72l-3.45-4.771-.5-.667-4.003 5.444a1.466 1.466 0 01-1.802.708l5.158-6.92-4.798-6.251a1.595 1.595 0 011.9.666l3.576 4.83 3.596-4.81a1.435 1.435 0 011.788-.668L21.708 7.9l-2.522 3.283a.666.666 0 000 .994l4.804 6.412zM.002 11.576l.42-2.075c1.154-4.103 5.858-5.81 9.094-3.27 1.895 1.489 2.368 3.597 2.275 5.973H1.116C.943 16.447 4.005 19.009 7.92 17.7a4.078 4.078 0 002.582-2.876c.207-.666.548-.78 1.174-.588a5.417 5.417 0 01-2.589 3.957 6.272 6.272 0 01-7.306-.933 6.575 6.575 0 01-1.64-3.858c0-.235-.08-.455-.134-.666A88.33 88.33 0 010 11.577zm1.127-.286h9.654c-.06-3.076-2.001-5.258-4.59-5.278-2.882-.04-4.944 2.094-5.071 5.264z"/>
+    </g>
+    <text x="75" y="100" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Express · api.ts</text>
+    <text x="75" y="115" text-anchor="middle" font-size="10" fill="#9aa3b2">REST · :8000 · 5 routes</text>
+  </g>
+
+  <!-- Claude -->
+  <g transform="translate(860,380)">
+    <rect width="150" height="130" rx="14" fill="rgba(255,200,87,0.10)" stroke="#ffc857" stroke-width="2"/>
+    <g transform="translate(54,18) scale(1.8)" fill="#D97757">
+      <path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/>
+    </g>
+    <text x="75" y="100" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Claude (Anthropic)</text>
+    <text x="75" y="115" text-anchor="middle" font-size="10" fill="#9aa3b2">tool filter · sandbox chat</text>
+  </g>
+
+  <!-- MCP -->
+  <g transform="translate(1140,380)">
+    <rect width="150" height="130" rx="14" fill="rgba(255,200,87,0.10)" stroke="#ffc857" stroke-width="2"/>
+    <g transform="translate(55,20)">
+      <circle cx="20" cy="20" r="18" fill="none" stroke="#ffc857" stroke-width="2.5"/>
+      <circle cx="20" cy="20" r="5" fill="#ffc857"/>
+      <line x1="20" y1="2" x2="20" y2="9" stroke="#ffc857" stroke-width="2.5"/>
+      <line x1="20" y1="31" x2="20" y2="38" stroke="#ffc857" stroke-width="2.5"/>
+      <line x1="2" y1="20" x2="9" y2="20" stroke="#ffc857" stroke-width="2.5"/>
+      <line x1="31" y1="20" x2="38" y2="20" stroke="#ffc857" stroke-width="2.5"/>
+    </g>
+    <text x="75" y="100" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">MCP · server.ts</text>
+    <text x="75" y="115" text-anchor="middle" font-size="10" fill="#9aa3b2">protocol · :3000 · per-session</text>
+  </g>
+
+  <!-- Target API -->
+  <g transform="translate(1430,380)">
+    <rect width="150" height="130" rx="14" fill="rgba(154,163,178,0.08)" stroke="#9aa3b2" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="75" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#9aa3b2">USER'S</text>
+    <text x="75" y="72" text-anchor="middle" font-size="13" font-weight="700" fill="#9aa3b2">TARGET API</text>
+    <text x="75" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2">any HTTP</text>
+    <text x="75" y="115" text-anchor="middle" font-size="10" fill="#9aa3b2">GET-only in sandbox</text>
+  </g>
+
+  <!-- ============= SPINE FORWARD ARROWS ============= -->
+  <g stroke="#ffc857" stroke-width="3" fill="none">
+    <path d="M 230 425 L 295 425" marker-end="url(#arr)"/>
+    <path d="M 450 425 L 555 425" marker-end="url(#arr)"/>
+    <path d="M 710 425 L 855 425" marker-end="url(#arr)"/>
+    <path d="M 1010 425 L 1135 425" marker-end="url(#arr)"/>
+    <path d="M 1290 425 L 1425 425" marker-end="url(#arr)"/>
+  </g>
+  <g font-size="11" fill="#ffc857" font-weight="600" text-anchor="middle">
+    <text x="262" y="418">click</text>
+    <text x="502" y="418">fetch() + JWT</text>
+    <text x="782" y="418">tools[] + msgs[]</text>
+    <text x="1072" y="418">tool_use blocks</text>
+    <text x="1357" y="418">real HTTP</text>
+  </g>
+
+  <!-- ============= SPINE RETURN ARROWS (response path) ============= -->
+  <g stroke="#7a8294" stroke-width="1.5" fill="none" stroke-dasharray="3 3">
+    <path d="M 295 470 L 235 470" marker-end="url(#arrBack)"/>
+    <path d="M 555 470 L 455 470" marker-end="url(#arrBack)"/>
+    <path d="M 855 470 L 715 470" marker-end="url(#arrBack)"/>
+    <path d="M 1135 470 L 1015 470" marker-end="url(#arrBack)"/>
+    <path d="M 1425 470 L 1295 470" marker-end="url(#arrBack)"/>
+  </g>
+  <g font-size="10" fill="#9aa3b2" text-anchor="middle" font-style="italic">
+    <text x="265" y="486">render</text>
+    <text x="505" y="486">JSON reply</text>
+    <text x="785" y="486">text + stop</text>
+    <text x="1075" y="486">tool_result</text>
+    <text x="1360" y="486">JSON</text>
+  </g>
+
+  <!-- Loop hint between Claude and MCP -->
+  <g opacity="0.7">
+    <path d="M 1075 502 Q 1075 520 1100 520 L 1115 520" stroke="#ffc857" stroke-width="1" fill="none" stroke-dasharray="2 2"/>
+    <text x="1077" y="540" text-anchor="middle" font-size="10" fill="#ffc857" font-style="italic">loop until Claude returns final text</text>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- ============ FRONTEND CLUSTER ================ -->
+  <!-- ============================================== -->
+  <g>
+    <rect x="30" y="585" width="700" height="240" rx="16" fill="rgba(97,218,251,0.04)" stroke="rgba(97,218,251,0.35)" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="50" y="610" font-size="12" font-weight="700" fill="#61DAFB" letter-spacing="3">FRONTEND  ·  Next.js renders pages with these</text>
+
+    <g stroke="#61DAFB" stroke-width="1.8" fill="none" opacity="0.7">
+      <path d="M 375 510 L 375 650"/>
+      <path d="M 130 650 L 620 650"/>
+      <path d="M 130 650 L 130 690" marker-end="url(#arrFE)"/>
+      <path d="M 295 650 L 295 690" marker-end="url(#arrFE)"/>
+      <path d="M 460 650 L 460 690" marker-end="url(#arrFE)"/>
+      <path d="M 620 650 L 620 690" marker-end="url(#arrFE)"/>
+    </g>
+
+    <!-- React -->
+    <g transform="translate(60,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(52,12) scale(1.6)" fill="#61DAFB">
+        <path d="M14.23 12.004a2.236 2.236 0 0 1-2.235 2.236 2.236 2.236 0 0 1-2.236-2.236 2.236 2.236 0 0 1 2.235-2.236 2.236 2.236 0 0 1 2.236 2.236zm2.648-10.69c-1.346 0-3.107.96-4.888 2.622-1.78-1.653-3.542-2.602-4.887-2.602-.41 0-.783.093-1.106.278-1.375.793-1.683 3.264-.973 6.365C1.98 8.917 0 10.42 0 12.004c0 1.59 1.99 3.097 5.043 4.03-.704 3.113-.39 5.588.988 6.38.32.187.69.275 1.102.275 1.345 0 3.107-.96 4.888-2.624 1.78 1.654 3.542 2.603 4.887 2.603.41 0 .783-.09 1.106-.275 1.374-.792 1.683-3.263.973-6.365C22.02 15.096 24 13.59 24 12.004c0-1.59-1.99-3.097-5.043-4.032.704-3.11.39-5.587-.988-6.38-.318-.184-.688-.277-1.092-.278zm-.005 1.09v.006c.225 0 .406.044.558.127.666.382.955 1.835.73 3.704-.054.46-.142.945-.25 1.44-.96-.236-2.006-.417-3.107-.534-.66-.905-1.345-1.727-2.035-2.447 1.592-1.48 3.087-2.292 4.105-2.295zm-9.77.02c1.012 0 2.514.808 4.11 2.28-.686.72-1.37 1.537-2.02 2.442-1.107.117-2.154.298-3.113.538-.112-.49-.195-.964-.254-1.42-.23-1.868.054-3.32.714-3.707.19-.09.4-.127.563-.132zm4.882 3.05c.455.468.91.992 1.36 1.564-.44-.02-.89-.034-1.345-.034-.46 0-.915.01-1.36.034.44-.572.895-1.096 1.345-1.565zM12 8.1c.74 0 1.477.034 2.202.093.406.582.802 1.203 1.183 1.86.372.64.71 1.29 1.018 1.946-.308.655-.646 1.31-1.013 1.95-.38.66-.773 1.288-1.18 1.87-.728.063-1.466.098-2.21.098-.74 0-1.477-.035-2.202-.093-.406-.582-.802-1.204-1.183-1.86-.372-.64-.71-1.29-1.018-1.946.303-.657.646-1.313 1.013-1.954.38-.66.773-1.286 1.18-1.868.728-.064 1.466-.098 2.21-.098zm-3.635.254c-.24.377-.48.763-.704 1.16-.225.39-.435.782-.635 1.174-.265-.656-.49-1.31-.676-1.947.64-.15 1.315-.283 2.015-.386zm7.26 0c.695.103 1.365.23 2.006.387-.18.632-.405 1.282-.66 1.933-.2-.39-.41-.783-.64-1.174-.225-.392-.465-.774-.705-1.146zm3.063.675c.484.15.944.317 1.375.498 1.732.74 2.852 1.708 2.852 2.476-.005.768-1.125 1.74-2.857 2.475-.42.18-.88.342-1.355.493-.28-.958-.646-1.956-1.1-2.98.45-1.017.81-2.01 1.085-2.964zm-13.395.004c.278.96.645 1.957 1.1 2.98-.45 1.017-.812 2.01-1.086 2.964-.484-.15-.944-.318-1.37-.5-1.732-.737-2.852-1.706-2.852-2.474 0-.768 1.12-1.742 2.852-2.476.42-.18.88-.342 1.356-.494z"/>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">React 19</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">renders the UI</text>
+    </g>
+
+    <!-- TypeScript -->
+    <g transform="translate(225,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(52,12) scale(1.6)" fill="#3178C6">
+        <path d="M1.125 0C.502 0 0 .502 0 1.125v21.75C0 23.498.502 24 1.125 24h21.75c.623 0 1.125-.502 1.125-1.125V1.125C24 .502 23.498 0 22.875 0zm17.363 9.75c.612 0 1.154.037 1.627.111a6.38 6.38 0 0 1 1.306.34v2.458a3.95 3.95 0 0 0-.643-.361 5.093 5.093 0 0 0-.717-.26 5.453 5.453 0 0 0-1.426-.2c-.3 0-.573.028-.819.086a2.1 2.1 0 0 0-.623.242c-.17.104-.3.229-.393.374a.888.888 0 0 0-.14.49c0 .196.053.373.156.529.104.156.252.304.443.444s.423.276.696.41c.273.135.582.274.926.416.47.197.892.407 1.266.628.374.222.695.473.963.753.268.279.472.598.614.957.142.359.214.776.214 1.253 0 .657-.125 1.21-.373 1.656a3.033 3.033 0 0 1-1.012 1.085 4.38 4.38 0 0 1-1.487.596c-.566.12-1.163.18-1.79.18a9.916 9.916 0 0 1-1.84-.164 5.544 5.544 0 0 1-1.512-.493v-2.63a5.033 5.033 0 0 0 3.237 1.2c.333 0 .624-.03.872-.09.249-.06.456-.144.623-.25.166-.108.29-.234.373-.38a1.023 1.023 0 0 0-.074-1.089 2.12 2.12 0 0 0-.537-.5 5.597 5.597 0 0 0-.807-.444 27.72 27.72 0 0 0-1.007-.436c-.918-.383-1.602-.852-2.053-1.405-.45-.553-.676-1.222-.676-2.005 0-.614.123-1.141.369-1.582.246-.441.58-.804 1.004-1.089a4.494 4.494 0 0 1 1.47-.629 7.536 7.536 0 0 1 1.77-.201zm-15.113.188h9.563v2.166H9.506v9.646H6.789v-9.646H3.375z"/>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">TypeScript</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">static types</text>
+    </g>
+
+    <!-- Tailwind -->
+    <g transform="translate(390,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(52,22) scale(1.6)" fill="#06B6D4">
+        <path d="M12.001,4.8c-3.2,0-5.2,1.6-6,4.8c1.2-1.6,2.6-2.2,4.2-1.8c0.913,0.228,1.565,0.89,2.288,1.624 C13.666,10.618,15.027,12,18.001,12c3.2,0,5.2-1.6,6-4.8c-1.2,1.6-2.6,2.2-4.2,1.8c-0.913-0.228-1.565-0.89-2.288-1.624 C16.337,6.182,14.976,4.8,12.001,4.8z M6.001,12c-3.2,0-5.2,1.6-6,4.8c1.2-1.6,2.6-2.2,4.2-1.8c0.913,0.228,1.565,0.89,2.288,1.624 c1.177,1.194,2.538,2.576,5.512,2.576c3.2,0,5.2-1.6,6-4.8c-1.2,1.6-2.6,2.2-4.2,1.8c-0.913-0.228-1.565-0.89-2.288-1.624 C10.337,13.382,8.976,12,6.001,12z"/>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Tailwind v4</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">utility CSS</text>
+    </g>
+
+    <!-- Framer Motion -->
+    <g transform="translate(550,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(52,12) scale(1.6)" fill="#0055FF">
+        <path d="M4 0h16v8h-8zM4 8h8l8 8H4zM4 16h8v8z"/>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Framer Motion</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">page transitions</text>
+    </g>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- ============ BACKEND CLUSTER ================= -->
+  <!-- ============================================== -->
+  <g>
+    <rect x="750" y="585" width="920" height="430" rx="16" fill="rgba(95,160,78,0.04)" stroke="rgba(95,160,78,0.35)" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="770" y="610" font-size="12" font-weight="700" fill="#5FA04E" letter-spacing="3">BACKEND  ·  Express uses these per route / per call</text>
+
+    <g stroke="#5FA04E" stroke-width="1.8" fill="none" opacity="0.7">
+      <!-- trunk Express → backend frame -->
+      <path d="M 635 510 L 635 555 L 1200 555 L 1200 650"/>
+      <!-- rib -->
+      <path d="M 870 650 L 1530 650"/>
+      <!-- drops -->
+      <path d="M 870 650 L 870 690" marker-end="url(#arrBE)"/>
+      <path d="M 1035 650 L 1035 690" marker-end="url(#arrBE)"/>
+      <path d="M 1200 650 L 1200 690" marker-end="url(#arrBE)"/>
+      <path d="M 1365 650 L 1365 690" marker-end="url(#arrBE)"/>
+      <path d="M 1530 650 L 1530 690" marker-end="url(#arrBE)"/>
+      <!-- mongoose → mongodb -->
+      <path d="M 1200 805 L 1200 855" marker-end="url(#arrBE)"/>
+    </g>
+    <text x="1212" y="828" font-size="10" fill="#5FA04E" font-style="italic">CRUD: specs · users · keys</text>
+
+    <!-- Zod -->
+    <g transform="translate(800,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(52,12) scale(1.6)" fill="#3068B7">
+        <path d="M2.584 3.582a2.247 2.247 0 0 1 2.112-1.479h14.617c.948 0 1.794.595 2.115 1.487l2.44 6.777a2.248 2.248 0 0 1-.624 2.443l-9.61 8.52a2.247 2.247 0 0 1-2.963.018L.776 12.773a2.248 2.248 0 0 1-.64-2.467Zm12.038 4.887-9.11 5.537 5.74 5.007c.456.399 1.139.396 1.593-.006l5.643-5.001H14.4l6.239-3.957c.488-.328.69-.947.491-1.5l-1.24-3.446a1.535 1.535 0 0 0-1.456-1.015H5.545a1.535 1.535 0 0 0-1.431 1.01l-1.228 3.37z"/>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Zod</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">validates req.body</text>
+    </g>
+
+    <!-- swagger-parser -->
+    <g transform="translate(965,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(50,12)">
+        <rect width="40" height="40" rx="8" fill="#85EA2D"/>
+        <text x="20" y="27" text-anchor="middle" font-size="16" font-weight="800" fill="#000">{ }</text>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">swagger-parser</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">/spec/parse</text>
+    </g>
+
+    <!-- Mongoose -->
+    <g transform="translate(1130,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(52,12) scale(1.6)" fill="#880000">
+        <path d="M14.014 7.37a9.162 9.162 0 0 0-.808.025c-.218.017-.434.072-.65.11.229.118.456.213.68.315.225.103.436.232.629.387-.253-.097-.499-.208-.752-.298a8.046 8.046 0 0 0-1.624-.421c-.273-.037-.546-.073-.819.005-.276.078-.354.18-.38.458-.04.46.098.887.281 1.298a4.432 4.432 0 0 0 1.185 1.573c.391.335.825.598 1.305.787.136.053.274.103.411.155l-.009.032c-.263-.072-.532-.126-.787-.22a4.14 4.14 0 0 1-1.222-.73 4.16 4.16 0 0 1-1.007-1.22 3.43 3.43 0 0 1-.43-1.609l-.012.005C4.891 7.488.402 11.595.035 11.94l-.034.014c-.002.005 0 .01.003.016L0 11.974l.005-.002c.004.008.01.016.013.024.087-.019.173-.042.26-.054l.069-.01c.324-.115.655-.205.997-.253.484-.069.985-.159 1.48-.156.468.002.943.074 1.402.153.129.022.255.052.38.087.335.075.65.21.933.391l.06.03c.403.19.758.47 1.038.811.052.057.141.116.187.178.096.114.142.236.303.363v-1.737h2.01l.939 1.733.942-1.733h2.07v3.357l.343-.226s.375-1 2.116-1.14l1.996-.064c-.308-.637-.307-.637-.159-.83.147-.19 1.28-.314 1.48-.433l2.912-.588c.007-.022.015.012.03.007.072-.022.147-.037.25-.061l.66-.16c.042-.025.093-.034.14-.05.308-.107.577-.245.726-.573.145-.319.339-.616.41-.967.022-.111.003-.208-.078-.288-.097-.096-.222-.138-.35-.171-.421-.173-.84-.35-1.264-.513z"/>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Mongoose</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">Spec · User · ApiKey</text>
+    </g>
+
+    <!-- MongoDB (under Mongoose) -->
+    <g transform="translate(1130,860)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(52,12) scale(1.6)" fill="#47A248">
+        <path d="M17.193 9.555c-1.264-5.58-4.252-7.414-4.573-8.115-.28-.394-.53-.954-.735-1.44-.036.495-.055.685-.523 1.184-.723.566-4.438 3.682-4.74 10.02-.282 5.912 4.27 9.435 4.888 9.884l.07.05A73.49 73.49 0 0111.91 24h.481c.114-1.032.284-2.056.51-3.07.417-.296.604-.463.85-.693a11.342 11.342 0 003.639-8.464c.01-.814-.103-1.662-.197-2.218zm-5.336 8.195s0-8.291.275-8.29c.213 0 .49 10.695.49 10.695-.381-.045-.765-1.76-.765-2.405z"/>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">MongoDB</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">document store</text>
+    </g>
+
+    <!-- JSZip -->
+    <g transform="translate(1295,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(50,12)">
+        <rect width="40" height="40" rx="8" fill="#FFD700"/>
+        <rect x="14" y="6" width="12" height="3" fill="#000"/>
+        <rect x="14" y="11" width="12" height="3" fill="#000"/>
+        <rect x="14" y="16" width="12" height="3" fill="#000"/>
+        <rect x="14" y="21" width="12" height="3" fill="#000"/>
+        <text x="20" y="36" text-anchor="middle" font-size="9" font-weight="800" fill="#000">ZIP</text>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">JSZip</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">/server/download</text>
+    </g>
+
+    <!-- Node.js -->
+    <g transform="translate(1460,695)">
+      <rect width="140" height="115" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <g transform="translate(52,12) scale(1.6)" fill="#5FA04E">
+        <path d="M11.998,24c-0.321,0-0.641-0.084-0.922-0.247l-2.936-1.737c-0.438-0.245-0.224-0.332-0.08-0.383 c0.585-0.203,0.703-0.25,1.328-0.604c0.065-0.037,0.151-0.023,0.218,0.017l2.256,1.339c0.082,0.045,0.197,0.045,0.272,0l8.795-5.076 c0.082-0.047,0.134-0.141,0.134-0.238V6.921c0-0.099-0.053-0.192-0.137-0.242l-8.791-5.072c-0.081-0.047-0.189-0.047-0.271,0 L3.075,6.68C2.99,6.729,2.936,6.825,2.936,6.921v10.15c0,0.097,0.054,0.189,0.139,0.235l2.409,1.392 c1.307,0.654,2.108-0.116,2.108-0.89V7.787c0-0.142,0.114-0.253,0.256-0.253h1.115c0.139,0,0.255,0.112,0.255,0.253v10.021 c0,1.745-0.95,2.745-2.604,2.745c-0.508,0-0.909,0-2.026-0.551L2.28,18.675c-0.57-0.329-0.922-0.945-0.922-1.604V6.921 c0-0.659,0.353-1.275,0.922-1.603l8.795-5.082c0.557-0.315,1.296-0.315,1.848,0l8.794,5.082c0.57,0.329,0.924,0.944,0.924,1.603 v10.15c0,0.659-0.354,1.273-0.924,1.604l-8.794,5.078C12.643,23.916,12.324,24,11.998,24z"/>
+      </g>
+      <text x="70" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Node.js</text>
+      <text x="70" y="100" text-anchor="middle" font-size="10" fill="#9aa3b2" font-style="italic">runs api.ts + server.ts</text>
+    </g>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- ============ ROUTES FOOTER =================== -->
+  <!-- ============================================== -->
+  <g transform="translate(40,1055)">
+    <text x="0" y="0" font-size="13" fill="#9aa3b2">
+      <tspan fill="#ffc857" font-weight="700">EXPRESS ROUTES: </tspan>
+      <tspan fill="#fff" font-family="ui-monospace, Consolas, monospace">POST /auth/google</tspan>
+      <tspan fill="#9aa3b2">  ·  </tspan>
+      <tspan fill="#fff" font-family="ui-monospace, Consolas, monospace">POST /api/spec/parse</tspan>
+      <tspan fill="#9aa3b2">  ·  </tspan>
+      <tspan fill="#fff" font-family="ui-monospace, Consolas, monospace">POST /api/sandbox/start</tspan>
+      <tspan fill="#9aa3b2">  ·  </tspan>
+      <tspan fill="#fff" font-family="ui-monospace, Consolas, monospace">POST /api/sandbox/chat</tspan>
+      <tspan fill="#9aa3b2">  ·  </tspan>
+      <tspan fill="#fff" font-family="ui-monospace, Consolas, monospace">GET /api/server/download</tspan>
+    </text>
+    <text x="0" y="22" font-size="12" fill="#9aa3b2" font-style="italic">
+      Each route validates with Zod, auths with JWT, hits Mongoose for state, and (for /sandbox/*) calls Claude → MCP → user's API.
+    </text>
+  </g>
+</svg>

@@ -2,7 +2,6 @@
 import { Suspense, useState, useEffect, useLayoutEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Send, User, Bot, ChevronDown, ChevronRight } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
 import { isLoggedIn, getAuthHeaders } from "@/lib/auth"
 import { InfoBubble } from "@/app/components/InfoBubble"
@@ -653,9 +652,20 @@ function SandboxContent() {
                 return (
                   <div key={message.id} className={cn("flex gap-3", message.role === "user" ? "justify-end" : "justify-start")}>
                     {message.role === "assistant" && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden"
-                        style={{ background: "linear-gradient(135deg,#C9A84C,#E8C46A)" }}>
-                        <Image src="/logo.svg" alt="Helios" width={30} height={30} className="brightness-0" />
+                      <div
+                        aria-label="Helios"
+                        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{
+                          background: "linear-gradient(135deg,#C9A84C,#E8C46A)",
+                          boxShadow: "0 0 0 1px rgba(255,255,255,0.18) inset, 0 2px 6px rgba(0,0,0,0.25)",
+                        }}
+                      >
+                        <span
+                          className="font-[family-name:--font-cinzel] font-semibold text-[20px] leading-none"
+                          style={{ color: "rgba(0,0,0,0.82)", letterSpacing: "0.02em" }}
+                        >
+                          H
+                        </span>
                       </div>
                     )}
                     {/* Bubble — backdrop-filter samples the fixed background at GPU level, zero JS needed */}
@@ -721,9 +731,20 @@ function SandboxContent() {
 
               {isLoading && (
                 <div className="flex gap-3 justify-start">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden"
-                    style={{ background: "linear-gradient(135deg,#C9A84C,#E8C46A)" }}>
-                    <Image src="/logo.svg" alt="Helios" width={20} height={20} className="brightness-0" />
+                  <div
+                    aria-label="Helios"
+                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{
+                      background: "linear-gradient(135deg,#C9A84C,#E8C46A)",
+                      boxShadow: "0 0 0 1px rgba(255,255,255,0.18) inset, 0 2px 6px rgba(0,0,0,0.25)",
+                    }}
+                  >
+                    <span
+                      className="font-[family-name:--font-cinzel] font-semibold text-[20px] leading-none"
+                      style={{ color: "rgba(0,0,0,0.82)", letterSpacing: "0.02em" }}
+                    >
+                      H
+                    </span>
                   </div>
                   <div className="glass rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-3">
                     <div className="flex gap-1.5 items-center">
